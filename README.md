@@ -1,42 +1,123 @@
-# Slim Framework 4 Skeleton Application
+# SolfAcademy
 
-[![Coverage Status](https://coveralls.io/repos/github/slimphp/Slim-Skeleton/badge.svg?branch=master)](https://coveralls.io/github/slimphp/Slim-Skeleton?branch=master)
+Plataforma de academia de música construida con **Slim 4** + **PHP-DI** y **MySQL/MariaDB**. El sitio web público (homepage, catálogo de cursos, detalle de curso, perfiles de instructores, login/registro) está desarrollado siguiendo el prototipo de diseño; la parte autenticada (matrículas, horarios, pagos) corresponde a la fase 2.
 
-Use this skeleton application to quickly setup and start working on a new Slim Framework 4 application. This application uses the latest Slim 4 with Slim PSR-7 implementation and PHP-DI container implementation. It also uses the Monolog logger.
+## Requisitos
 
-This skeleton application was built for Composer. This makes setting up a new Slim Framework application quick and easy.
+- PHP 8.0 o superior (probado con PHP 8.4)
+- [Composer](https://getcomposer.org/)
+- MySQL 8 / MariaDB 10.4 o superior
 
-## Install the Application
-
-Run this command from the directory in which you want to install your new Slim Framework application. You will require PHP 7.4 or newer.
-
-```bash
-composer create-project slim/slim-skeleton [my-app-name]
-```
-
-Replace `[my-app-name]` with the desired directory name for your new application. You'll want to:
-
-* Point your virtual host document root to your new application's `public/` directory.
-* Ensure `logs/` is web writable.
-
-To run the application in development, you can run these commands 
+## Instalación
 
 ```bash
-cd [my-app-name]
+# 1. Dependencias de PHP
+composer install
+
+# 2. Crear la base de datos (o déjala crear al importar el SQL)
+mysql -u valet -e "CREATE DATABASE solfacademy CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 3. Importar esquema + datos de prueba
+mysql -u valet solfacademy < database/solfacademy.sql
+#    (también puedes importar database/solfacademy.sql desde phpMyAdmin o Workbench)
+
+# 4. Configurar tus credenciales
+#    Editar config/db.php (ver sección siguiente)
+
+# 5. Arrancar
 composer start
 ```
 
-Or you can use `docker-compose` to run the app with `docker`, so you can run these commands:
-```bash
-cd [my-app-name]
-docker-compose up -d
-```
-After that, open `http://localhost:8080` in your browser.
+Abre <http://127.0.0.1:8080> en el navegador.
 
-Run this command in the application directory to run the test suite
+Ejecuta las pruebas con:
 
 ```bash
 composer test
 ```
 
-That's it! Now go build something cool.
+## Configuración de la base de datos
+
+La conexión se configura en **`config/db.php`** (credenciales por defecto de desarrollo: usuario `valet` sin contraseña en `127.0.0.1`, base de datos `solfacademy`). Edita ese archivo con los datos de tu servidor:
+
+```php
+// config/db.php
+return [
+    'host'    => '127.0.0.1',
+    'dbname'  => 'solfacademy',
+    'user'    => 'valet',
+    'pass'    => '',
+    'charset' => 'utf8mb4',
+];
+```
+
+Cómo fluye la configuración hasta la conexión PDO:
+
+1. **`config/db.php`** — credenciales (fuente única de verdad).
+2. **`app/settings.php`** — las incluye en el objeto `Settings` como `'db'`.
+3. **`app/dependencies.php`** — registra `PDO::class` en el contenedor PHP-DI leyendo de `$settings->get('db')` (equivalente PHP-DI de `$container['db'] = function ($c) {...}` de la documentación de Slim).
+
+La conexión es perezosa: PDO solo se abre cuando un controlador solicita `PDO::class`.
+
+### Comprobar la conexión
+
+```bash
+php scripts/comprobar-db.php
+```
+
+Imprime la conexión correcta con el número de tablas y registros, o el error exacto si algo falla.
+
+### Esquema
+
+`database/solfacademy.sql` crea las 16 tablas del diagrama entidad-relación con sus claves foráneas y datos de prueba alineados con la web (categorías, instrumentos, instructores, 9 cursos, grupos, horarios, aulas, estudiantes e inscripciones de ejemplo):
+
+| Área | Tablas |
+|---|---|
+| Catálogo | `categoria`, `instrumento`, `curso` |
+| Instructores | `instructor`, `instructor_instrumento` (N:M) |
+| Reglas | `requisito_curso`, `descuento` |
+| Grupos | `grupo`, `horario`, `aula` |
+| Matrícula | `estudiante`, `inscripcion`, `evaluacion`, `asistencia`, `pago` |
+| Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`) |
+
+> **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. Todos los usuarios de prueba usan la contraseña `solfacademy123` (por ejemplo `admin@solfacademy.com` o `laura.gomez@ejemplo.com`).
+
+El script es re-importable: borra y recrea las tablas cada vez que se ejecuta.
+
+### Evitar errores comunes
+
+- **"Unknown database solfacademy"** → aún no importaste `database/solfacademy.sql`.
+- **"Access denied"** → revisa usuario/contraseña en `config/db.php`.
+- **"Connection refused"** → el servidor MySQL/MariaDB no está activo.
+
+## Rutas del sitio web (fase 1)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/` | Homepage |
+| GET | `/cursos` | Catálogo con filtros (instrumento, nivel, horario), búsqueda y orden |
+| GET | `/cursos/{id}` | Detalle de curso |
+| GET | `/instructores/{id}` | Perfil de instructor |
+| GET | `/login` | Iniciar sesión (formulario; POST en fase 2) |
+| GET | `/registro` | Crear cuenta (formulario; POST en fase 2) |
+
+## Estructura del proyecto
+
+```
+config/db.php              → credenciales de la base de datos
+app/settings.php           → ajustes globales (incluye 'db')
+app/dependencies.php       → definiciones del contenedor (logger, PDO)
+app/routes.php             → rutas de la aplicación
+database/solfacademy.sql   → esquema + datos de prueba
+scripts/comprobar-db.php   → verificación de conexión
+src/Controllers/Web/       → controladores del sitio web
+src/Data/SampleData.php    → datos de ejemplo (se sustituirá por PDO)
+templates/web/             → vistas (layout.php + secciones)
+public/css/style.css       → estilos globales
+```
+
+Los datos de ejemplo viven en `src/Data/SampleData.php` con la misma forma que las tablas; al implementar la capa de acceso a datos se sustituyen por consultas PDO sin tocar las vistas.
+
+## Licencia
+
+Ver [LICENSE](LICENSE).

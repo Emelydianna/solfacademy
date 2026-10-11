@@ -26,5 +26,27 @@ return function (ContainerBuilder $containerBuilder) {
 
             return $logger;
         },
+
+        // Conexión a la base de datos (MySQL/MariaDB vía PDO).
+        // Equivalente PHP-DI de: $container['db'] = function ($c) { ... }.
+        // Es perezosa: PDO solo se conecta cuando un controlador lo solicita.
+        PDO::class => function (ContainerInterface $c) {
+            $db = $c->get(SettingsInterface::class)->get('db');
+
+            $dsn = sprintf(
+                'mysql:host=%s;dbname=%s;charset=%s',
+                $db['host'],
+                $db['dbname'],
+                $db['charset']
+            );
+
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
+
+            return new PDO($dsn, $db['user'], $db['pass'], $options);
+        },
     ]);
 };

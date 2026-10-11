@@ -23,6 +23,8 @@ return function (ContainerBuilder $containerBuilder) {
                     'path' => isset($_ENV['docker']) ? 'php://stdout' : __DIR__ . '/../logs/app.log',
                     'level' => Logger::DEBUG,
                 ],
+                // Configuración de la base de datos (ver config/db.php)
+                'db' => require __DIR__ . '/../config/db.php',
             ]);
         }
     ]);

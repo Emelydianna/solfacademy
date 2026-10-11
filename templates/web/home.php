@@ -1,12 +1,126 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solfacademy</title>
-</head>
-<body>
-    <h1>Solfacademy</h1>
-    <p>La academia de música</p>
-</body>
-</html>
+<!-- ============================== -->
+<!-- Hero                          -->
+<!-- ============================== -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center gy-4">
+            <div class="col-lg-6">
+                <span class="section-eyebrow">FORMACIÓN LAS 24 HORAS</span>
+                <h1 class="hero-title">Aprende de los Mejores Músicos en SolfAcademy</h1>
+                <p class="hero-text">Desde principiante hasta entusiasta. Ofrecemos clases personalizadas con instructores expertos, horarios flexibles y una comunidad vibrante. ¡Comienza tu viaje musical hoy!</p>
+                <div class="d-flex flex-wrap gap-3 mt-4">
+                    <a href="#" class="btn btn-accent px-4 fw-semibold">REGISTRARME AHORA</a>
+                    <a href="#" class="btn btn-outline-light px-4">VER CURSOS</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <!-- TODO: sustituir por la imagen real del aula cuando haya assets -->
+                <div class="hero-image-placeholder">
+                    <i class="bi bi-music-note-beamed"></i>
+                    <span>Aula de orquesta</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================== -->
+<!-- Nuestros Cursos (CATEGORÍA)   -->
+<!-- ============================== -->
+<section class="courses-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-eyebrow">PROGRAMAS DE ESTUDIO</span>
+            <h2 class="section-title">Nuestros Cursos</h2>
+        </div>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
+            <?php foreach ($categorias ?? [] as $categoria): ?>
+                <div class="col">
+                    <div class="card course-card h-100">
+                        <div class="card-body p-4">
+                            <div class="course-icon mb-3">
+                                <i class="bi <?= htmlspecialchars((string) $categoria['icono']) ?>"></i>
+                            </div>
+                            <h5 class="card-title text-white mb-2"><?= htmlspecialchars((string) $categoria['nombre']) ?></h5>
+                            <p class="card-text course-card-text mb-0"><?= htmlspecialchars((string) $categoria['descripcion']) ?></p>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+
+<!-- ============================== -->
+<!-- Nuestros Instructores         -->
+<!-- ============================== -->
+<section id="instructores" class="instructors-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-eyebrow">APRENDE DE EXPERTOS</span>
+            <h2 class="section-title">Nuestros Instructores</h2>
+        </div>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
+            <?php foreach ($instructores ?? [] as $instructor): ?>
+                <div class="col">
+                    <div class="card instructor-card h-100 text-center">
+                        <a href="/instructores/<?= (int) $instructor['id_instructor'] ?>" class="instructor-card-link">
+                            <div class="card-body p-4">
+                            <!-- TODO: sustituir por la foto real del instructor cuando haya assets -->
+                            <div class="instructor-photo mx-auto mb-3">
+                                <?= htmlspecialchars(mb_strtoupper(mb_substr((string) $instructor['nombre'], 0, 1) . mb_substr((string) $instructor['apellido'], 0, 1))) ?>
+                            </div>
+                            <h5 class="card-title mb-1"><?= htmlspecialchars((string) $instructor['nombre'] . ' ' . $instructor['apellido']) ?></h5>
+                            <p class="instructor-role"><?= htmlspecialchars((string) $instructor['rol']) ?></p>
+                            <div class="stars mb-2" aria-label="Valoración de <?= htmlspecialchars((string) $instructor['valoracion']) ?> de 5">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <i class="bi <?= $i <= (int) round((float) $instructor['valoracion']) ? 'bi-star-fill' : 'bi-star' ?>"></i>
+                                <?php endfor; ?>
+                                <span class="rating-number"><?= htmlspecialchars((string) $instructor['valoracion']) ?></span>
+                            </div>
+                            <p class="instructor-bio mb-0"><?= htmlspecialchars((string) $instructor['bio']) ?></p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+
+<!-- ============================== -->
+<!-- Testimonios                   -->
+<!-- ============================== -->
+<section class="testimonials-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-eyebrow">EXPERIENCIAS REALES</span>
+            <h2 class="testimonials-title">Lo que dicen nuestros alumnos</h2>
+        </div>
+        <div class="row row-cols-1 row-cols-lg-2 g-4 justify-content-center">
+            <?php foreach ($testimonios ?? [] as $testimonio): ?>
+                <div class="col">
+                    <div class="card testimonial-card h-100">
+                        <div class="card-body p-4">
+                            <div class="testimonial-quote mb-3">
+                                <i class="bi bi-quote"></i>
+                            </div>
+                            <p class="testimonial-text mb-4"><?= htmlspecialchars((string) $testimonio['texto']) ?></p>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="testimonial-avatar"><?= htmlspecialchars((string) $testimonio['iniciales']) ?></span>
+                                <div>
+                                    <div class="testimonial-author"><?= htmlspecialchars((string) $testimonio['autor']) ?></div>
+                                    <div class="stars">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <i class="bi <?= $i <= (int) $testimonio['valoracion'] ? 'bi-star-fill' : 'bi-star' ?>"></i>
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
