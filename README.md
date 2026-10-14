@@ -69,18 +69,40 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 
 ### Esquema
 
-`database/solfacademy.sql` crea las 16 tablas del diagrama entidad-relación con sus claves foráneas y datos de prueba alineados con la web (categorías, instrumentos, instructores, 9 cursos, grupos, horarios, aulas, estudiantes e inscripciones de ejemplo):
+`database/solfacademy.sql` crea las 17 tablas del diagrama entidad-relación (más `practica_estudiante`) con sus claves foráneas, vistas, procedimientos almacenados y datos de prueba alineados con la web (categorías, instrumentos, instructores, 9 cursos, grupos, horarios, aulas, estudiantes e inscripciones de ejemplo):
 
 | Área | Tablas |
 |---|---|
 | Catálogo | `categoria`, `instrumento`, `curso` |
-| Instructores | `instructor`, `instructor_instrumento` (N:M) |
-| Reglas | `requisito_curso`, `descuento` |
-| Grupos | `grupo`, `horario`, `aula` |
-| Matrícula | `estudiante`, `inscripcion`, `evaluacion`, `asistencia`, `pago` |
+| Instructores | `instructor`, `instructor_instrumento` (N:M, con `nivel_dominio`) |
+| Reglas | `requisito_curso`, `descuento` (vigencia, usos y % o monto fijo) |
+| Grupos | `grupo` (`capacidad_maxima`, `estado`), `horario`, `aula` |
+| Matrícula | `estudiante`, `inscripcion` (con `precio_inscripcion` congelado al matricular) |
+| Seguimiento | `evaluacion` (escala 0–10), `asistencia` (`presente` = `S`/`N`), `practica_estudiante` |
+| Cobro | `pago` (con `referencia_pago`, `comprobante_url` y `creado_por`) |
 | Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`) |
 
 > **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. Todos los usuarios de prueba usan la contraseña `solfacademy123` (por ejemplo `admin@solfacademy.com` o `laura.gomez@ejemplo.com`).
+>
+> **Nota de pagos**: el estado de pago *no* se guarda duplicado en `inscripcion`; se calcula con `SUM(pago.monto_pagado) WHERE estado='Pagado'` (fuente única de verdad). La vista `v_inscripciones_detalle` ya lo hace por ti.
+
+#### Vistas
+
+| Vista | Qué muestra |
+|---|---|
+| `v_grupos_completos` | Cupo de cada grupo (las inscripciones canceladas no ocupan lugar) |
+| `v_horarios_grupos` | Horario semanal de todos los grupos, ordenado Lunes→Domingo |
+| `v_inscripciones_detalle` | Matrículas con total pagado y saldo pendiente calculados |
+| `v_asistencia_estudiante` | % de asistencia por matrícula |
+| `v_calificaciones_estudiante` | Notas con promedio por matrícula (escala 0–10) |
+
+#### Procedimientos almacenados
+
+| Procedimiento | Qué hace |
+|---|---|
+| `sp_verificar_disponibilidad_grupo(id_grupo, OUT lugares)` | Lugares libres de un grupo |
+| `sp_registrar_inscripcion(estudiante, grupo, OUT ok, OUT msg)` | Matrícula segura: valida cupo, grupo activo y doble inscripción; congela el precio |
+| `sp_actualizar_pago(inscripción, monto, método, concepto, referencia, creado_por, OUT ok, OUT msg)` | Registra un pago validando el monto |
 
 El script es re-importable: borra y recrea las tablas cada vez que se ejecuta.
 

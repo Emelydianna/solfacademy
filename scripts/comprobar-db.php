@@ -42,10 +42,20 @@ try {
     }
 
     // Conteo rápido de registros principales
-    foreach (['categoria', 'instrumento', 'instructor', 'curso', 'usuario'] as $tabla) {
+    foreach (['categoria', 'instrumento', 'instructor', 'curso', 'usuario', 'inscripcion', 'pago'] as $tabla) {
         $total = $pdo->query("SELECT COUNT(*) FROM {$tabla}")->fetchColumn();
         echo sprintf("  %-12s %s registros\n", $tabla . ':', $total);
     }
+
+    // Vistas y procedimientos almacenados del esquema
+    $vistas = $pdo->query(
+        "SELECT COUNT(*) FROM information_schema.views WHERE table_schema = DATABASE()"
+    )->fetchColumn();
+    $procedimientos = $pdo->query(
+        "SELECT COUNT(*) FROM information_schema.routines
+         WHERE routine_schema = DATABASE() AND routine_type = 'PROCEDURE'"
+    )->fetchColumn();
+    echo sprintf("Vistas: %d · Procedimientos almacenados: %d\n", $vistas, $procedimientos);
 
     exit(0);
 } catch (PDOException $e) {
