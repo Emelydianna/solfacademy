@@ -10,15 +10,21 @@
                 <p class="auth-subtitle">Únete a la comunidad de SolfAcademy</p>
             </div>
 
-            <!-- TODO: POST /registro creando ESTUDIANTE + USUARIO con sesión (fase 2) -->
-            <form method="post" action="#">
+            <!-- Registro real: crea ESTUDIANTE + USUARIO y abre sesión (fase 2) -->
+            <form method="post" action="/registro">
+                <?php if (!empty($errorRegistro)): ?>
+                    <div class="alert alert-danger py-2 small mb-3" role="alert">
+                        <i class="bi bi-exclamation-circle me-1"></i><?= htmlspecialchars($errorRegistro) ?>
+                    </div>
+                <?php endif; ?>
+
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6">
                         <label for="nombre" class="form-label">Nombre</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
                             <input type="text" class="form-control" id="nombre" name="nombre"
-                                   placeholder="Tu nombre" required>
+                                   placeholder="Tu nombre" value="<?= htmlspecialchars($datosAnteriores['nombre'] ?? '') ?>" required>
                         </div>
                     </div>
                     <div class="col-sm-6">
@@ -26,7 +32,7 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
                             <input type="text" class="form-control" id="apellido" name="apellido"
-                                   placeholder="Tu apellido" required>
+                                   placeholder="Tu apellido" value="<?= htmlspecialchars($datosAnteriores['apellido'] ?? '') ?>" required>
                         </div>
                     </div>
                 </div>
@@ -36,7 +42,7 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                         <input type="email" class="form-control" id="email" name="email"
-                               placeholder="tu@correo.com" required>
+                               placeholder="tu@correo.com" value="<?= htmlspecialchars($datosAnteriores['email'] ?? '') ?>" required>
                     </div>
                 </div>
 

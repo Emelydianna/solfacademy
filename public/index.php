@@ -12,6 +12,11 @@ use Slim\Factory\ServerRequestCreatorFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+// Zona horaria del proyecto: debe coincidir con la que usa MySQL
+// (CURDATE(), etc.) para que "hoy" sea el mismo día en PHP y en la BD.
+// Se puede sobreescribir con la variable de entorno APP_TIMEZONE.
+date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'America/El_Salvador');
+
 // Instantiate PHP-DI ContainerBuilder
 $containerBuilder = new ContainerBuilder();
 

@@ -10,14 +10,20 @@
                 <p class="auth-subtitle">Bienvenido de nuevo a SolfAcademy</p>
             </div>
 
-            <!-- TODO: POST /login con sesión de usuario y tabla USUARIO (fase 2) -->
-            <form method="post" action="#">
+            <!-- Autenticación real contra la tabla usuario (fase 2) -->
+            <form method="post" action="/login">
+                <?php if (!empty($errorLogin)): ?>
+                    <div class="alert alert-danger py-2 small mb-3" role="alert">
+                        <i class="bi bi-exclamation-circle me-1"></i><?= htmlspecialchars($errorLogin) ?>
+                    </div>
+                <?php endif; ?>
+
                 <div class="mb-3">
                     <label for="email" class="form-label">Correo electrónico</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                         <input type="email" class="form-control" id="email" name="email"
-                               placeholder="tu@correo.com" required>
+                               placeholder="tu@correo.com" value="<?= htmlspecialchars($emailAnterior ?? '') ?>" required>
                     </div>
                 </div>
 

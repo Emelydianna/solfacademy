@@ -31,6 +31,7 @@ DROP TABLE IF EXISTS pago;
 DROP TABLE IF EXISTS asistencia;
 DROP TABLE IF EXISTS evaluacion;
 DROP TABLE IF EXISTS inscripcion;
+DROP TABLE IF EXISTS practica_estudiante;
 DROP TABLE IF EXISTS usuario;
 DROP TABLE IF EXISTS estudiante;
 DROP TABLE IF EXISTS horario;
@@ -226,9 +227,23 @@ CREATE TABLE pago (
     id_inscripcion INT UNSIGNED NOT NULL,
     fecha_pago    DATE NOT NULL,
     monto_pagado  DECIMAL(8,2) NOT NULL,
+    concepto      VARCHAR(60) NOT NULL DEFAULT 'Mensualidad',
+    metodo        VARCHAR(40) NULL,
+    estado        ENUM('Pagado','Pendiente','Fallido') NOT NULL DEFAULT 'Pagado',
     PRIMARY KEY (id_pago),
     CONSTRAINT fk_pago_inscripcion FOREIGN KEY (id_inscripcion)
         REFERENCES inscripcion (id_inscripcion)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Registro de práctica individual (dashboard del portal)
+CREATE TABLE practica_estudiante (
+    id_practica   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_estudiante INT UNSIGNED NOT NULL,
+    fecha         DATE NOT NULL,
+    horas         DECIMAL(4,2) NOT NULL DEFAULT 0.00,
+    PRIMARY KEY (id_practica),
+    CONSTRAINT fk_practica_estudiante FOREIGN KEY (id_estudiante)
+        REFERENCES estudiante (id_estudiante)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -359,7 +374,105 @@ INSERT INTO asistencia (id_inscripcion, fecha_clase, presente) VALUES
 INSERT INTO inscripcion (id_inscripcion, id_estudiante, id_grupo, fecha, estado) VALUES
     (4, 2, 1, '2026-02-25', 'Cancelada');
 
-INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado) VALUES
-    (1, '2026-02-20', 79.00),
-    (2, '2026-02-21', 49.00),
-    (3, '2026-02-22', 45.00);
+INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto, metodo, estado) VALUES
+    (1, '2026-02-20', 79.00, 'Mensualidad',   'Tarjeta de crédito',      'Pagado'),
+    (2, '2026-02-21', 49.00, 'Inscripción',   'Transferencia bancaria',  'Pagado'),
+    (3, '2026-02-22', 45.00, 'Inscripción',   'Efectivo',                'Pagado');
+
+-- ============================================================
+--  SEED FASE 2 — PORTAL DEL ESTUDIANTE
+--  Usa fechas dinámicas (CURDATE) para que el portal se vea
+--  "vivo" siempre que se re-importe el script.
+-- ============================================================
+
+-- Grupos adicionales: Piano (Mateo), Batería y Violín ---------
+INSERT INTO grupo (id_grupo, id_curso, id_instructor, id_aula, fecha_inicio, fecha_fin) VALUES
+    (4, 3, 1, 3, DATE_SUB(CURDATE(), INTERVAL 70 DAY), DATE_ADD(CURDATE(), INTERVAL 20 DAY)),  -- Piano Clásico II
+    (5, 5, 5, 2, DATE_SUB(CURDATE(), INTERVAL 50 DAY), DATE_ADD(CURDATE(), INTERVAL 35 DAY)),  -- Batería
+    (6, 6, 2, 1, DATE_SUB(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 45 DAY));  -- Violín
+
+-- Horarios (el piano incluye una clase "de hoy" para que el
+-- dashboard muestre siempre "Próxima clase: Hoy") -------------
+INSERT INTO horario (id_grupo, dia_semana, hora_inicio, hora_fin) VALUES
+    (4, 'Lunes',     '17:00', '18:30'),
+    (4, 'Miércoles', '17:00', '18:30'),
+    (4, ELT(WEEKDAY(CURDATE()) + 1, 'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'), '17:00', '18:30'),
+    (5, 'Martes',    '19:00', '20:30'),
+    (5, 'Jueves',    '19:00', '20:30'),
+    (6, 'Viernes',   '18:00', '19:30');
+
+-- Estudiante Mateo Díaz (el "ALUMNO - INTERMEDIO" del prototipo)
+INSERT INTO estudiante (id_estudiante, nombre, apellido, email, telefono) VALUES
+    (4, 'Mateo', 'Díaz', 'mateo.diaz@ejemplo.com', '600777888');
+
+INSERT INTO usuario (id_estudiante, id_instructor, email_usuario, password_hash, rol, activo) VALUES
+    (4, NULL, 'mateo.diaz@ejemplo.com', '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'estudiante', 1);
+
+-- Sus 5 matrículas (insertadas una a una para capturar los ids) 
+INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado)
+VALUES (4, 4, DATE_SUB(CURDATE(), INTERVAL 70 DAY), 'Activa');
+SET @ins_piano = LAST_INSERT_ID();
+
+INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado)
+VALUES (4, 2, DATE_SUB(CURDATE(), INTERVAL 100 DAY), 'Finalizada');
+SET @ins_guitarra = LAST_INSERT_ID();
+
+INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado)
+VALUES (4, 5, DATE_SUB(CURDATE(), INTERVAL 50 DAY), 'Activa');
+SET @ins_bateria = LAST_INSERT_ID();
+
+INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado)
+VALUES (4, 6, DATE_SUB(CURDATE(), INTERVAL 30 DAY), 'Activa');
+SET @ins_violin = LAST_INSERT_ID();
+
+INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado)
+VALUES (4, 3, CURDATE(), 'Pendiente');
+SET @ins_canto = LAST_INSERT_ID();
+
+-- Asistencias (volumen para el KPI global y el % de asistencia)
+-- Piano: 12/13 · Guitarra: 10/10 · Batería: 11/12 · Violín: 9/10
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente)
+SELECT @ins_piano, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 12, 'S', 'N')
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 13) AS nums;
+
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente)
+SELECT @ins_guitarra, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), 'S'
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 10) AS nums;
+
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente)
+SELECT @ins_bateria, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 11, 'S', 'N')
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 12) AS nums;
+
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente)
+SELECT @ins_violin, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 9, 'S', 'N')
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 10) AS nums;
+
+-- Evaluaciones (media exacta: 9.2) ---------------------------
+INSERT INTO evaluacion (id_inscripcion, tipo, calificacion) VALUES
+    (@ins_piano,    'Parcial de Solfeo',        9.00),
+    (@ins_piano,    'Práctica de Repertorio',   9.50),
+    (@ins_guitarra, 'Examen Final',             9.40),
+    (@ins_bateria,  'Parcial de Ritmo',         8.80),
+    (@ins_violin,   'Práctica de Técnica',      9.30);
+
+-- Pagos de Mateo (1 pagado + 1 pendiente + próximo vencimiento)
+INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto, metodo, estado) VALUES
+    (@ins_piano,    DATE_SUB(CURDATE(), INTERVAL 70 DAY), 79.00, 'Inscripción',           'Tarjeta de crédito', 'Pagado'),
+    (@ins_guitarra, DATE_SUB(CURDATE(), INTERVAL 100 DAY), 49.00, 'Inscripción',          'Transferencia bancaria', 'Pagado'),
+    (@ins_bateria,  DATE_SUB(CURDATE(), INTERVAL 50 DAY), 52.00, 'Mensualidad',           'Tarjeta de crédito', 'Pagado'),
+    (@ins_violin,   DATE_SUB(CURDATE(), INTERVAL 15 DAY), 62.00, 'Mensualidad',           'PayPal',             'Pendiente'),
+    (@ins_piano,    DATE_ADD(CURDATE(), INTERVAL 5 DAY),  79.00, 'Mensualidad (próxima)', NULL,                 'Pendiente');
+
+-- Práctica semanal individual (14.5 horas totales, como el prototipo)
+INSERT INTO practica_estudiante (id_estudiante, fecha, horas) VALUES
+    (4, DATE_SUB(CURDATE(), INTERVAL 6 DAY), 1.50),
+    (4, DATE_SUB(CURDATE(), INTERVAL 5 DAY), 2.00),
+    (4, DATE_SUB(CURDATE(), INTERVAL 4 DAY), 0.50),
+    (4, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 3.00),
+    (4, DATE_SUB(CURDATE(), INTERVAL 2 DAY), 2.50),
+    (4, DATE_SUB(CURDATE(), INTERVAL 1 DAY), 4.00),
+    (4, CURDATE(),                           1.00);

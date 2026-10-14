@@ -9,6 +9,14 @@ use App\Controllers\Web\CourseCatalogController;
 use App\Controllers\Web\CourseDetailController;
 use App\Controllers\Web\HomeController;
 use App\Controllers\Web\InstructorProfileController;
+use App\Application\Middleware\AuthMiddleware;
+use App\Controllers\Estudiante\AsistenciasController;
+use App\Controllers\Estudiante\CalendarioController;
+use App\Controllers\Estudiante\CalificacionesController;
+use App\Controllers\Estudiante\DashboardController;
+use App\Controllers\Estudiante\MisCursosController;
+use App\Controllers\Estudiante\PagosController;
+use App\Controllers\Estudiante\PerfilController;
 use App\Application\Actions\User\ListUsersAction;
 use App\Application\Actions\User\ViewUserAction;
 
@@ -27,11 +35,27 @@ return function (App $app) {
     // Perfil de instructor (pantalla 4 del prototipo)
     $app->get('/instructores/{id}', [InstructorProfileController::class, 'profile']);
 
-    // Login y registro (pantalla 5 del prototipo).
-    // POST /login y POST /registro con sesión: fase 2 de la aplicación.
+    // Login y registro (pantalla 5 del prototipo + autenticación real)
     $app->get('/login', [AuthController::class, 'loginForm']);
+    $app->post('/login', [AuthController::class, 'login']);
     $app->get('/registro', [AuthController::class, 'registerForm']);
-    
+    $app->post('/registro', [AuthController::class, 'registro']);
+    $app->get('/logout', [AuthController::class, 'logout']);
+
+    // ==========================================
+    // 2. RUTAS DE LA APLICACIÓN (Fase 2)
+    //    Portal del Estudiante — requieren sesión
+    // ==========================================
+    $app->group('/estudiante', function (Group $group) {
+        $group->get('/dashboard', [DashboardController::class, 'index']);
+        $group->get('/cursos', [MisCursosController::class, 'index']);
+        $group->get('/calendario', [CalendarioController::class, 'index']);
+        $group->get('/asistencias', [AsistenciasController::class, 'index']);
+        $group->get('/calificaciones', [CalificacionesController::class, 'index']);
+        $group->get('/pagos', [PagosController::class, 'index']);
+        $group->get('/perfil', [PerfilController::class, 'index']);
+    })->add(AuthMiddleware::class);
+
     $app->options('/{routes:.*}', function (Request $request, Response $response) {
        
         return $response;

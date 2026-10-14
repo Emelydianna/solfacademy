@@ -42,10 +42,24 @@
                         <a class="nav-link" href="#">Contacto</a>
                     </li>
                 </ul>
-                <div class="d-flex align-items-center gap-3">
-                    <a href="/login" class="nav-link text-white">Iniciar Sesión</a>
-                    <a href="/registro" class="btn btn-accent btn-sm px-3 fw-semibold">REGISTRARSE</a>
-                </div>
+                <?php if (!empty($usuarioSesion)): ?>
+                    <div class="d-flex align-items-center gap-3">
+                        <?php if (($usuarioSesion['rol'] ?? '') === 'estudiante'): ?>
+                            <a href="/estudiante/dashboard" class="nav-link text-white">Mi portal</a>
+                        <?php endif; ?>
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle fs-5"></i>
+                            <span class="text-white small d-none d-lg-inline"><?= htmlspecialchars($usuarioSesion['nombre']) ?></span>
+                            <span class="badge-rol"><?= ($usuarioSesion['rol'] ?? '') === 'estudiante' ? 'ALUMNO' : mb_strtoupper((string) ($usuarioSesion['rol'] ?? '')) ?></span>
+                        </span>
+                        <a href="/logout" class="nav-link text-white">Cerrar sesión</a>
+                    </div>
+                <?php else: ?>
+                    <div class="d-flex align-items-center gap-3">
+                        <a href="/login" class="nav-link text-white">Iniciar Sesión</a>
+                        <a href="/registro" class="btn btn-accent btn-sm px-3 fw-semibold">REGISTRARSE</a>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </nav>
