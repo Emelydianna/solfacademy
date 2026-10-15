@@ -4,29 +4,67 @@ declare(strict_types=1);
 
 namespace App\Controllers\Estudiante;
 
+use App\Application\Estudiante\EstudiantePortalService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
 
 /**
  * Pantalla 4 del portal: Asistencias e Historial (/estudiante/asistencias).
+ * Acepta filtros por query string: ?curso=, ?estado=, ?desde=, ?hasta=
  */
 class AsistenciasController
 {
     private PhpRenderer $view;
+    private EstudiantePortalService $portal;
 
-    public function __construct(PhpRenderer $view)
+    public function __construct(PhpRenderer $view, EstudiantePortalService $portal)
     {
         $this->view = $view;
+        $this->portal = $portal;
     }
 
     public function index(Request $request, Response $response): Response
     {
+        $usuario = $_SESSION['usuario'] ?? [];
+
+        // El portal es solo para alumnos (instructores/admin: fase futura)
+        if (($usuario['rol'] ?? '') !== 'estudiante') {
+            return $response->withStatus(302)->withHeader('Location', '/');
+        }
+
+        $params = $request->getQueryParams();
+
+        $filtros = [
+            'curso'  => isset($params['curso']) ? (string) $params['curso'] : '',
+            'estado' => isset($params['estado']) ? (string) $params['estado'] : '',
+            'desde'  => self::fechaValida($params['desde'] ?? null),
+            'hasta'  => self::fechaValida($params['hasta'] ?? null),
+        ];
+
         $this->view->setLayout('estudiante/layout.php');
 
         return $this->view->render($response, 'estudiante/asistencias.php', [
             'tituloPagina' => 'Asistencias — Portal del Estudiante',
             'paginaPortal' => 'asistencias',
+            'datos' => $this->portal->asistencias((int) $usuario['id_referencia'], $filtros),
+            'filtros' => $filtros,
         ]);
+    }
+
+    /**
+     * Valida un valor YYYY-MM-DD; devuelve '' si no lo es.
+     */
+    private static function fechaValida(mixed $valor): string
+    {
+        $valor = is_string($valor) ? trim($valor) : '';
+
+        if ($valor === '') {
+            return '';
+        }
+
+        $fecha = \DateTimeImmutable::createFromFormat('Y-m-d', $valor);
+
+        return $fecha !== false && $fecha->format('Y-m-d') === $valor ? $valor : '';
     }
 }

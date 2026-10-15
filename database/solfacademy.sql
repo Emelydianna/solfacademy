@@ -320,6 +320,13 @@ SET FOREIGN_KEY_CHECKS = 1;
 --  VISTAS
 -- ============================================================
 
+-- Se eliminan primero para que el script sea re-importable
+DROP VIEW IF EXISTS v_grupos_completos;
+DROP VIEW IF EXISTS v_horarios_grupos;
+DROP VIEW IF EXISTS v_inscripciones_detalle;
+DROP VIEW IF EXISTS v_asistencia_estudiante;
+DROP VIEW IF EXISTS v_calificaciones_estudiante;
+
 -- Ocupación de cada grupo (las inscripciones canceladas no
 -- ocupan cupo; por eso el LEFT JOIN filtra por estado).
 CREATE VIEW v_grupos_completos AS
@@ -419,6 +426,11 @@ JOIN curso c ON c.id_curso = g.id_curso;
 -- ============================================================
 
 DELIMITER $$
+
+-- Se eliminan primero para que el script sea re-importable
+DROP PROCEDURE IF EXISTS sp_verificar_disponibilidad_grupo$$
+DROP PROCEDURE IF EXISTS sp_registrar_inscripcion$$
+DROP PROCEDURE IF EXISTS sp_actualizar_pago$$
 
 -- Lugares libres de un grupo (NULL si el grupo no existe)
 CREATE PROCEDURE sp_verificar_disponibilidad_grupo (
@@ -735,6 +747,32 @@ INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, ob
     (1, '2026-03-04', 'S', NULL, NULL),
     (2, '2026-03-02', 'N', 'Enfermedad', 'Avisó por mensaje'),
     (3, '2026-03-03', 'S', NULL, NULL);
+
+-- Asistencias de Mateo (volumen para el % y los KPIs del portal)
+-- Piano: 12/13 · Guitarra: 10/10 · Batería: 11/12 · Violín: 9/10
+-- Fechas: una cada 2 días hacia atrás desde hoy.
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, observaciones)
+SELECT 5, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 12, 'S', 'N'),
+       IF(nums.n > 12, 'Enfermedad', NULL), IF(nums.n > 12, 'Avisó al instructor', NULL)
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 13) AS nums;
+
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, observaciones)
+SELECT 6, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), 'S', NULL, NULL
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 10) AS nums;
+
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, observaciones)
+SELECT 7, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 11, 'S', 'N'),
+       IF(nums.n > 11, 'Compromiso laboral', NULL), IF(nums.n > 11, 'Repondrá la clase', NULL)
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 12) AS nums;
+
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, observaciones)
+SELECT 8, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 9, 'S', 'N'),
+       IF(nums.n > 9, 'Viaje familiar', NULL), NULL
+FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+      FROM information_schema.columns LIMIT 10) AS nums;
 
 -- Pagos -------------------------------------------------------
 INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto, metodo, estado, referencia_pago, comprobante_url, observaciones, creado_por) VALUES

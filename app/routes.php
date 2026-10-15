@@ -54,6 +54,8 @@ return function (App $app) {
         $group->get('/calificaciones', [CalificacionesController::class, 'index']);
         $group->get('/pagos', [PagosController::class, 'index']);
         $group->get('/perfil', [PerfilController::class, 'index']);
+        $group->post('/perfil', [PerfilController::class, 'actualizar']);
+        $group->post('/perfil/password', [PerfilController::class, 'cambiarPassword']);
     })->add(AuthMiddleware::class);
 
     $app->options('/{routes:.*}', function (Request $request, Response $response) {

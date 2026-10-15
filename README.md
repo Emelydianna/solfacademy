@@ -132,10 +132,15 @@ app/dependencies.php       → definiciones del contenedor (logger, PDO)
 app/routes.php             → rutas de la aplicación
 database/solfacademy.sql   → esquema + datos de prueba
 scripts/comprobar-db.php   → verificación de conexión
+scripts/generar-comprobantes.php → genera los PDF de /public/comprobantes
 src/Controllers/Web/       → controladores del sitio web
+src/Controllers/Estudiante/ → controladores del portal del estudiante
 src/Data/SampleData.php    → datos de ejemplo (se sustituirá por PDO)
 templates/web/             → vistas (layout.php + secciones)
+templates/estudiante/      → vistas del portal del estudiante
 public/css/style.css       → estilos globales
+public/css/portal.css      → design system del portal (tema oscuro)
+public/comprobantes/       → PDF de comprobante de pago (generados)
 ```
 
 Los datos de ejemplo viven en `src/Data/SampleData.php` con la misma forma que las tablas; al implementar la capa de acceso a datos se sustituyen por consultas PDO sin tocar las vistas.

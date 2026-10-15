@@ -382,6 +382,24 @@ body.portal-body {
     border-color: rgba(255, 193, 7, 0.35);
 }
 
+.portal-pill--verde {
+    background-color: rgba(52, 211, 153, 0.1);
+    color: var(--portal-green);
+    border-color: rgba(52, 211, 153, 0.35);
+}
+
+.portal-pill--azul {
+    background-color: rgba(96, 165, 250, 0.1);
+    color: var(--portal-blue);
+    border-color: rgba(96, 165, 250, 0.35);
+}
+
+.portal-pill--rojo {
+    background-color: rgba(248, 113, 113, 0.1);
+    color: var(--portal-red);
+    border-color: rgba(248, 113, 113, 0.35);
+}
+
 .portal-link {
     color: var(--portal-gold);
     text-decoration: none;
@@ -516,6 +534,140 @@ body.portal-body {
 .reminder-text {
     color: var(--portal-muted);
     font-size: 0.78rem;
+}
+
+/* ---------- Botones ----------
+   Bootstrap no trae color por sí solo (.btn es transparente con texto
+   oscuro), así que en el tema dark hay que fijarlo siempre. */
+
+.btn-accent,
+.btn-accent:hover,
+.btn-accent:focus,
+.btn-accent:active {
+    background-color: var(--portal-gold);
+    border-color: var(--portal-gold);
+    color: #0b0f19;
+    font-weight: 600;
+}
+
+.btn-accent:hover,
+.btn-accent:focus {
+    background-color: var(--portal-gold-2);
+    border-color: var(--portal-gold-2);
+    color: #0b0f19;
+}
+
+.portal-body .btn-outline-secondary {
+    --bs-btn-color: var(--portal-muted);
+    --bs-btn-border-color: var(--portal-border);
+    --bs-btn-hover-color: var(--portal-text);
+    --bs-btn-hover-bg: var(--portal-surface-2);
+    --bs-btn-hover-border-color: var(--portal-muted);
+    --bs-btn-active-color: var(--portal-text);
+    --bs-btn-active-bg: var(--portal-surface-2);
+    --bs-btn-active-border-color: var(--portal-muted);
+}
+
+/* ---------- Formularios ---------- */
+
+.portal-body .form-label {
+    color: var(--portal-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+
+.portal-body .form-control,
+.portal-body .form-select {
+    background-color: var(--portal-surface-2);
+    border-color: var(--portal-border);
+    color: var(--portal-text);
+}
+
+.portal-body .form-control::placeholder {
+    color: var(--portal-muted);
+    opacity: 1;
+}
+
+.portal-body .form-control:focus,
+.portal-body .form-select:focus {
+    background-color: var(--portal-surface-2);
+    border-color: var(--portal-gold);
+    color: var(--portal-text);
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.15);
+}
+
+.portal-body .form-control[readonly],
+.portal-body .form-control:disabled,
+.portal-body .form-select:disabled {
+    background-color: var(--portal-surface);
+    color: var(--portal-muted);
+    opacity: 1;
+}
+
+.portal-body .input-group-text {
+    background-color: var(--portal-surface-2);
+    border-color: var(--portal-border);
+    color: var(--portal-muted);
+}
+
+.portal-body .is-invalid {
+    border-color: var(--portal-red) !important;
+}
+
+.portal-body .invalid-feedback {
+    color: var(--portal-red);
+}
+
+.portal-body .valid-feedback {
+    color: var(--portal-green);
+}
+
+/* ---------- Alertas (mensajes de acción) ---------- */
+
+.portal-alert {
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+}
+
+.portal-alert--exito {
+    background-color: rgba(52, 211, 153, 0.12);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: var(--portal-green);
+}
+
+.portal-alert--error {
+    background-color: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.35);
+    color: var(--portal-red);
+}
+
+/* Lista de datos de solo lectura (perfil) */
+
+.portal-dato {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--portal-border);
+}
+
+.portal-dato:last-child {
+    border-bottom: none;
+}
+
+.portal-dato dt {
+    color: var(--portal-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+}
+
+.portal-dato dd {
+    color: var(--portal-text);
+    margin-bottom: 0;
 }
 
 /* ---------- Ajustes responsive ---------- */

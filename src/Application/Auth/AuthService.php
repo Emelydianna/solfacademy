@@ -133,6 +133,38 @@ final class AuthService
     }
 
     /**
+     * Cambia la contraseña del usuario tras verificar la actual.
+     * Devuelve false si la contraseña actual no coincide.
+     */
+    public function cambiarPassword(int $idUsuario, string $passwordActual, string $passwordNueva): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT password_hash FROM usuario WHERE id_usuario = :id LIMIT 1'
+        );
+        $stmt->execute(['id' => $idUsuario]);
+        $hash = $stmt->fetchColumn();
+
+        if ($hash === false || !password_verify($passwordActual, (string) $hash)) {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE usuario SET password_hash = :hash WHERE id_usuario = :id'
+        );
+        $stmt->execute([
+            'hash' => password_hash($passwordNueva, PASSWORD_DEFAULT),
+            'id'   => $idUsuario,
+        ]);
+
+        // Regenera el identificador de sesión al rotar credenciales
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+
+        return true;
+    }
+
+    /**
      * @param array<string, mixed> $fila
      * @return array<string, mixed>
      */
