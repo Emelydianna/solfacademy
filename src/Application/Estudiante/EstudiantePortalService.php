@@ -622,7 +622,7 @@ final class EstudiantePortalService
                     JOIN curso c ON c.id_curso = g.id_curso
                     JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
                     WHERE i.id_estudiante = :id AND i.estado IN ('Finalizada','Cancelada')
-                    ORDER BY g.fecha_fin DESC, g.fecha_inicio DESC";
+                    ORDER BY MAX(g.fecha_fin) DESC, MAX(g.fecha_inicio) DESC";
         $stmtH = $this->pdo->prepare($sqlHist);
         $stmtH->execute(['id' => $idEstudiante]);
         $hist = $stmtH->fetchAll();
