@@ -122,7 +122,7 @@
                                             </div>
                                         </div>
                                         <div class="card-footer catalog-card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                            <span class="price-tag"><?= htmlspecialchars(number_format((float) $curso['precio'], 0, ',', '.')) ?>€<small>/mes</small></span>
+                                            <span class="price-tag">$ <?= htmlspecialchars(number_format((float) $curso['precio'], 0, ',', '.')) ?><small>/mes</small></span>
                                             <span class="schedule-line"><i class="bi bi-clock me-1"></i><?= htmlspecialchars((string) $curso['horario']) ?></span>
                                             <!-- Inscripción requiere sesión: fase 2 de la aplicación -->
                                             <a href="/cursos/<?= (int) $curso['id_curso'] ?>" class="btn btn-accent btn-sm px-3 fw-semibold">VER CURSO</a>

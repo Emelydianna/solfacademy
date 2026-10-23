@@ -20,7 +20,7 @@ $resumen = $datos['resumen'] ?? [];
 $saldos  = $datos['saldos'] ?? [];
 $historial = $datos['historial'] ?? [];
 
-$euros = static fn (float $n): string => number_format($n, 2, ',', '.') . ' €';
+$dolares = static fn (float $n): string => '$ ' . number_format($n, 2, '.', ',');
 
 $claseEstado = [
     'Pagado'   => 'portal-pill--verde',
@@ -48,7 +48,7 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
     </div>
     <?php if (!$vacio): ?>
         <?php if ($saldo > 0): ?>
-            <span class="portal-pill portal-pill--dorado">Saldo pendiente: <?= $euros($saldo) ?></span>
+            <span class="portal-pill portal-pill--dorado">Saldo pendiente: <?= $dolares($saldo) ?></span>
         <?php else: ?>
             <span class="portal-pill portal-pill--verde">Al día</span>
         <?php endif; ?>
@@ -74,7 +74,7 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
                     <span class="portal-label">Total pagado</span>
                     <span class="portal-kpi-icon portal-kpi-icon--verde"><i class="bi bi-wallet2"></i></span>
                 </div>
-                <div class="portal-kpi-value"><?= $euros((float) ($resumen['total_pagado'] ?? 0.0)) ?></div>
+                <div class="portal-kpi-value"><?= $dolares((float) ($resumen['total_pagado'] ?? 0.0)) ?></div>
                 <span class="portal-kpi-note">Suma de comprobantes válidos</span>
             </div>
         </div>
@@ -85,7 +85,7 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
                     <span class="portal-label">Saldo por pagar</span>
                     <span class="portal-kpi-icon portal-kpi-icon--rosa"><i class="bi bi-exclamation-circle"></i></span>
                 </div>
-                <div class="portal-kpi-value"><?= $euros($saldo) ?></div>
+                <div class="portal-kpi-value"><?= $dolares($saldo) ?></div>
                 <span class="portal-kpi-note">
                     <?= $saldo > 0 ? 'Pendiente de saldar en tus inscripciones' : 'Tus inscripciones están saldadas' ?>
                 </span>
@@ -101,7 +101,7 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
                 <div class="portal-kpi-value"><?= (int) ($resumen['pagos_pendientes'] ?? 0) ?></div>
                 <span class="portal-kpi-note">
                     <?= (int) ($resumen['pagos_pendientes'] ?? 0) > 0
-                        ? $euros((float) ($resumen['importe_pendiente'] ?? 0.0)) . ' por abonar'
+                        ? $dolares((float) ($resumen['importe_pendiente'] ?? 0.0)) . ' por abonar'
                         : 'No tienes pagos por abonar' ?>
                 </span>
             </div>
@@ -155,14 +155,14 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
                                     <?= $fila['fecha'] !== null ? date('d/m/Y', strtotime((string) $fila['fecha'])) : '—' ?>
                                 </td>
                                 <td class="text-end text-nowrap">
-                                    <?= $fila['precio_inscripcion'] !== null ? $euros((float) $fila['precio_inscripcion']) : '—' ?>
+                                    <?= $fila['precio_inscripcion'] !== null ? $dolares((float) $fila['precio_inscripcion']) : '—' ?>
                                 </td>
-                                <td class="text-end text-nowrap"><?= $euros((float) $fila['total_pagado']) ?></td>
+                                <td class="text-end text-nowrap"><?= $dolares((float) $fila['total_pagado']) ?></td>
                                 <td class="text-end text-nowrap">
                                     <?php if ($debe > 0): ?>
-                                        <span class="portal-pill portal-pill--rojo"><?= $euros($debe) ?></span>
+                                        <span class="portal-pill portal-pill--rojo"><?= $dolares($debe) ?></span>
                                     <?php else: ?>
-                                        <span class="portal-pill portal-pill--verde">0,00 €</span>
+                                        <span class="portal-pill portal-pill--verde">$ 0.00</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -232,7 +232,7 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-end text-nowrap fw-semibold">
-                                    <?= $euros((float) $mov['monto_pagado']) ?>
+                                    <?= $dolares((float) $mov['monto_pagado']) ?>
                                 </td>
                                 <td>
                                     <span class="portal-pill <?= $claseEstado[$mov['estado']] ?? 'portal-pill--azul' ?>">

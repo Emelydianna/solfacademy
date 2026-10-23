@@ -6,7 +6,8 @@
  *   Cada fila: id_inscripcion, estado, fecha_inscripcion, precio_inscripcion,
  *   observaciones, id_grupo, fecha_inicio, fecha_fin, estado_grupo,
  *   capacidad_maxima, id_curso, curso, nivel, descripcion, duracion_semanas,
- *   precio, aula, ubicacion, instructor, instructor_email, horarios[]
+ *   precio, categoria, aula, ubicacion, instructor, instructor_email,
+ *   avance_pct, clases_presentes, clases_registradas, horarios[]
  */
 $cursos = $cursos ?? [];
 
@@ -15,6 +16,11 @@ $claseEstado = [
     'Pendiente'  => 'portal-pill--dorado',
     'Finalizada' => 'portal-pill--azul',
     'Cancelada'  => 'portal-pill--rojo',
+];
+
+$diasCortos = [
+    'Lunes' => 'Lun', 'Martes' => 'Mar', 'Miércoles' => 'Mié', 'Jueves' => 'Jue',
+    'Viernes' => 'Vie', 'Sábado' => 'Sáb', 'Domingo' => 'Dom',
 ];
 ?>
 
@@ -38,88 +44,128 @@ $claseEstado = [
 <?php else: ?>
     <div class="row g-3">
         <?php foreach ($cursos as $curso): ?>
-            <div class="col-12">
-                <div class="portal-card p-4 h-100 course-row">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                        <!-- Cabecera: curso + estado -->
-                        <div class="flex-grow-1" style="min-width: 260px;">
-                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                <h2 class="portal-card-title mb-0"><?= htmlspecialchars($curso['curso']) ?></h2>
-                                <span class="portal-pill <?= $claseEstado[$curso['estado']] ?? 'portal-pill--azul' ?>">
-                                    <?= htmlspecialchars($curso['estado']) ?>
+            <?php
+            $finalizado = in_array($curso['estado'], ['Finalizada', 'Cancelada'], true);
+            $avance     = max(0, min(100, (int) ($curso['avance_pct'] ?? 0)));
+            ?>
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="portal-card course-card h-100 d-flex flex-column">
+
+                    <div class="course-card-body p-3 flex-grow-1">
+                        <!-- Cabecera: categoría + estado -->
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <span class="course-card-cat"><?= htmlspecialchars($curso['categoria'] ?? 'Curso') ?></span>
+                            <span class="portal-pill <?= $claseEstado[$curso['estado']] ?? 'portal-pill--azul' ?>">
+                                <?= htmlspecialchars($curso['estado']) ?>
+                            </span>
+                        </div>
+
+                        <!-- Título -->
+                        <h2 class="portal-card-title course-card-title mb-2"><?= htmlspecialchars($curso['curso']) ?></h2>
+
+                        <!-- Metadatos con iconos -->
+                        <div class="course-card-meta">
+                            <div class="course-card-row">
+                                <i class="bi bi-person"></i>
+                                <span><?= htmlspecialchars($curso['instructor']) ?></span>
+                            </div>
+
+                            <div class="course-card-row">
+                                <i class="bi bi-clock"></i>
+                                <span>
+                                    <?php if (count($curso['horarios']) === 0): ?>
+                                        Sin horario asignado
+                                    <?php else: ?>
+                                        <?php
+                                        $partes = [];
+                                        foreach ($curso['horarios'] as $horario) {
+                                            $dia = $diasCortos[$horario['dia_semana']] ?? substr((string) $horario['dia_semana'], 0, 3);
+                                            $partes[] = $dia . ' ' . substr((string) $horario['hora_inicio'], 0, 5)
+                                                . '–' . substr((string) $horario['hora_fin'], 0, 5);
+                                        }
+                                        echo htmlspecialchars(implode(' · ', $partes));
+                                        ?>
+                                    <?php endif; ?>
                                 </span>
                             </div>
-                            <p class="small mb-2" style="color: var(--portal-muted);">
-                                <?= htmlspecialchars($curso['nivel']) ?>
-                                <?php if (!empty($curso['duracion_semanas'])): ?>
-                                    · <?= (int) $curso['duracion_semanas'] ?> semanas
-                                <?php endif; ?>
-                                <?php if (!empty($curso['fecha_inicio'])): ?>
-                                    · <?= date('d/m/Y', strtotime((string) $curso['fecha_inicio'])) ?>
-                                    <?= !empty($curso['fecha_fin']) ? ' — ' . date('d/m/Y', strtotime((string) $curso['fecha_fin'])) : '' ?>
-                                <?php endif; ?>
-                            </p>
-                            <?php if (!empty($curso['descripcion'])): ?>
-                                <p class="small mb-0" style="color: var(--portal-muted);"><?= htmlspecialchars($curso['descripcion']) ?></p>
-                            <?php endif; ?>
+
+                            <div class="course-card-row">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>
+                                    <?= htmlspecialchars($curso['aula']) ?>
+                                    <?php if (!empty($curso['ubicacion'])): ?>
+                                        <span class="course-card-muted"> · <?= htmlspecialchars($curso['ubicacion']) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
                         </div>
 
-                        <!-- Precio -->
-                        <div class="text-end">
-                            <?php if (!empty($curso['precio_inscripcion'])): ?>
-                                <div class="portal-kpi-value portal-kpi-value--sm">
-                                    $<?= number_format((float) $curso['precio_inscripcion'], 2) ?>
-                                </div>
-                                <span class="portal-label mb-0">Precio de matrícula</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <hr style="border-color: var(--portal-border); opacity: .6;">
-
-                    <!-- Detalles: instructor, aula, horario -->
-                    <div class="row g-3 small">
-                        <div class="col-md-4">
-                            <div class="portal-label mb-1"><i class="bi bi-person me-1"></i>Instructor</div>
-                            <div><?= htmlspecialchars($curso['instructor']) ?></div>
-                            <?php if (!empty($curso['instructor_email'])): ?>
-                                <a class="small" style="color: var(--portal-blue);" href="mailto:<?= htmlspecialchars($curso['instructor_email']) ?>">
-                                    <?= htmlspecialchars($curso['instructor_email']) ?>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="portal-label mb-1"><i class="bi bi-door-closed me-1"></i>Aula</div>
-                            <div><?= htmlspecialchars($curso['aula']) ?></div>
-                            <?php if (!empty($curso['ubicacion'])): ?>
-                                <span style="color: var(--portal-muted);"><?= htmlspecialchars($curso['ubicacion']) ?></span>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="portal-label mb-1"><i class="bi bi-clock me-1"></i>Horario</div>
-                            <?php if (count($curso['horarios']) === 0): ?>
-                                <span style="color: var(--portal-muted);">Sin horario asignado</span>
-                            <?php else: ?>
-                                <?php foreach ($curso['horarios'] as $horario): ?>
-                                    <div>
-                                        <?= htmlspecialchars($horario['dia_semana']) ?>
-                                        <?= substr((string) $horario['hora_inicio'], 0, 5) ?>–<?= substr((string) $horario['hora_fin'], 0, 5) ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                        <!-- Progreso (% de asistencia) -->
+                        <div class="course-card-progress mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="portal-label mb-0">Avance</span>
+                                <span class="course-card-pct"><?= $avance ?>%</span>
+                            </div>
+                            <div class="progress" role="progressbar"
+                                 aria-label="Avance del curso"
+                                 aria-valuenow="<?= $avance ?>" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar" style="width: <?= $avance ?>%;"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Enlaces de acción -->
-                    <div class="mt-3">
-                        <a href="/cursos/<?= (int) $curso['id_curso'] ?>" class="portal-link">
-                            Ver detalle del curso <i class="bi bi-arrow-right"></i>
-                        </a>
+                    <!-- Acción inferior -->
+                    <div class="px-3 pb-3">
+                        <?php if ($finalizado): ?>
+                            <button type="button"
+                                    class="btn btn-accent w-100 fw-bold"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalProximamente"
+                                    data-modal-titulo="Certificado"
+                                    data-modal-mensaje="La descarga de certificados estará disponible muy pronto.">
+                                Ver Certificado <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        <?php else: ?>
+                            <a href="/cursos/<?= (int) $curso['id_curso'] ?>" class="btn btn-accent w-100 fw-bold">
+                                Ir al Curso <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
+
+<!-- Modal reutilizable para funciones aún no disponibles -->
+<div class="modal fade" id="modalProximamente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content portal-modal">
+            <div class="modal-body text-center p-4">
+                <span class="portal-modal-icon"><i class="bi bi-stars"></i></span>
+                <h2 class="portal-card-title h5 mb-1" data-modal-titulo-texto>Próximamente</h2>
+                <p class="small mb-4" style="color: var(--portal-muted);" data-modal-mensaje-texto>
+                    Esta función estará disponible muy pronto.
+                </p>
+                <button type="button" class="btn btn-accent fw-semibold px-4" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('modalProximamente');
+        if (!modal) return;
+        modal.addEventListener('show.bs.modal', function (event) {
+            var boton = event.relatedTarget;
+            if (!boton) return;
+            var titulo = boton.getAttribute('data-modal-titulo');
+            var mensaje = boton.getAttribute('data-modal-mensaje');
+            var elTitulo = modal.querySelector('[data-modal-titulo-texto]');
+            var elMensaje = modal.querySelector('[data-modal-mensaje-texto]');
+            if (titulo) elTitulo.textContent = titulo;
+            if (mensaje) elMensaje.textContent = mensaje;
+        });
+    });
+</script>

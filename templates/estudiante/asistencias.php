@@ -7,29 +7,51 @@
  *              injustificadas, porcentaje
  *   - cursos:  [{id_curso, curso}]
  *   - detalle: [{id_asistencia, fecha_clase, presente, justificacion,
- *                observaciones, id_curso, curso, estado_inscripcion}]
- * $filtros: {curso, estado, desde, hasta}
+ *                observaciones, id_curso, curso, instructor, estado_inscripcion}]
+ * $filtros: {curso, estado, rango, desde, hasta}
  */
 $datos   = $datos ?? ['resumen' => [], 'cursos' => [], 'detalle' => []];
-$filtros = $filtros ?? ['curso' => '', 'estado' => '', 'desde' => '', 'hasta' => ''];
+$filtros = $filtros ?? ['curso' => '', 'estado' => '', 'rango' => '', 'desde' => '', 'hasta' => ''];
 $resumen = $datos['resumen'] ?? [];
 
-$total   = (int) ($resumen['total_clases'] ?? 0);
-$pct     = (float) ($resumen['porcentaje'] ?? 0.0);
-
-// Color del porcentaje según el umbral
-$clasePct = $pct >= 90 ? 'portal-pill--verde' : ($pct >= 75 ? 'portal-pill--dorado' : 'portal-pill--rojo');
+$total     = (int) ($resumen['total_clases'] ?? 0);
+$presentes = (int) ($resumen['presentes'] ?? 0);
+$pct       = (float) ($resumen['porcentaje'] ?? 0.0);
 
 $hayFiltro = ($filtros['curso'] ?? '') !== '' || ($filtros['estado'] ?? '') !== ''
-    || ($filtros['desde'] ?? '') !== '' || ($filtros['hasta'] ?? '') !== '';
+    || ($filtros['rango'] ?? '') !== '';
+
+$rangos = [
+    ''    => 'Todo el historial',
+    '7'   => 'Últimos 7 días',
+    '30'  => 'Últimos 30 días',
+    '90'  => 'Últimos 90 días',
+    '365' => 'Último año',
+];
 ?>
 
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
-        <h1 class="portal-title mb-1">Asistencias</h1>
-        <p class="portal-subtitle mb-0">Registro detallado de tu puntualidad y presencia en las clases.</p>
+        <h1 class="portal-title mb-1">Asistencias e Historial</h1>
+        <p class="portal-subtitle mb-0">Lleva el control detallado de tus asistencias a clases y justificaciones.</p>
     </div>
-    <span class="portal-pill <?= $clasePct ?>"><?= number_format($pct, 1, ',', '.') ?>% asistencia</span>
+
+    <?php if ($total > 0): ?>
+        <div class="d-flex flex-wrap gap-2">
+            <div class="portal-card kpi-compact">
+                <span class="portal-label">Asistencia total</span>
+                <span class="kpi-compact-value kpi-compact-value--verde">
+                    <?= number_format($pct, 1, ',', '.') ?>%
+                </span>
+            </div>
+            <div class="portal-card kpi-compact">
+                <span class="portal-label">Clases asistidas</span>
+                <span class="kpi-compact-value">
+                    <?= $presentes ?> <small>/ <?= $total ?></small>
+                </span>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?php if ($total === 0): ?>
@@ -43,60 +65,13 @@ $hayFiltro = ($filtros['curso'] ?? '') !== '' || ($filtros['estado'] ?? '') !== 
 
 <?php else: ?>
 
-    <!-- Resumen -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-xl-3">
-            <div class="portal-card portal-kpi h-100 p-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <span class="portal-label">Clases totales</span>
-                    <span class="portal-kpi-icon"><i class="bi bi-calendar-check"></i></span>
-                </div>
-                <div class="portal-kpi-value"><?= $total ?></div>
-                <span class="portal-kpi-note">Registradas por tu instructor</span>
-            </div>
-        </div>
-
-        <div class="col-6 col-xl-3">
-            <div class="portal-card portal-kpi h-100 p-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <span class="portal-label">Asistencias</span>
-                    <span class="portal-kpi-icon portal-kpi-icon--verde"><i class="bi bi-check2-circle"></i></span>
-                </div>
-                <div class="portal-kpi-value"><?= (int) ($resumen['presentes'] ?? 0) ?></div>
-                <span class="portal-kpi-note">Clases presentadas</span>
-            </div>
-        </div>
-
-        <div class="col-6 col-xl-3">
-            <div class="portal-card portal-kpi h-100 p-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <span class="portal-label">Justificadas</span>
-                    <span class="portal-kpi-icon portal-kpi-icon--azul"><i class="bi bi-file-earmark-text"></i></span>
-                </div>
-                <div class="portal-kpi-value"><?= (int) ($resumen['justificadas'] ?? 0) ?></div>
-                <span class="portal-kpi-note">Ausencias con motivo</span>
-            </div>
-        </div>
-
-        <div class="col-6 col-xl-3">
-            <div class="portal-card portal-kpi h-100 p-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <span class="portal-label">Sin justificar</span>
-                    <span class="portal-kpi-icon portal-kpi-icon--rosa"><i class="bi bi-x-octagon"></i></span>
-                </div>
-                <div class="portal-kpi-value"><?= (int) ($resumen['injustificadas'] ?? 0) ?></div>
-                <span class="portal-kpi-note">Ausencias no avisadas</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filtros -->
+    <!-- Barra de filtros -->
     <div class="portal-card p-3 p-md-4 mb-3">
         <form method="get" action="/estudiante/asistencias" class="row g-3 align-items-end">
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-4">
                 <label class="portal-label d-block mb-1" for="filtroCurso">Curso</label>
                 <select class="form-select portal-input" id="filtroCurso" name="curso">
-                    <option value="">Todos los cursos</option>
+                    <option value="">Todos los Cursos</option>
                     <?php foreach ($datos['cursos'] as $curso): ?>
                         <option value="<?= (int) $curso['id_curso'] ?>"
                             <?= (string) $filtros['curso'] === (string) $curso['id_curso'] ? 'selected' : '' ?>>
@@ -106,33 +81,35 @@ $hayFiltro = ($filtros['curso'] ?? '') !== '' || ($filtros['estado'] ?? '') !== 
                 </select>
             </div>
 
-            <div class="col-12 col-md-2">
+            <div class="col-12 col-md-3">
+                <label class="portal-label d-block mb-1" for="filtroRango">Rango</label>
+                <select class="form-select portal-input" id="filtroRango" name="rango">
+                    <?php foreach ($rangos as $valor => $etiqueta): ?>
+                        <option value="<?= htmlspecialchars($valor) ?>"
+                            <?= (string) $filtros['rango'] === (string) $valor ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($etiqueta) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
                 <label class="portal-label d-block mb-1" for="filtroEstado">Estado</label>
                 <select class="form-select portal-input" id="filtroEstado" name="estado">
-                    <option value="">Todos</option>
+                    <option value="">Cualquiera</option>
                     <option value="presente" <?= $filtros['estado'] === 'presente' ? 'selected' : '' ?>>Presente</option>
                     <option value="ausente" <?= $filtros['estado'] === 'ausente' ? 'selected' : '' ?>>Ausente</option>
                 </select>
             </div>
 
-            <div class="col-6 col-md-2">
-                <label class="portal-label d-block mb-1" for="filtroDesde">Desde</label>
-                <input type="date" class="form-control portal-input" id="filtroDesde" name="desde"
-                       value="<?= htmlspecialchars($filtros['desde']) ?>">
-            </div>
-
-            <div class="col-6 col-md-2">
-                <label class="portal-label d-block mb-1" for="filtroHasta">Hasta</label>
-                <input type="date" class="form-control portal-input" id="filtroHasta" name="hasta"
-                       value="<?= htmlspecialchars($filtros['hasta']) ?>">
-            </div>
-
-            <div class="col-12 col-md-3 d-flex gap-2">
+            <div class="col-12 col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-accent fw-semibold flex-grow-1">
                     <i class="bi bi-funnel me-1"></i>Filtrar
                 </button>
                 <?php if ($hayFiltro): ?>
-                    <a href="/estudiante/asistencias" class="btn btn-outline-secondary">Limpiar</a>
+                    <a href="/estudiante/asistencias" class="btn btn-outline-secondary" title="Limpiar filtros">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
                 <?php endif; ?>
             </div>
         </form>
@@ -156,9 +133,8 @@ $hayFiltro = ($filtros['curso'] ?? '') !== '' || ($filtros['estado'] ?? '') !== 
                         <tr>
                             <th>Fecha</th>
                             <th>Curso</th>
+                            <th>Instructor</th>
                             <th>Estado</th>
-                            <th>Justificación</th>
-                            <th>Observaciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -172,20 +148,18 @@ $hayFiltro = ($filtros['curso'] ?? '') !== '' || ($filtros['estado'] ?? '') !== 
                                     <?= date('d/m/Y', strtotime((string) $fila['fecha_clase'])) ?>
                                 </td>
                                 <td><?= htmlspecialchars($fila['curso']) ?></td>
+                                <td><?= htmlspecialchars($fila['instructor']) ?></td>
                                 <td>
                                     <?php if ($presente): ?>
-                                        <span class="portal-pill portal-pill--verde">Presente</span>
+                                        <span class="estado-badge estado-badge--presente">Presente</span>
                                     <?php elseif ($justificada): ?>
-                                        <span class="portal-pill portal-pill--dorado">Justificado</span>
+                                        <span class="estado-badge estado-badge--justificado">Justificado</span>
+                                        <span class="d-block small mt-1" style="color: var(--portal-muted);">
+                                            <?= htmlspecialchars($fila['justificacion']) ?>
+                                        </span>
                                     <?php else: ?>
-                                        <span class="portal-pill portal-pill--rojo">Ausente</span>
+                                        <span class="estado-badge estado-badge--ausente">Ausente</span>
                                     <?php endif; ?>
-                                </td>
-                                <td class="small" style="color: var(--portal-muted);">
-                                    <?= !empty($fila['justificacion']) ? htmlspecialchars($fila['justificacion']) : '—' ?>
-                                </td>
-                                <td class="small" style="color: var(--portal-muted);">
-                                    <?= !empty($fila['observaciones']) ? htmlspecialchars($fila['observaciones']) : '—' ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

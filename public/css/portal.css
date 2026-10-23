@@ -670,6 +670,419 @@ body.portal-body {
     margin-bottom: 0;
 }
 
+/* ---------- Mis Cursos: tarjetas en grid ---------- */
+
+.course-card {
+    overflow: hidden;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.course-card:hover {
+    border-color: rgba(255, 193, 7, 0.5);
+    transform: translateY(-2px);
+}
+
+.course-card-cat {
+    color: var(--portal-gold);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+
+.course-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.course-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.course-card-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    color: var(--portal-muted);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.course-card-row i {
+    color: var(--portal-gold);
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.course-card-muted {
+    color: var(--portal-muted);
+}
+
+.course-card-progress .progress {
+    height: 6px;
+    background-color: var(--portal-surface-2);
+    border-radius: 999px;
+}
+
+.course-card-progress .progress-bar {
+    background: linear-gradient(135deg, var(--portal-gold) 0%, var(--portal-gold-2) 100%);
+    border-radius: 999px;
+}
+
+.course-card-pct {
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+/* ---------- Calendario: cuadrícula mensual ---------- */
+
+.cal-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.cal-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 0.5rem;
+    background-color: var(--portal-surface-2);
+    border: 1px solid var(--portal-border);
+    color: var(--portal-text);
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.cal-nav:hover {
+    border-color: var(--portal-gold);
+    color: var(--portal-gold);
+}
+
+.cal-title {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    min-width: 160px;
+    text-align: center;
+    margin: 0 0.25rem;
+}
+
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.cal-dow {
+    color: var(--portal-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding-bottom: 0.25rem;
+}
+
+.cal-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    min-height: 86px;
+    padding: 0.45rem;
+    background-color: var(--portal-surface-2);
+    border: 1px solid var(--portal-border);
+    border-radius: 0.6rem;
+    color: var(--portal-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.cal-cell:hover {
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.cal-cell--fuera {
+    opacity: 0.4;
+}
+
+.cal-cell--hoy {
+    border-color: var(--portal-gold);
+}
+
+.cal-cell--sel {
+    background-color: rgba(255, 193, 7, 0.08);
+    border-color: var(--portal-gold);
+}
+
+.cal-cell-num {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.cal-cell--hoy .cal-cell-num {
+    color: var(--portal-gold);
+    font-weight: 700;
+}
+
+.cal-cell-eventos {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.cal-chip {
+    display: block;
+    max-width: 100%;
+    padding: 0.08rem 0.32rem;
+    border-radius: 0.3rem;
+    color: #0b0f19;
+    font-size: 0.62rem;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cal-chip--mas {
+    background-color: transparent !important;
+    border: 1px solid var(--portal-border);
+    color: var(--portal-muted);
+    text-align: center;
+}
+
+/* ---------- Calendario: panel "Clases del Día" ---------- */
+
+.cal-dia-titulo {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.clase-item {
+    display: block;
+    padding: 0.7rem 0.85rem;
+    margin-bottom: 0.6rem;
+    background-color: var(--portal-surface-2);
+    border: 1px solid var(--portal-border);
+    border-radius: 0.6rem;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.clase-item:last-child {
+    margin-bottom: 0;
+}
+
+.clase-item:hover {
+    border-color: var(--portal-gold);
+    background-color: var(--portal-surface);
+}
+
+.clase-item-hora {
+    color: var(--portal-gold);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.clase-item-punto {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.clase-item-curso {
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.clase-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--portal-muted);
+    font-size: 0.76rem;
+}
+
+.cal-vacio {
+    text-align: center;
+    color: var(--portal-muted);
+    padding: 1.5rem 0;
+}
+
+.cal-vacio i {
+    display: block;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.cal-cta .portal-kpi-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 0.75rem;
+    font-size: 1.3rem;
+}
+
+/* ---------- Modal "Próximamente" ---------- */
+
+.portal-modal {
+    background-color: var(--portal-surface);
+    border: 1px solid var(--portal-border);
+    border-radius: 0.75rem;
+}
+
+.portal-modal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background-color: rgba(255, 193, 7, 0.12);
+    color: var(--portal-gold);
+    font-size: 1.4rem;
+    margin-bottom: 0.75rem;
+}
+
+/* ---------- KPIs compactos (cabecera de asistencias) ---------- */
+
+.kpi-compact {
+    padding: 0.6rem 1rem;
+    min-width: 150px;
+}
+
+.kpi-compact-value {
+    display: block;
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 0.15rem;
+}
+
+.kpi-compact-value small {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--portal-muted);
+}
+
+.kpi-compact-value--verde {
+    color: #10b981;
+}
+
+/* ---------- Tablas oscuras del portal ---------- */
+
+.portal-tabla {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--portal-text);
+    --bs-table-border-color: var(--portal-border);
+    --bs-table-hover-bg: var(--portal-surface-2);
+    --bs-table-hover-color: var(--portal-text);
+    color: var(--portal-text);
+    margin-bottom: 0;
+}
+
+.portal-tabla > :not(caption) > * > * {
+    background-color: transparent;
+    border-bottom-color: var(--portal-border);
+    box-shadow: none;
+}
+
+.portal-tabla thead th {
+    color: var(--portal-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom-color: var(--portal-border);
+    white-space: nowrap;
+}
+
+.portal-tabla tbody td,
+.portal-tabla tbody th {
+    color: var(--portal-text);
+    vertical-align: middle;
+}
+
+.portal-tabla tbody tr:last-child > * {
+    border-bottom: none;
+}
+
+/* ---------- Etiquetas de estado (asistencias / notas) ---------- */
+
+.estado-badge {
+    display: inline-block;
+    padding: 0.22rem 0.65rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+
+.estado-badge--presente {
+    background-color: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #10b981;
+}
+
+.estado-badge--justificado {
+    background-color: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #f59e0b;
+}
+
+.estado-badge--ausente {
+    background-color: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #ef4444;
+}
+
+/* ---------- Mini barra de calificación ---------- */
+
+.nota-celda {
+    min-width: 130px;
+}
+
+.nota-valor {
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.nota-barra {
+    height: 5px;
+    margin-top: 0.35rem;
+    background-color: var(--portal-surface-2);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.nota-barra > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--portal-gold) 0%, var(--portal-gold-2) 100%);
+}
+
 /* ---------- Ajustes responsive ---------- */
 
 @media (max-width: 991.98px) {

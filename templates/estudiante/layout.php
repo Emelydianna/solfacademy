@@ -47,6 +47,7 @@
                     'dashboard'    => ['/estudiante/dashboard', 'bi-grid-1x2', 'Dashboard'],
                     'cursos'       => ['/estudiante/cursos', 'bi-book', 'Mis Cursos'],
                     'calendario'   => ['/estudiante/calendario', 'bi-calendar3', 'Calendario'],
+                    'reservas'     => ['/estudiante/reservas', 'bi-calendar-plus', 'Reservas'],
                     'asistencias'  => ['/estudiante/asistencias', 'bi-check2-square', 'Asistencias'],
                     'calificaciones' => ['/estudiante/calificaciones', 'bi-clipboard-data', 'Calificaciones'],
                     'pagos'        => ['/estudiante/pagos', 'bi-credit-card', 'Pagos'],

@@ -17,6 +17,9 @@ use App\Controllers\Estudiante\DashboardController;
 use App\Controllers\Estudiante\MisCursosController;
 use App\Controllers\Estudiante\PagosController;
 use App\Controllers\Estudiante\PerfilController;
+use App\Controllers\Estudiante\ReservaCabinaController;
+use App\Controllers\Estudiante\ReservaController;
+use App\Controllers\Estudiante\ReservaExtraController;
 use App\Application\Actions\User\ListUsersAction;
 use App\Application\Actions\User\ViewUserAction;
 
@@ -52,10 +55,17 @@ return function (App $app) {
         $group->get('/calendario', [CalendarioController::class, 'index']);
         $group->get('/asistencias', [AsistenciasController::class, 'index']);
         $group->get('/calificaciones', [CalificacionesController::class, 'index']);
+        $group->get('/calificaciones/boletin', [CalificacionesController::class, 'descargarBoletin']);
         $group->get('/pagos', [PagosController::class, 'index']);
         $group->get('/perfil', [PerfilController::class, 'index']);
         $group->post('/perfil', [PerfilController::class, 'actualizar']);
         $group->post('/perfil/password', [PerfilController::class, 'cambiarPassword']);
+        $group->get('/reservas', [ReservaController::class, 'index']);
+        $group->get('/reservas/cabinas', [ReservaCabinaController::class, 'crearFormulario']);
+        $group->post('/reservas/cabinas', [ReservaCabinaController::class, 'crear']);
+        $group->get('/reservas/extras', [ReservaExtraController::class, 'crearFormulario']);
+        $group->post('/reservas/extras', [ReservaExtraController::class, 'crear']);
+        $group->post('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
     })->add(AuthMiddleware::class);
 
     $app->options('/{routes:.*}', function (Request $request, Response $response) {

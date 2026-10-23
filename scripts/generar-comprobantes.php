@@ -99,7 +99,7 @@ foreach ($pagos as $p) {
         [12, 'Curso:     ' . $p['curso']],
         [12, 'Concepto:  ' . $p['concepto']],
         [12, 'Fecha:     ' . date('d/m/Y', strtotime((string) $p['fecha_pago']))],
-        [12, 'Importe:   ' . number_format((float) $p['monto_pagado'], 2, ',', '.') . ' EUR'],
+        [12, 'Importe:   ' . number_format((float) $p['monto_pagado'], 2, '.', ',') . ' USD'],
         [12, 'Estado:    ' . $p['estado']],
         [12, 'Referencia: ' . ($p['referencia_pago'] ?? '(sin referencia)')],
         [10, str_repeat('-', 68)],

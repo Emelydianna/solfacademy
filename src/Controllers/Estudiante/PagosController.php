@@ -11,7 +11,7 @@ use Slim\Views\PhpRenderer;
 
 /**
  * Pantalla 6 del portal: Pagos y Facturación (/estudiante/pagos).
- * Solo estado de cuenta, referencia y comprobante — sin pasarelas.
+ * Solo estado de cuenta, referencia y comprobante
  * Acepta filtro por query string: ?estado=Pagado|Pendiente|Fallido
  */
 class PagosController

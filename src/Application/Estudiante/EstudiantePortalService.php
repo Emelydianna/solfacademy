@@ -41,7 +41,8 @@ final class EstudiantePortalService
 
     /**
      * Mis cursos (/estudiante/cursos): todas las inscripciones del
-     * estudiante con curso, instructor, aula, fechas y horario semanal.
+     * estudiante con curso, categoría, instructor, aula, fechas, horario
+     * semanal y porcentaje de avance (% de asistencia).
      *
      * @return array<int, array<string, mixed>>
      */
@@ -63,6 +64,7 @@ final class EstudiantePortalService
                        c.descripcion,
                        c.duracion_semanas,
                        c.precio,
+                       cat.nombre AS categoria,
                        a.nombre AS aula,
                        a.ubicacion,
                        CONCAT(inst.nombre, ' ', inst.apellido) AS instructor,
@@ -70,6 +72,8 @@ final class EstudiantePortalService
                 FROM inscripcion i
                 JOIN grupo g ON g.id_grupo = i.id_grupo
                 JOIN curso c ON c.id_curso = g.id_curso
+                JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
+                JOIN categoria cat ON cat.id_categoria = ins.id_categoria
                 JOIN aula a ON a.id_aula = g.id_aula
                 JOIN instructor inst ON inst.id_instructor = g.id_instructor
                 WHERE i.id_estudiante = :id
@@ -102,8 +106,35 @@ final class EstudiantePortalService
             $horarios[(int) $fila['id_grupo']][] = $fila;
         }
 
+        // Asistencia por inscripción -> porcentaje de avance de la tarjeta
+        $idsInscripcion = array_map(static fn (array $fila): int => (int) $fila['id_inscripcion'], $inscripciones);
+        $placeholdersIns = implode(',', array_fill(0, count($idsInscripcion), '?'));
+
+        $stmtA = $this->pdo->prepare(
+            "SELECT id_inscripcion,
+                    COUNT(*) AS clases_registradas,
+                    COALESCE(SUM(presente = 'S'), 0) AS clases_presentes
+             FROM asistencia
+             WHERE id_inscripcion IN ($placeholdersIns)
+             GROUP BY id_inscripcion"
+        );
+        $stmtA->execute($idsInscripcion);
+
+        $asistencias = [];
+        foreach ($stmtA->fetchAll() as $fila) {
+            $asistencias[(int) $fila['id_inscripcion']] = $fila;
+        }
+
         foreach ($inscripciones as &$inscripcion) {
             $inscripcion['horarios'] = $horarios[(int) $inscripcion['id_grupo']] ?? [];
+
+            $asis = $asistencias[(int) $inscripcion['id_inscripcion']] ?? null;
+            $total = $asis === null ? 0 : (int) $asis['clases_registradas'];
+            $presentes = $asis === null ? 0 : (int) $asis['clases_presentes'];
+
+            $inscripcion['clases_registradas'] = $total;
+            $inscripcion['clases_presentes'] = $presentes;
+            $inscripcion['avance_pct'] = $total > 0 ? (int) round($presentes / $total * 100) : 0;
         }
         unset($inscripcion);
 
@@ -111,12 +142,14 @@ final class EstudiantePortalService
     }
 
     /**
-     * Calendario (/estudiante/calendario): eventos recurrentes de las
-     * clases de las inscripciones vigentes, listos para FullCalendar.js
-     * (versión gratuita: se agrupa por grupo + franja horaria, de modo
-     * que Lunes y Miércoles 17:00-18:30 sean UN evento recurrente).
+     * Calendario (/estudiante/calendario): clases recurrentes de las
+     * inscripciones vigentes, listas para pintar la cuadrícula mensual
+     * y el panel "Clases del Día" del portal.
      *
-     * @return array{eventos: array<int, array<string, mixed>>, leyenda: array<int, array<string, string>>}
+     * Se agrupa por grupo + franja horaria, de modo que Lunes y Miércoles
+     * 17:00-18:30 sean UNA sola clase recurrente con dos días.
+     *
+     * @return array{clases: array<int, array<string, mixed>>, leyenda: array<int, array<string, string>>}
      */
     public function calendario(int $idEstudiante): array
     {
@@ -125,14 +158,20 @@ final class EstudiantePortalService
                        g.fecha_fin,
                        c.id_curso,
                        c.nombre AS curso,
+                       cat.nombre AS categoria,
                        a.nombre AS aula,
+                       a.ubicacion,
+                       CONCAT(inst.nombre, ' ', inst.apellido) AS instructor,
                        h.dia_semana,
                        h.hora_inicio,
                        h.hora_fin
                 FROM inscripcion i
                 JOIN grupo g ON g.id_grupo = i.id_grupo
                 JOIN curso c ON c.id_curso = g.id_curso
+                JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
+                JOIN categoria cat ON cat.id_categoria = ins.id_categoria
                 JOIN aula a ON a.id_aula = g.id_aula
+                JOIN instructor inst ON inst.id_instructor = g.id_instructor
                 JOIN horario h ON h.id_grupo = g.id_grupo
                 WHERE i.id_estudiante = :id
                   AND i.estado IN ('Activa', 'Pendiente')
@@ -145,10 +184,10 @@ final class EstudiantePortalService
         $filas = $stmt->fetchAll();
 
         if ($filas === []) {
-            return ['eventos' => [], 'leyenda' => []];
+            return ['clases' => [], 'leyenda' => []];
         }
 
-        // daysOfWeek de FullCalendar: 0 = Domingo ... 6 = Sábado
+        // Días en el índice de Date.getDay() de JS: 0 = Domingo ... 6 = Sábado
         $mapaDias = [
             'Lunes' => 1, 'Martes' => 2, 'Miércoles' => 3, 'Jueves' => 4,
             'Viernes' => 5, 'Sábado' => 6, 'Domingo' => 0,
@@ -161,7 +200,10 @@ final class EstudiantePortalService
             $franjas[$clave] ??= [
                 'id_curso'   => (int) $fila['id_curso'],
                 'curso'      => $fila['curso'],
+                'categoria'  => $fila['categoria'],
                 'aula'       => $fila['aula'],
+                'ubicacion'  => $fila['ubicacion'],
+                'instructor' => $fila['instructor'],
                 'inicio'     => $fila['fecha_inicio'],
                 'fin'        => $fila['fecha_fin'],
                 'hora_ini'   => $fila['hora_inicio'],
@@ -180,7 +222,7 @@ final class EstudiantePortalService
         $colorPorCurso = [];
         $leyenda = [];
 
-        $eventos = [];
+        $clases = [];
         foreach ($franjas as $franja) {
             if ($franja['dias'] === []) {
                 continue; // grupo sin horario asignado
@@ -197,29 +239,24 @@ final class EstudiantePortalService
                 ];
             }
 
-            $evento = [
-                'title'       => $franja['curso'] . ' · ' . $franja['aula'],
-                'daysOfWeek'  => $franja['dias'],
-                'startTime'   => substr((string) $franja['hora_ini'], 0, 5),
-                'endTime'     => substr((string) $franja['hora_fin'], 0, 5),
-                'color'       => $colorPorCurso[$idCurso],
-                'textoColor'  => '#0b0f19',
-                'idCurso'     => $idCurso,
-                'url'         => '/cursos/' . $idCurso,
+            $clases[] = [
+                'idCurso'    => $idCurso,
+                'curso'      => $franja['curso'],
+                'categoria'  => $franja['categoria'],
+                'aula'       => $franja['aula'],
+                'ubicacion'  => $franja['ubicacion'],
+                'instructor' => $franja['instructor'],
+                'inicio'     => $franja['inicio'],
+                'fin'        => $franja['fin'],
+                'horaInicio' => substr((string) $franja['hora_ini'], 0, 5),
+                'horaFin'    => substr((string) $franja['hora_fin'], 0, 5),
+                'dias'       => $franja['dias'],
+                'color'      => $colorPorCurso[$idCurso],
+                'url'        => '/cursos/' . $idCurso,
             ];
-
-            // startRecur / endRecur acotan la recurrencia al ciclo del grupo
-            if (!empty($franja['inicio'])) {
-                $evento['startRecur'] = $franja['inicio'];
-            }
-            if (!empty($franja['fin'])) {
-                $evento['endRecur'] = $franja['fin'];
-            }
-
-            $eventos[] = $evento;
         }
 
-        return ['eventos' => $eventos, 'leyenda' => $leyenda];
+        return ['clases' => $clases, 'leyenda' => $leyenda];
     }
 
     /**
@@ -277,11 +314,13 @@ final class EstudiantePortalService
                        a.observaciones,
                        c.id_curso,
                        c.nombre AS curso,
+                       CONCAT(inst.nombre, ' ', inst.apellido) AS instructor,
                        i.estado AS estado_inscripcion
                 FROM asistencia a
                 JOIN inscripcion i ON i.id_inscripcion = a.id_inscripcion
                 JOIN grupo g ON g.id_grupo = i.id_grupo
                 JOIN curso c ON c.id_curso = g.id_curso
+                JOIN instructor inst ON inst.id_instructor = g.id_instructor
                 WHERE i.id_estudiante = :id";
         $params = ['id' => $idEstudiante];
 
@@ -325,8 +364,7 @@ final class EstudiantePortalService
      * PHP a partir de las notas en escala 0-10.
      *
      * @return array{resumen: array<string, mixed>, grupos: array<int, array<string, mixed>>, detalle: array<int, array<string, mixed>>}
-     */
-    public function calificaciones(int $idEstudiante): array
+     */    public function calificaciones(int $idEstudiante): array
     {
         $sql = "SELECT e.id_evaluacion,
                        e.id_inscripcion,
@@ -395,9 +433,15 @@ final class EstudiantePortalService
             }
         }
 
+        $cursosAprobados = 0;
         foreach ($grupos as &$grupo) {
             $conNota = count($grupo['notas']);
             $grupo['promedio'] = $conNota > 0 ? round($grupo['suma'] / $conNota, 2) : 0.0;
+
+            if ($conNota > 0 && $grupo['promedio'] >= 5.0) {
+                $cursosAprobados++;
+            }
+
             unset($grupo['notas'], $grupo['suma']);
         }
         unset($grupo);
@@ -415,10 +459,12 @@ final class EstudiantePortalService
         }
 
         $resumen = [
-            'cursos_evaluados'   => count($grupos),
-            'evaluaciones_total' => count($evaluaciones),
-            'promedio_global'    => $totalNotas > 0 ? round($sumaNotas / $totalNotas, 2) : 0.0,
-            'notas_evaluadas'    => $totalNotas,
+            'cursos_evaluados'       => count($grupos),
+            'evaluaciones_total'     => count($evaluaciones),
+            'promedio_global'        => $totalNotas > 0 ? round($sumaNotas / $totalNotas, 2) : 0.0,
+            'notas_evaluadas'        => $totalNotas,
+            'cursos_aprobados'       => $cursosAprobados,
+            'evaluaciones_pendientes'=> count($evaluaciones) - $totalNotas,
         ];
 
         return [
@@ -738,7 +784,7 @@ final class EstudiantePortalService
     private function actividadesRecientes(int $idEstudiante): array
     {
         $sql = "(SELECT 'pago' AS tipo, p.fecha_pago AS fecha,
-                        CONCAT('Pago registrado: ', p.concepto, ' — ', p.monto_pagado, '€') AS detalle
+                        CONCAT('Pago registrado: ', p.concepto, ' — $ ', FORMAT(p.monto_pagado, 2)) AS detalle
                  FROM pago p
                  JOIN inscripcion i ON i.id_inscripcion = p.id_inscripcion
                  WHERE i.id_estudiante = :id_pagos AND p.estado = 'Pagado'
@@ -800,7 +846,7 @@ final class EstudiantePortalService
                 'icono' => 'bi-credit-card',
                 'titulo' => $pago['concepto'],
                 'texto' => $verbo . ' ' . date('d/m', $fechaPago)
-                    . ' · ' . number_format((float) $pago['monto_pagado'], 2, ',', '.') . '€ — ' . $pago['curso'],
+                    . ' · $ ' . number_format((float) $pago['monto_pagado'], 2, '.', ',') . ' — ' . $pago['curso'],
             ];
         }
 

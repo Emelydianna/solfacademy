@@ -109,7 +109,7 @@
                 <div class="card price-card mb-4">
                     <div class="card-body p-4 text-center">
                         <span class="price-label">Precio del curso</span>
-                        <div class="price-big"><?= htmlspecialchars(number_format((float) $curso['precio'], 0, ',', '.')) ?>€<small>/mes</small></div>
+                        <div class="price-big">$ <?= htmlspecialchars(number_format((float) $curso['precio'], 0, ',', '.')) ?><small>/mes</small></div>
                         <!-- Inscripción requiere sesión de usuario: fase 2 de la aplicación -->
                         <a href="#" class="btn btn-accent w-100 fw-semibold mt-3">INSCRIBIRSE AHORA</a>
                     </div>

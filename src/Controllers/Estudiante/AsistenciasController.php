@@ -35,11 +35,21 @@ class AsistenciasController
 
         $params = $request->getQueryParams();
 
+        $rango = isset($params['rango']) ? (string) $params['rango'] : '';
+        $desde = self::fechaValida($params['desde'] ?? null);
+        $hasta = self::fechaValida($params['hasta'] ?? null);
+
+        // Un rango predefinido (en días) equivale a fijar la fecha "desde".
+        if ($desde === '' && $hasta === '' && $rango !== '' && ctype_digit($rango)) {
+            $desde = date('Y-m-d', strtotime('-' . (int) $rango . ' days'));
+        }
+
         $filtros = [
             'curso'  => isset($params['curso']) ? (string) $params['curso'] : '',
             'estado' => isset($params['estado']) ? (string) $params['estado'] : '',
-            'desde'  => self::fechaValida($params['desde'] ?? null),
-            'hasta'  => self::fechaValida($params['hasta'] ?? null),
+            'rango'  => $rango,
+            'desde'  => $desde,
+            'hasta'  => $hasta,
         ];
 
         $this->view->setLayout('estudiante/layout.php');

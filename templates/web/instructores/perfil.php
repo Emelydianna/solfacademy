@@ -93,7 +93,7 @@
                                                 <h6 class="mini-title mb-1"><?= htmlspecialchars((string) $curso['nombre']) ?></h6>
                                                 <span class="mini-meta">
                                                     <?= htmlspecialchars((string) $curso['nivel']) ?> ·
-                                                    <?= htmlspecialchars(number_format((float) $curso['precio'], 0, ',', '.')) ?>€/mes
+                                                    $ <?= htmlspecialchars(number_format((float) $curso['precio'], 0, ',', '.')) ?>/mes
                                                 </span>
                                             </div>
                                         </a>
