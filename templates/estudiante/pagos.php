@@ -110,11 +110,26 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
         <div class="col-6 col-xl-3">
             <div class="portal-card portal-kpi h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
-                    <span class="portal-label">Movimientos</span>
-                    <span class="portal-kpi-icon"><i class="bi bi-receipt"></i></span>
+                    <span class="portal-label">Fecha de pago</span>
+                    <span class="portal-kpi-icon"><i class="bi bi-calendar-check"></i></span>
                 </div>
-                <div class="portal-kpi-value"><?= (int) ($resumen['total_movimientos'] ?? 0) ?></div>
-                <span class="portal-kpi-note">En tu historial de pagos</span>
+                <div class="portal-kpi-value" style="font-size:1.6rem;">
+                    <?php
+                    $ultimoPago = $resumen['ultimo_pago'] ?? null;
+                    if ($ultimoPago && !empty($ultimoPago['fecha_pago'])) {
+                        echo date('d/m/Y', strtotime((string) $ultimoPago['fecha_pago']));
+                    } else {
+                        echo '—';
+                    }
+                    ?>
+                </div>
+                <span class="portal-kpi-note">
+                    <?php if ($ultimoPago && !empty($ultimoPago['concepto'])): ?>
+                        <?= htmlspecialchars($ultimoPago['concepto']) ?><?= !empty($ultimoPago['monto_pagado']) ? ' · ' . $dolares((float)$ultimoPago['monto_pagado']) : '' ?>
+                    <?php else: ?>
+                        Sin pagos registrados
+                    <?php endif; ?>
+                </span>
             </div>
         </div>
     </div>

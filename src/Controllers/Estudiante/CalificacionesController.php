@@ -100,7 +100,7 @@ class CalificacionesController
 
             $lineas[] = [14, 'BOLETIN POR CURSO'];
             $lineas[] = [12, 'Curso: ' . $cursoNombre];
-            $lineas[] = [12, 'Tutor/Instructor: ' . $tutor];
+            $lineas[] = [12, 'Instructor: ' . $tutor];
             $lineas[] = [0, ''];
             $lineas[] = [12, 'EVALUACIONES'];
             $lineas[] = [10, str_repeat('-', 70)];
@@ -141,7 +141,7 @@ class CalificacionesController
             $lineas[] = [10, str_repeat('-', 70)];
             foreach (($datos['grupos'] ?? []) as $g) {
                 $prom = (float) ($g['promedio'] ?? 0);
-                $lineas[] = [12, 'Curso: ' . ($g['curso'] ?? '') . ' | Tutor: ' . ($g['instructor'] ?? '')];
+                $lineas[] = [12, 'Curso: ' . ($g['curso'] ?? '') . ' | Instructor: ' . ($g['instructor'] ?? '')];
                 $lineas[] = [11, '  Promedio del curso: ' . ($prom > 0 ? number_format($prom, 2) : '—') . ' / 10 | Evaluaciones: ' . (int) ($g['total_evaluaciones'] ?? 0)];
                 // Detalle de evaluaciones de este curso
                 foreach (($datos['detalle'] ?? []) as $e) {

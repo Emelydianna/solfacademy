@@ -591,7 +591,7 @@ final class EstudiantePortalService
     {
         $stmt = $this->pdo->prepare(
             'SELECT e.id_estudiante, e.nombre, e.apellido, e.email, e.telefono,
-                    e.direccion, e.fecha_inscripcion,
+                    e.direccion, e.fecha_inscripcion, e.foto_url, e.generos_favoritos, e.objetivo_academia,
                     u.id_usuario, u.email_usuario, u.ultimo_acceso, u.activo
              FROM estudiante e
              LEFT JOIN usuario u ON u.id_estudiante = e.id_estudiante AND u.rol = \'estudiante\'
@@ -599,8 +599,15 @@ final class EstudiantePortalService
         );
         $stmt->execute(['id' => $idEstudiante]);
         $fila = $stmt->fetch();
+        if ($fila === false) {
+            return null;
+        }
 
-        return $fila === false ? null : $fila;
+        $stmtH = $this->pdo->prepare('SELECT instrumento, periodo, nivel FROM estudiante_instrumento_historial WHERE id_estudiante = :id ORDER BY orden ASC, id_historial ASC');
+        $stmtH->execute(['id' => $idEstudiante]);
+        $fila['historial_instrumentos'] = $stmtH->fetchAll();
+
+        return $fila;
     }
 
     /**
