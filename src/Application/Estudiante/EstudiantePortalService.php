@@ -591,7 +591,7 @@ final class EstudiantePortalService
     {
         $stmt = $this->pdo->prepare(
             'SELECT e.id_estudiante, e.nombre, e.apellido, e.email, e.telefono,
-                    e.direccion, e.fecha_inscripcion, e.foto_url, e.generos_favoritos, e.objetivo_academia,
+                    e.direccion, e.fecha_inscripcion,
                     u.id_usuario, u.email_usuario, u.ultimo_acceso, u.activo
              FROM estudiante e
              LEFT JOIN usuario u ON u.id_estudiante = e.id_estudiante AND u.rol = \'estudiante\'
@@ -603,9 +603,44 @@ final class EstudiantePortalService
             return null;
         }
 
-        $stmtH = $this->pdo->prepare('SELECT instrumento, periodo, nivel FROM estudiante_instrumento_historial WHERE id_estudiante = :id ORDER BY orden ASC, id_historial ASC');
+        $stmtF = $this->pdo->prepare('SELECT ruta FROM estudiante_foto WHERE id_estudiante = :id');
+        $stmtF->execute(['id' => $idEstudiante]);
+        $foto = $stmtF->fetchColumn();
+        $fila['foto_url'] = $foto ?: null;
+
+        $stmtP = $this->pdo->prepare('SELECT generos_favoritos, objetivo_academia FROM estudiante_preferencias WHERE id_estudiante = :id');
+        $stmtP->execute(['id' => $idEstudiante]);
+        $pref = $stmtP->fetch();
+        $fila['generos_favoritos'] = $pref['generos_favoritos'] ?? null;
+        $fila['objetivo_academia'] = $pref['objetivo_academia'] ?? null;
+
+        $sqlHist = "SELECT DISTINCT ins.nombre AS instrumento,
+                           CONCAT(DATE_FORMAT(g.fecha_inicio, '%Y'), ' - ', COALESCE(DATE_FORMAT(g.fecha_fin, '%Y'), 'Presente')) AS periodo,
+                           COALESCE(c.nivel, 'Finalizado') AS nivel
+                    FROM inscripcion i
+                    JOIN grupo g ON g.id_grupo = i.id_grupo
+                    JOIN curso c ON c.id_curso = g.id_curso
+                    JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
+                    WHERE i.id_estudiante = :id AND i.estado IN ('Finalizada','Cancelada')
+                    ORDER BY g.fecha_fin DESC, g.fecha_inicio DESC";
+        $stmtH = $this->pdo->prepare($sqlHist);
         $stmtH->execute(['id' => $idEstudiante]);
-        $fila['historial_instrumentos'] = $stmtH->fetchAll();
+        $hist = $stmtH->fetchAll();
+        if (empty($hist)) {
+            $sqlHist2 = "SELECT DISTINCT ins.nombre AS instrumento,
+                                CONCAT(DATE_FORMAT(g.fecha_inicio, '%Y'), ' - ', COALESCE(DATE_FORMAT(g.fecha_fin, '%Y'), 'Presente')) AS periodo,
+                                COALESCE(c.nivel, '') AS nivel
+                         FROM inscripcion i
+                         JOIN grupo g ON g.id_grupo = i.id_grupo
+                         JOIN curso c ON c.id_curso = g.id_curso
+                         JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
+                         WHERE i.id_estudiante = :id
+                         ORDER BY g.fecha_inicio DESC";
+            $stmtH2 = $this->pdo->prepare($sqlHist2);
+            $stmtH2->execute(['id' => $idEstudiante]);
+            $hist = $stmtH2->fetchAll();
+        }
+        $fila['historial_instrumentos'] = $hist;
 
         return $fila;
     }

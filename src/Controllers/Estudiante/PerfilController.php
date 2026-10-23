@@ -10,6 +10,7 @@ use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
+use PDO;
 
 /**
  * Pantalla 7 del portal: Mi Perfil (/estudiante/perfil).
@@ -275,4 +276,81 @@ class PerfilController
 
         return $errores;
     }
+
+
+    public function subirFoto(Request $request, Response $response): Response
+    {
+        $usuario = $_SESSION['usuario'] ?? [];
+        if (($usuario['rol'] ?? '') !== 'estudiante') {
+            return $response->withStatus(302)->withHeader('Location', '/');
+        }
+        $idEstudiante = (int) $usuario['id_referencia'];
+        $uploadedFiles = $request->getUploadedFiles();
+        if (empty($uploadedFiles['foto'])) {
+            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'Selecciona una imagen para subir.'];
+            return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+        }
+        $file = $uploadedFiles['foto'];
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'Error al subir la imagen.'];
+            return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+        }
+        $size = $file->getSize();
+        if ($size > 2 * 1024 * 1024) {
+            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'La imagen no debe superar 2MB.'];
+            return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+        }
+        $clientName = $file->getClientFilename();
+        $ext = strtolower(pathinfo($clientName ?? '', PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'Formato de imagen no válido.'];
+            return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+        }
+        $nombreArchivo = 'perfil_' . $idEstudiante . '_' . time() . '.' . $ext;
+        $directorio = dirname(__DIR__, 3) . '/public/uploads/perfiles';
+        if (!is_dir($directorio)) {
+            @mkdir($directorio, 0755, true);
+        }
+        $rutaCompleta = $directorio . '/' . $nombreArchivo;
+        try {
+            $file->moveTo($rutaCompleta);
+        } catch (\Throwable $e) {
+            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'No se pudo guardar la imagen.'];
+            return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+        }
+        $rutaPublica = '/uploads/perfiles/' . $nombreArchivo;
+        $pdo = $this->getPdo();
+        $stmt = $pdo->prepare('REPLACE INTO estudiante_foto (id_estudiante, ruta) VALUES (:id, :ruta)');
+        $stmt->execute(['id' => $idEstudiante, 'ruta' => $rutaPublica]);
+        $_SESSION[self::FLASH] = ['tipo' => 'exito', 'mensaje' => 'Foto de perfil actualizada correctamente.'];
+        return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+    }
+
+    public function guardarPreferencias(Request $request, Response $response): Response
+    {
+        $usuario = $_SESSION['usuario'] ?? [];
+        if (($usuario['rol'] ?? '') !== 'estudiante') {
+            return $response->withStatus(302)->withHeader('Location', '/');
+        }
+        $idEstudiante = (int) $usuario['id_referencia'];
+        $datos = (array) $request->getParsedBody();
+        $generos = trim((string) ($datos['generos_favoritos'] ?? ''));
+        $objetivo = trim((string) ($datos['objetivo_academia'] ?? ''));
+        $pdo = $this->getPdo();
+        $stmt = $pdo->prepare('REPLACE INTO estudiante_preferencias (id_estudiante, generos_favoritos, objetivo_academia) VALUES (:id, :g, :o)');
+        $stmt->execute(['id' => $idEstudiante, 'g' => $generos !== '' ? $generos : null, 'o' => $objetivo !== '' ? $objetivo : null]);
+        $_SESSION[self::FLASH] = ['tipo' => 'exito', 'mensaje' => 'Preferencias musicales guardadas correctamente.'];
+        return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
+    }
+
+    private function getPdo()
+    {
+        $container = require dirname(__DIR__, 3) . '/app/container.php';
+        $app = require dirname(__DIR__, 3) . '/app/app.php';
+        // Easier: use global or just create from config
+        $c = require dirname(__DIR__, 3) . '/config/db.php';
+        $pdo = new \PDO(sprintf('mysql:host=%s;dbname=%s;charset=%s', $c['host'], $c['dbname'], $c['charset']), $c['user'], $c['pass'], [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION, \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC]);
+        return $pdo;
+    }
+
 }

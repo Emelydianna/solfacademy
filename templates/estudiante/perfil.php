@@ -1,18 +1,11 @@
 <!-- Mi Perfil -->
 <?php
-/**
- * Mi Perfil
- */
 $perfil  = $perfil ?? [];
 $valores = $valores ?? [];
 $errores = $errores ?? [];
 $flash   = $flash ?? null;
 
 $err = static fn (string $campo): string => !empty($errores[$campo]) ? ' is-invalid' : '';
-
-$fechaInscripcion = !empty($perfil['fecha_inscripcion'])
-    ? date('d/m/Y', strtotime((string) $perfil['fecha_inscripcion']))
-    : '—';
 
 $nombreCompleto = trim(($perfil['nombre'] ?? '') . ' ' . ($perfil['apellido'] ?? ''));
 $nombreCompleto = $nombreCompleto !== '' ? $nombreCompleto : 'Estudiante';
@@ -32,8 +25,8 @@ $historial = $perfil['historial_instrumentos'] ?? [];
 </div>
 
 <?php if (is_array($flash) && ($flash['mensaje'] ?? '') !== ''): ?>
-    <div class="portal-alert portal-alert--exito d-flex align-items-center gap-2 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill"></i>
+    <div class="portal-alert portal-alert--<?= ($flash['tipo'] ?? 'exito') === 'error' ? 'peligro' : 'exito' ?> d-flex align-items-center gap-2 mb-4" role="alert">
+        <i class="bi bi-<?= ($flash['tipo'] ?? 'exito') === 'error' ? 'exclamation-circle' : 'check-circle' ?>-fill"></i>
         <span><?= htmlspecialchars($flash['mensaje']) ?></span>
     </div>
 <?php endif; ?>
@@ -53,21 +46,24 @@ $historial = $perfil['historial_instrumentos'] ?? [];
                 </div>
                 <h2 class="portal-card-title mb-1" style="font-size:1.25rem;"><?= htmlspecialchars($nombreCompleto) ?></h2>
                 <p class="mb-3" style="color:#94a3b8;">Estudiante</p>
-                <button type="button" class="btn btn-outline-light w-100" data-bs-toggle="modal" data-bs-target="#modalProximamente" data-modal-titulo="Cambiar Foto" data-modal-mensaje="La carga de foto de perfil estará disponible muy pronto.">
+                <button type="button" class="btn btn-outline-light w-100" data-bs-toggle="modal" data-bs-target="#modalFoto">
                     <i class="bi bi-camera me-1"></i>Cambiar Foto
                 </button>
             </div>
 
             <!-- Preferencias Musicales -->
             <div class="portal-card p-4">
-                <h3 class="portal-card-title mb-3">Preferencias Musicales</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="portal-card-title mb-0">Preferencias Musicales</h3>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#modalPreferencias"><i class="bi bi-pencil"></i></button>
+                </div>
                 <div class="mb-3">
                     <div class="small mb-1" style="color:#94a3b8;">Géneros Favoritos</div>
-                    <div style="color:#fff;"><?= $generos !== '' ? htmlspecialchars($generos) : '—' ?></div>
+                    <div style="color:#fff;"><?= $generos !== '' && $generos !== null ? htmlspecialchars($generos) : '—' ?></div>
                 </div>
                 <div>
                     <div class="small mb-1" style="color:#94a3b8;">Objetivo en la Academia</div>
-                    <div style="color:#fff;"><?= $objetivo !== '' ? htmlspecialchars($objetivo) : '—' ?></div>
+                    <div style="color:#fff;"><?= $objetivo !== '' && $objetivo !== null ? htmlspecialchars($objetivo) : '—' ?></div>
                 </div>
             </div>
         </div>
@@ -138,7 +134,7 @@ $historial = $perfil['historial_instrumentos'] ?? [];
                     <h2 class="portal-card-title mb-0">Historial de Instrumentos Estudiados</h2>
                 </div>
                 <?php if (count($historial) === 0): ?>
-                    <p class="mb-0" style="color:#94a3b8;">Sin registros.</p>
+                    <p class="mb-0" style="color:#94a3b8;">Sin registros. Aparecerá aquí cuando tengas cursos finalizados o registrados.</p>
                 <?php else: ?>
                     <div class="row row-cols-1 row-cols-md-3 g-3">
                         <?php foreach ($historial as $h): ?>
@@ -146,7 +142,7 @@ $historial = $perfil['historial_instrumentos'] ?? [];
                                 <div class="p-3 h-100" style="border:1px solid var(--portal-border);border-radius:10px;background:rgba(255,255,255,0.02);">
                                     <div class="fw-bold mb-1" style="color:#ffc107;"><?= htmlspecialchars($h['instrumento']) ?></div>
                                     <div class="small" style="color:#94a3b8;">Periodo: <?= htmlspecialchars($h['periodo']) ?></div>
-                                    <div class="small" style="color:#94a3b8;">Nivel: <?= htmlspecialchars($h['nivel']) ?></div>
+                                    <div class="small" style="color:#94a3b8;">Nivel: <?= htmlspecialchars($h['nivel'] ?: '—') ?></div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -200,32 +196,52 @@ $historial = $perfil['historial_instrumentos'] ?? [];
     </div>
 </div>
 
-<!-- Modal reutilizable -->
-<div class="modal fade" id="modalProximamente" tabindex="-1" aria-hidden="true">
+<!-- Modal Foto -->
+<div class="modal fade" id="modalFoto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content portal-modal">
-            <div class="modal-body text-center p-4">
-                <span class="portal-modal-icon"><i class="bi bi-stars"></i></span>
-                <h2 class="portal-card-title h5 mb-1" data-modal-titulo-texto>Próximamente</h2>
-                <p class="small mb-4" style="color: var(--portal-muted);" data-modal-mensaje-texto>Esta función estará disponible muy pronto.</p>
-                <button type="button" class="btn btn-accent fw-semibold px-4" data-bs-dismiss="modal">Entendido</button>
-            </div>
+            <form method="post" action="/estudiante/perfil/foto" enctype="multipart/form-data">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">Cambiar Foto de Perfil</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="file" name="foto" class="form-control" accept="image/*" required>
+                    <div class="form-text" style="color: var(--portal-muted);">Formatos: JPG, PNG, GIF, WEBP. Máximo 2MB.</div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-accent">Subir Foto</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var modal = document.getElementById('modalProximamente');
-    if (!modal) return;
-    modal.addEventListener('show.bs.modal', function (event) {
-        var boton = event.relatedTarget;
-        if (!boton) return;
-        var titulo = boton.getAttribute('data-modal-titulo');
-        var mensaje = boton.getAttribute('data-modal-mensaje');
-        var elTitulo = modal.querySelector('[data-modal-titulo-texto]');
-        var elMensaje = modal.querySelector('[data-modal-mensaje-texto]');
-        if (titulo) elTitulo.textContent = titulo;
-        if (mensaje) elMensaje.textContent = mensaje;
-    });
-});
-</script>
+
+<!-- Modal Preferencias -->
+<div class="modal fade" id="modalPreferencias" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content portal-modal">
+            <form method="post" action="/estudiante/perfil/preferencias">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">Preferencias Musicales</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Géneros Favoritos</label>
+                        <input type="text" name="generos_favoritos" class="form-control" value="<?= htmlspecialchars($generos ?? '') ?>" placeholder="Música Clásica, Jazz, etc.">
+                    </div>
+                    <div>
+                        <label class="form-label">Objetivo en la Academia</label>
+                        <input type="text" name="objetivo_academia" class="form-control" value="<?= htmlspecialchars($objetivo ?? '') ?>" placeholder="Dominar técnica, ensamble, etc.">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-accent">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

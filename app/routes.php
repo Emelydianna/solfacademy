@@ -59,6 +59,8 @@ return function (App $app) {
         $group->get('/pagos', [PagosController::class, 'index']);
         $group->get('/perfil', [PerfilController::class, 'index']);
         $group->post('/perfil', [PerfilController::class, 'actualizar']);
+        $group->post('/perfil/foto', [PerfilController::class, 'subirFoto']);
+        $group->post('/perfil/preferencias', [PerfilController::class, 'guardarPreferencias']);
         $group->post('/perfil/password', [PerfilController::class, 'cambiarPassword']);
         $group->get('/reservas', [ReservaController::class, 'index']);
         $group->get('/reservas/cabinas', [ReservaCabinaController::class, 'crearFormulario']);
