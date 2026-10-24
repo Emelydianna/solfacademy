@@ -32,10 +32,29 @@
 
             <!-- Perfil -->
             <div class="portal-profile">
-                <!-- TODO: sustituir por la foto real del alumno cuando haya assets -->
-                <div class="portal-avatar">
-                    <?= htmlspecialchars(mb_strtoupper(mb_substr(trim((string) ($usuarioSesion['nombre'] ?? 'U')), 0, 1))) ?>
-                </div>
+                <?php
+                $fotoSidebar = $fotoPerfilSidebar ?? null;
+                if (!$fotoSidebar && isset($_SESSION['usuario']['id_referencia'])) {
+                    try {
+                        $cdb = require __DIR__ . '/../../config/db.php';
+                        $pdob = new PDO(sprintf('mysql:host=%s;dbname=%s;charset=%s', $cdb['host'], $cdb['dbname'], $cdb['charset']), $cdb['user'], $cdb['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+                        $stb = $pdob->prepare('SELECT ruta FROM estudiante_foto WHERE id_estudiante = :id');
+                        $stb->execute(['id' => (int) $_SESSION['usuario']['id_referencia']]);
+                        $fotoSidebar = $stb->fetchColumn() ?: null;
+                    } catch (Throwable $e) {
+                        $fotoSidebar = null;
+                    }
+                }
+                ?>
+                <?php if ($fotoSidebar): ?>
+                    <div class="portal-avatar" style="padding:0;overflow:hidden;">
+                        <img src="<?= htmlspecialchars($fotoSidebar) ?>" alt="Foto" style="width:100%;height:100%;object-fit:cover;">
+                    </div>
+                <?php else: ?>
+                    <div class="portal-avatar">
+                        <?= htmlspecialchars(mb_strtoupper(mb_substr(trim((string) ($usuarioSesion['nombre'] ?? 'U')), 0, 1))) ?>
+                    </div>
+                <?php endif; ?>
                 <div class="portal-profile-name"><?= htmlspecialchars($usuarioSesion['nombre'] ?? 'Estudiante') ?></div>
                 <span class="portal-profile-badge">Alumno</span>
             </div>
@@ -80,9 +99,29 @@
                         <span class="portal-bell-dot"></span>
                     </a>
                     <span class="d-none d-md-inline small"><?= htmlspecialchars($usuarioSesion['nombre'] ?? '') ?></span>
-                    <span class="portal-topbar-avatar d-none d-md-flex">
-                        <?= htmlspecialchars(mb_strtoupper(mb_substr(trim((string) ($usuarioSesion['nombre'] ?? 'U')), 0, 1))) ?>
-                    </span>
+                    <?php
+                    $fotoTop = $fotoPerfilSidebar ?? null;
+                    if (!$fotoTop && isset($_SESSION['usuario']['id_referencia'])) {
+                        try {
+                            $cdb2 = require __DIR__ . '/../../config/db.php';
+                            $pdob2 = new PDO(sprintf('mysql:host=%s;dbname=%s;charset=%s', $cdb2['host'], $cdb2['dbname'], $cdb2['charset']), $cdb2['user'], $cdb2['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+                            $stb2 = $pdob2->prepare('SELECT ruta FROM estudiante_foto WHERE id_estudiante = :id');
+                            $stb2->execute(['id' => (int) $_SESSION['usuario']['id_referencia']]);
+                            $fotoTop = $stb2->fetchColumn() ?: null;
+                        } catch (Throwable $e) {
+                            $fotoTop = null;
+                        }
+                    }
+                    ?>
+                    <?php if ($fotoTop): ?>
+                        <span class="portal-topbar-avatar d-none d-md-flex" style="padding:0;overflow:hidden;">
+                            <img src="<?= htmlspecialchars($fotoTop) ?>" alt="Foto" style="width:100%;height:100%;object-fit:cover;">
+                        </span>
+                    <?php else: ?>
+                        <span class="portal-topbar-avatar d-none d-md-flex">
+                            <?= htmlspecialchars(mb_strtoupper(mb_substr(trim((string) ($usuarioSesion['nombre'] ?? 'U')), 0, 1))) ?>
+                        </span>
+                    <?php endif; ?>
                     <span class="portal-profile-badge">Alumno</span>
                 </div>
             </header>

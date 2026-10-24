@@ -614,28 +614,30 @@ final class EstudiantePortalService
         $fila['generos_favoritos'] = $pref['generos_favoritos'] ?? null;
         $fila['objetivo_academia'] = $pref['objetivo_academia'] ?? null;
 
-        $sqlHist = "SELECT DISTINCT ins.nombre AS instrumento,
-                           CONCAT(DATE_FORMAT(g.fecha_inicio, '%Y'), ' - ', COALESCE(DATE_FORMAT(g.fecha_fin, '%Y'), 'Presente')) AS periodo,
-                           COALESCE(c.nivel, 'Finalizado') AS nivel
+        $sqlHist = "SELECT ins.nombre AS instrumento,
+                           CONCAT(DATE_FORMAT(MIN(g.fecha_inicio), '%Y'), ' - ', COALESCE(DATE_FORMAT(MAX(g.fecha_fin), '%Y'), 'Presente')) AS periodo,
+                           COALESCE(MAX(c.nivel), 'Finalizado') AS nivel
                     FROM inscripcion i
                     JOIN grupo g ON g.id_grupo = i.id_grupo
                     JOIN curso c ON c.id_curso = g.id_curso
                     JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
                     WHERE i.id_estudiante = :id AND i.estado IN ('Finalizada','Cancelada')
-                    ORDER BY MAX(g.fecha_fin) DESC, MAX(g.fecha_inicio) DESC";
+                    GROUP BY ins.id_instrumento, ins.nombre
+                    ORDER BY MAX(g.fecha_fin) DESC, MIN(g.fecha_inicio) DESC";
         $stmtH = $this->pdo->prepare($sqlHist);
         $stmtH->execute(['id' => $idEstudiante]);
         $hist = $stmtH->fetchAll();
         if (empty($hist)) {
-            $sqlHist2 = "SELECT DISTINCT ins.nombre AS instrumento,
-                                CONCAT(DATE_FORMAT(g.fecha_inicio, '%Y'), ' - ', COALESCE(DATE_FORMAT(g.fecha_fin, '%Y'), 'Presente')) AS periodo,
-                                COALESCE(c.nivel, '') AS nivel
+            $sqlHist2 = "SELECT ins.nombre AS instrumento,
+                                CONCAT(DATE_FORMAT(MIN(g.fecha_inicio), '%Y'), ' - ', COALESCE(DATE_FORMAT(MAX(g.fecha_fin), '%Y'), 'Presente')) AS periodo,
+                                COALESCE(MAX(c.nivel), '') AS nivel
                          FROM inscripcion i
                          JOIN grupo g ON g.id_grupo = i.id_grupo
                          JOIN curso c ON c.id_curso = g.id_curso
                          JOIN instrumento ins ON ins.id_instrumento = c.id_instrumento
                          WHERE i.id_estudiante = :id
-                         ORDER BY g.fecha_inicio DESC";
+                         GROUP BY ins.id_instrumento, ins.nombre
+                         ORDER BY MAX(g.fecha_inicio) DESC";
             $stmtH2 = $this->pdo->prepare($sqlHist2);
             $stmtH2->execute(['id' => $idEstudiante]);
             $hist = $stmtH2->fetchAll();

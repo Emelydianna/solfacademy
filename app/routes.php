@@ -85,4 +85,22 @@ return function (App $app) {
         $group->get('', ListUsersAction::class);
         $group->get('/{id}', ViewUserAction::class);
     });
+
+
+    // Servir foto de perfil desde var/uploads (no rastreable en git)
+    $app->get('/perfil/foto/{archivo}', function (\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response, array $args) {
+        $archivo = basename($args['archivo'] ?? '');
+        $ruta = __DIR__ . '/../var/uploads/perfiles/' . $archivo;
+        if (!is_file($ruta)) {
+            return $response->withStatus(404);
+        }
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $ruta) ?: 'application/octet-stream';
+        finfo_close($finfo);
+        $stream = new \Slim\Psr7\Stream(fopen($ruta, 'rb'));
+        return $response
+            ->withHeader('Content-Type', $mime)
+            ->withHeader('Cache-Control', 'private, max-age=3600')
+            ->withBody($stream);
+    })->add(AuthMiddleware::class);
 };

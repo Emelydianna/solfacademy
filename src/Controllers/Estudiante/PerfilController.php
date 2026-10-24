@@ -307,7 +307,7 @@ class PerfilController
             return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
         }
         $nombreArchivo = 'perfil_' . $idEstudiante . '_' . time() . '.' . $ext;
-        $directorio = dirname(__DIR__, 3) . '/public/uploads/perfiles';
+        $directorio = dirname(__DIR__, 3) . '/var/uploads/perfiles';
         if (!is_dir($directorio)) {
             @mkdir($directorio, 0755, true);
         }
@@ -318,7 +318,8 @@ class PerfilController
             $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'No se pudo guardar la imagen.'];
             return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
         }
-        $rutaPublica = '/uploads/perfiles/' . $nombreArchivo;
+        // Guardar ruta relativa desde public o directa; servir desde var no es público directo
+        $rutaPublica = '/perfil/foto/' . $nombreArchivo;
         $pdo = $this->getPdo();
         $stmt = $pdo->prepare('REPLACE INTO estudiante_foto (id_estudiante, ruta) VALUES (:id, :ruta)');
         $stmt->execute(['id' => $idEstudiante, 'ruta' => $rutaPublica]);
@@ -345,9 +346,6 @@ class PerfilController
 
     private function getPdo()
     {
-        $container = require dirname(__DIR__, 3) . '/app/container.php';
-        $app = require dirname(__DIR__, 3) . '/app/app.php';
-        // Easier: use global or just create from config
         $c = require dirname(__DIR__, 3) . '/config/db.php';
         $pdo = new \PDO(sprintf('mysql:host=%s;dbname=%s;charset=%s', $c['host'], $c['dbname'], $c['charset']), $c['user'], $c['pass'], [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION, \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC]);
         return $pdo;
