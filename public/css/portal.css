@@ -6,20 +6,22 @@
 
 :root {
     --portal-bg: #0b0f19;
-    --portal-surface: #131b2e;
-    --portal-surface-2: #182138;
+    --portal-surface: #0b1320;
+    --portal-surface-2: #0f172a;
+    --portal-card: #131b2e;
     --portal-border: #1f293d;
+    --sidebar-bg: #0b1320;
     --portal-gold: #ffc107;
     --portal-gold-2: #f0ad4e;
     --portal-text: #e5e7eb;
-    --portal-muted: #8b93a7;
+    --portal-muted: #94a3b8;
     --portal-green: #34d399;
     --portal-red: #f87171;
     --portal-blue: #60a5fa;
 }
 
 body.portal-body {
-    background-color: var(--portal-bg);
+    background-color: #0b0f19;
     color: var(--portal-text);
 }
 
@@ -27,8 +29,8 @@ body.portal-body {
 
 .portal-sidebar {
     width: 264px;
-    background-color: var(--portal-surface);
-    border-right: 1px solid var(--portal-border);
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid #1a2333;
 }
 
 @media (min-width: 992px) {
@@ -41,16 +43,17 @@ body.portal-body {
 
 .portal-sidebar .offcanvas-header,
 .portal-sidebar .offcanvas-body {
-    background-color: var(--portal-surface);
+    background-color: var(--portal-card);
 }
 
 .portal-brand {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.5rem;
+    min-height: 72px;
     text-decoration: none;
-    border-bottom: 1px solid var(--portal-border);
+    border-bottom: 1px solid #1a2333;
 }
 
 .portal-brand-icon {
@@ -85,7 +88,7 @@ body.portal-body {
 .portal-profile {
     padding: 1.5rem 1.5rem 1.25rem;
     text-align: center;
-    border-bottom: 1px solid var(--portal-border);
+    border-bottom: 1px solid #1a2333;
 }
 
 .portal-avatar {
@@ -193,9 +196,10 @@ body.portal-body {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.85rem 1.75rem;
-    background-color: var(--portal-bg);
-    border-bottom: 1px solid var(--portal-border);
+    padding: 0 1.75rem;
+    min-height: 72px;
+    background-color: #0b0f19;
+    border-bottom: 1px solid #1a2333;
 }
 
 .portal-bell {
@@ -206,7 +210,7 @@ body.portal-body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: var(--portal-surface);
+    background-color: var(--portal-card);
     border: 1px solid var(--portal-border);
     color: var(--portal-muted);
     text-decoration: none;
@@ -285,7 +289,7 @@ body.portal-body {
 }
 
 .portal-card {
-    background-color: var(--portal-surface);
+    background-color: var(--portal-card);
     border: 1px solid var(--portal-border);
     border-radius: 0.75rem;
 }
@@ -581,9 +585,9 @@ body.portal-body {
 
 .portal-body .form-control,
 .portal-body .form-select {
-    background-color: var(--portal-surface-2);
-    border-color: var(--portal-border);
-    color: var(--portal-text);
+    background-color: #0f172a;
+    border-color: #1e293b;
+    color: #ffffff;
 }
 
 .portal-body .form-control::placeholder {
@@ -602,7 +606,7 @@ body.portal-body {
 .portal-body .form-control[readonly],
 .portal-body .form-control:disabled,
 .portal-body .form-select:disabled {
-    background-color: var(--portal-surface);
+    background-color: var(--portal-card);
     color: var(--portal-muted);
     opacity: 1;
 }
@@ -649,7 +653,7 @@ body.portal-body {
 
 .portal-dato {
     padding: 0.75rem 0;
-    border-bottom: 1px solid var(--portal-border);
+    border-bottom: 1px solid #1a2333;
 }
 
 .portal-dato:last-child {
@@ -889,7 +893,7 @@ body.portal-body {
 
 .clase-item:hover {
     border-color: var(--portal-gold);
-    background-color: var(--portal-surface);
+    background-color: var(--portal-card);
 }
 
 .clase-item-hora {
@@ -942,7 +946,7 @@ body.portal-body {
 /* ---------- Modal "Próximamente" ---------- */
 
 .portal-modal {
-    background-color: var(--portal-surface);
+    background-color: var(--portal-card);
     border: 1px solid var(--portal-border);
     border-radius: 0.75rem;
 }
