@@ -20,6 +20,11 @@ use App\Controllers\Estudiante\PerfilController;
 use App\Controllers\Estudiante\ReservaCabinaController;
 use App\Controllers\Estudiante\ReservaController;
 use App\Controllers\Estudiante\ReservaExtraController;
+use App\Controllers\Instructor\DashboardController as InstructorDashboardController;
+use App\Controllers\Instructor\GruposController;
+use App\Controllers\Instructor\AsistenciasController as InstructorAsistenciasController;
+use App\Controllers\Instructor\CalificacionesController as InstructorCalificacionesController;
+use App\Controllers\Instructor\ReportesController;
 use App\Application\Actions\User\ListUsersAction;
 use App\Application\Actions\User\ViewUserAction;
 
@@ -102,5 +107,19 @@ return function (App $app) {
             ->withHeader('Content-Type', $mime)
             ->withHeader('Cache-Control', 'private, max-age=3600')
             ->withBody($stream);
+    })->add(AuthMiddleware::class);
+
+
+    // ==========================================
+    // 3. RUTAS INSTRUCTOR
+    // ==========================================
+    $app->group('/instructor', function (Group $group) {
+        $group->get('/dashboard', [InstructorDashboardController::class, 'index']);
+        $group->get('/grupos', [GruposController::class, 'index']);
+        $group->get('/grupos/{id}', [GruposController::class, 'ver']);
+        $group->get('/asistencias', [InstructorAsistenciasController::class, 'index']);
+        $group->post('/asistencias/guardar', [InstructorAsistenciasController::class, 'guardar']);
+        $group->get('/calificaciones', [InstructorCalificacionesController::class, 'index']);
+        $group->get('/reportes', [ReportesController::class, 'index']);
     })->add(AuthMiddleware::class);
 };

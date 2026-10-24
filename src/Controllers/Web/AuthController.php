@@ -134,7 +134,8 @@ class AuthController
     {
         $destino = match ($rol) {
             'estudiante' => '/estudiante/dashboard',
-            // instructor y admin: su portal llega en una fase futura
+            'instructor' => '/instructor/dashboard',
+            'admin' => '/admin/dashboard',
             default => '/',
         };
 
