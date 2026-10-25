@@ -31,7 +31,6 @@ $grupoDetalle = trim(($grupoNombre) . (isset($grupo['nivel']) && $grupo['nivel']
                     <th>INSCRIPCIÓN</th>
                     <th>ASISTENCIA</th>
                     <th>PROMEDIO</th>
-                    <th>ACCIONES</th>
                 </tr>
             </thead>
             <tbody>
@@ -39,7 +38,13 @@ $grupoDetalle = trim(($grupoNombre) . (isset($grupo['nivel']) && $grupo['nivel']
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="portal-avatar" style="width:36px;height:36px;font-size:0.8rem;"><?= htmlspecialchars(mb_strtoupper(mb_substr($a['nombre'],0,1).mb_substr($a['apellido'],0,1))) ?></div>
+                                <div class="portal-avatar" style="width:36px;height:36px;font-size:0.8rem;overflow:hidden;">
+                                    <?php if (!empty($a['foto'])): ?>
+                                        <img src="<?= htmlspecialchars($a['foto']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                    <?php else: ?>
+                                        <?= htmlspecialchars(mb_strtoupper(mb_substr($a['nombre'],0,1).mb_substr($a['apellido'],0,1))) ?>
+                                    <?php endif; ?>
+                                </div>
                                 <span class="fw-semibold"><?= htmlspecialchars($a['nombre'].' '.$a['apellido']) ?></span>
                             </div>
                         </td>
@@ -48,12 +53,6 @@ $grupoDetalle = trim(($grupoNombre) . (isset($grupo['nivel']) && $grupo['nivel']
                         <td style="color:#94a3b8;"><?= $a['inscripcion_fecha'] ? date('d/M/Y', strtotime($a['inscripcion_fecha'])) : '—' ?></td>
                         <td class="fw-bold"><?= (int)$a['asistencia_pct'] ?>%</td>
                         <td class="fw-bold" style="color:#ffc107;"><?= number_format((float)$a['promedio'], 1) ?></td>
-                        <td>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <a href="/instructor/alumnos/<?= (int)$a['id_estudiante'] ?>/perfil" class="btn btn-sm btn-outline-secondary">Perfil</a>
-                                <a href="/instructor/mensajes?alumno=<?= (int)$a['id_estudiante'] ?>" class="btn btn-sm btn-outline-secondary">Mensaje</a>
-                            </div>
-                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

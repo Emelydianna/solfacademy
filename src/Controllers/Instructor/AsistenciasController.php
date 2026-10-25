@@ -31,6 +31,9 @@ class AsistenciasController
         $fecha = $params['fecha'] ?? date('Y-m-d');
         $this->view->setLayout('instructor/layout.php');
         $data = $this->service->asistenciaPorGrupo((int) $usuario['id_referencia'], $idGrupo, $fecha);
+        $mensaje = $_SESSION['asistencia_msg'] ?? null;
+        $tipoMsg = $_SESSION['asistencia_msg_tipo'] ?? null;
+        unset($_SESSION['asistencia_msg'], $_SESSION['asistencia_msg_tipo']);
         return $this->view->render($response, 'instructor/asistencias/index.php', [
             'tituloPagina' => 'Registrar Asistencia',
             'paginaInstructor' => 'asistencias',
@@ -39,10 +42,9 @@ class AsistenciasController
             'grupos' => $data['grupos'],
             'fecha' => $fecha,
             'idGrupo' => $idGrupo,
-            'mensaje' => $_SESSION['asistencia_msg'] ?? null,
-            'tipoMsg' => $_SESSION['asistencia_msg_tipo'] ?? null,
+            'mensaje' => $mensaje,
+            'tipoMsg' => $tipoMsg,
         ]);
-        unset($_SESSION['asistencia_msg'], $_SESSION['asistencia_msg_tipo']);
     }
 
     public function guardar(Request $request, Response $response): Response

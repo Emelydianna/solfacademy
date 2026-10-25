@@ -96,7 +96,8 @@ final class InstructorService
         $sql = "SELECT e.id_estudiante, e.nombre, e.apellido, e.email, e.telefono,
                        i.fecha AS inscripcion_fecha,
                        (SELECT COALESCE(ROUND(SUM(a.presente='S')/NULLIF(COUNT(*),0)*100,0),0) FROM asistencia a WHERE a.id_inscripcion = i.id_inscripcion) AS asistencia_pct,
-                       (SELECT COALESCE(ROUND(AVG(ev.calificacion),1),0) FROM evaluacion ev WHERE ev.id_inscripcion = i.id_inscripcion AND ev.calificacion IS NOT NULL) AS promedio
+                       (SELECT COALESCE(ROUND(AVG(ev.calificacion),1),0) FROM evaluacion ev WHERE ev.id_inscripcion = i.id_inscripcion AND ev.calificacion IS NOT NULL) AS promedio,
+                       (SELECT f.ruta FROM estudiante_foto f WHERE f.id_estudiante = e.id_estudiante ORDER BY f.id_foto DESC LIMIT 1) AS foto
                 FROM inscripcion i
                 JOIN estudiante e ON e.id_estudiante = i.id_estudiante
                 JOIN grupo g ON g.id_grupo = i.id_grupo
@@ -125,7 +126,8 @@ final class InstructorService
     public function asistenciaPorGrupo(int $idInstructor, int $idGrupo, string $fecha): array
     {
         $sql = "SELECT e.id_estudiante, e.nombre, e.apellido, i.id_inscripcion,
-                       a.presente, a.justificacion
+                       a.presente, a.justificacion,
+                       (SELECT f.ruta FROM estudiante_foto f WHERE f.id_estudiante = e.id_estudiante ORDER BY f.id_foto DESC LIMIT 1) AS foto
                 FROM inscripcion i
                 JOIN estudiante e ON e.id_estudiante = i.id_estudiante
                 JOIN grupo g ON g.id_grupo = i.id_grupo
@@ -235,7 +237,8 @@ final class InstructorService
             }
 
             $sql = "SELECT i.id_inscripcion, e.id_estudiante, e.nombre, e.apellido,
-                           ev.id_evaluacion, ev.calificacion, ev.observaciones_profesor, ev.tipo
+                           ev.id_evaluacion, ev.calificacion, ev.observaciones_profesor, ev.tipo,
+                           (SELECT f.ruta FROM estudiante_foto f WHERE f.id_estudiante = e.id_estudiante ORDER BY f.id_foto DESC LIMIT 1) AS foto
                     FROM inscripcion i
                     JOIN estudiante e ON e.id_estudiante = i.id_estudiante
                     JOIN grupo g ON g.id_grupo = i.id_grupo

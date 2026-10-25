@@ -14,13 +14,16 @@ $tipoMsg = $tipoMsg ?? null;
 </div>
 
 <?php if ($mensaje): ?>
-    <div class="alert alert-<?= $tipoMsg === 'success' ? 'success' : 'danger' ?>"><?= htmlspecialchars($mensaje) ?></div>
+    <div class="portal-alert portal-alert--<?= ($tipoMsg === 'success') ? 'exito' : 'peligro' ?> d-flex align-items-center gap-2 mb-4" role="alert">
+        <i class="bi bi-<?= ($tipoMsg === 'success') ? 'check-circle' : 'exclamation-circle' ?>-fill"></i>
+        <span><?= htmlspecialchars($mensaje) ?></span>
+    </div>
 <?php endif; ?>
 
 <form method="get" action="/instructor/calificaciones" class="row g-3 mb-4">
     <div class="col-md-5">
-        <label class="form-label">GRUPO DE ESTUDIO</label>
-        <select name="grupo" class="form-select" required>
+        <label class="form-label text-uppercase small" style="color:#94a3b8;">Grupo de Estudio</label>
+        <select name="grupo" class="form-select" style="background-color:#0f172a;border:1px solid var(--portal-border);color:#fff;" required>
             <option value="">Seleccionar grupo</option>
             <?php foreach ($grupos as $g): ?>
                 <option value="<?= (int)$g['id_grupo'] ?>" <?= (int)$g['id_grupo'] === $idGrupo ? 'selected' : '' ?>><?= htmlspecialchars($g['curso']) ?></option>
@@ -28,8 +31,8 @@ $tipoMsg = $tipoMsg ?? null;
         </select>
     </div>
     <div class="col-md-5">
-        <label class="form-label">EVALUACIÓN / EXAMEN</label>
-        <select name="evaluacion" class="form-select" required>
+        <label class="form-label text-uppercase small" style="color:#94a3b8;">Evaluación / Examen</label>
+        <select name="evaluacion" class="form-select" style="background-color:#0f172a;border:1px solid var(--portal-border);color:#fff;" required>
             <option value="">Seleccionar evaluación</option>
             <?php foreach ($evaluaciones as $ev): ?>
                 <option value="<?= (int)$ev['id_evaluacion'] ?>" <?= (int)$ev['id_evaluacion'] === $idEvaluacion ? 'selected' : '' ?>><?= htmlspecialchars($ev['tipo']) ?><?= $ev['fecha_evaluacion'] ? ' (' . date('d/m/Y', strtotime($ev['fecha_evaluacion'])) . ')' : '' ?></option>
@@ -37,7 +40,7 @@ $tipoMsg = $tipoMsg ?? null;
         </select>
     </div>
     <div class="col-md-2 d-flex align-items-end">
-        <button class="btn btn-warning w-100">Cargar</button>
+        <button class="btn btn-warning w-100 fw-bold">Cargar</button>
     </div>
 </form>
 
@@ -54,11 +57,11 @@ $tipoMsg = $tipoMsg ?? null;
             <table class="table table-dark table-borderless align-middle mb-0">
                 <thead>
                     <tr style="border-bottom:1px solid var(--portal-border);">
-                        <th>FOTO</th>
-                        <th>ESTUDIANTE</th>
-                        <th style="width:160px;">CALIFICACIÓN (0-100)</th>
-                        <th>OBSERVACIONES / COMENTARIOS</th>
-                        <th>ESTADO AUTOMÁTICO</th>
+                        <th class="text-uppercase small" style="color:#94a3b8;">Foto</th>
+                        <th class="text-uppercase small" style="color:#94a3b8;">Estudiante</th>
+                        <th class="text-uppercase small" style="color:#94a3b8;width:160px;">Calificación (0-100)</th>
+                        <th class="text-uppercase small" style="color:#94a3b8;">Observaciones / Comentarios</th>
+                        <th class="text-uppercase small" style="color:#94a3b8;">Estado Automático</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,7 +72,13 @@ $tipoMsg = $tipoMsg ?? null;
                     ?>
                         <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
                             <td>
-                                <div class="portal-avatar" style="width:36px;height:36px;font-size:0.8rem;"><?= htmlspecialchars(mb_strtoupper(mb_substr($a['nombre'],0,1).mb_substr($a['apellido'],0,1))) ?></div>
+                                <div class="portal-avatar" style="width:36px;height:36px;font-size:0.8rem;overflow:hidden;">
+                                    <?php if (!empty($a['foto'])): ?>
+                                        <img src="<?= htmlspecialchars($a['foto']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                    <?php else: ?>
+                                        <?= htmlspecialchars(mb_strtoupper(mb_substr($a['nombre'],0,1).mb_substr($a['apellido'],0,1))) ?>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td class="fw-semibold text-white"><?= htmlspecialchars($a['nombre'].' '.$a['apellido']) ?></td>
                             <td>
@@ -91,10 +100,12 @@ $tipoMsg = $tipoMsg ?? null;
             </table>
         </div>
         <div class="d-flex justify-content-end mt-3">
-            <button class="btn btn-warning text-dark fw-bold px-4">GUARDAR CALIFICACIONES</button>
+            <button class="btn btn-warning text-dark fw-bold px-4">
+                <i class="bi bi-save me-2"></i>GUARDAR CALIFICACIONES
+            </button>
         </div>
     </div>
 </form>
 <?php elseif ($idGrupo > 0): ?>
-    <div class="portal-card p-4 text-center"><p class="mb-0">Selecciona una evaluación para registrar calificaciones.</p></div>
+    <div class="portal-card p-4 text-center"><p class="mb-0" style="color:#94a3b8;">Selecciona una evaluación para registrar calificaciones.</p></div>
 <?php endif; ?>

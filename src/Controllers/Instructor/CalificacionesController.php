@@ -31,6 +31,9 @@ class CalificacionesController
         $idEvaluacion = isset($params['evaluacion']) ? (int) $params['evaluacion'] : null;
         $this->view->setLayout('instructor/layout.php');
         $data = $this->service->calificacionesPorGrupo((int) $usuario['id_referencia'], $idGrupo, $idEvaluacion);
+        $mensaje = $_SESSION['calif_msg'] ?? null;
+        $tipoMsg = $_SESSION['calif_msg_tipo'] ?? null;
+        unset($_SESSION['calif_msg'], $_SESSION['calif_msg_tipo']);
         return $this->view->render($response, 'instructor/calificaciones/index.php', [
             'tituloPagina' => 'Ingresar Calificaciones',
             'paginaInstructor' => 'calificaciones',
@@ -40,10 +43,9 @@ class CalificacionesController
             'evaluaciones' => $data['evaluaciones'],
             'idGrupo' => $data['idGrupo'],
             'idEvaluacion' => $data['idEvaluacion'],
-            'mensaje' => $_SESSION['calif_msg'] ?? null,
-            'tipoMsg' => $_SESSION['calif_msg_tipo'] ?? null,
+            'mensaje' => $mensaje,
+            'tipoMsg' => $tipoMsg,
         ]);
-        unset($_SESSION['calif_msg'], $_SESSION['calif_msg_tipo']);
     }
 
     public function guardar(Request $request, Response $response): Response
