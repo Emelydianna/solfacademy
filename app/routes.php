@@ -118,6 +118,7 @@ return function (App $app) {
         $group->get('/perfil', [\App\Controllers\Instructor\PerfilController::class, 'index']);
         $group->post('/perfil', [\App\Controllers\Instructor\PerfilController::class, 'actualizar']);
         $group->post('/perfil/foto', [\App\Controllers\Instructor\PerfilController::class, 'subirFoto']);
+        $group->post('/perfil/password', [\App\Controllers\Instructor\PerfilController::class, 'cambiarPassword']);
         $group->get('/grupos', [GruposController::class, 'index']);
         $group->get('/grupos/{id}', [GruposController::class, 'ver']);
         $group->get('/grupos/{id}/exportar', [GruposController::class, 'exportar']);
