@@ -21,8 +21,18 @@ $tipoMsg = $tipoMsg ?? null;
         <label class="form-label">GRUPO DE ESTUDIO</label>
         <select name="grupo" class="form-select" required>
             <option value="">Seleccionar grupo</option>
-            <?php foreach ($grupos as $g): ?>
-                <option value="<?= (int)$g['id_grupo'] ?>" <?= (int)$g['id_grupo'] === $idGrupo ? 'selected' : '' ?>><?= htmlspecialchars($g['curso']) ?></option>
+            <?php foreach ($grupos as $g): 
+                $dias = $g['dias'] ?? '';
+                $nivel = $g['nivel'] ?? '';
+                $label = $g['curso'] ?? '';
+                if ($nivel && stripos($label, $nivel) === false) {
+                    $label .= ' - ' . $nivel;
+                }
+                if ($dias) {
+                    $label .= ' (' . $dias . ')';
+                }
+            ?>
+                <option value="<?= (int)$g['id_grupo'] ?>" <?= (int)$g['id_grupo'] === $idGrupo ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
             <?php endforeach; ?>
         </select>
     </div>

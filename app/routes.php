@@ -115,11 +115,19 @@ return function (App $app) {
     // ==========================================
     $app->group('/instructor', function (Group $group) {
         $group->get('/dashboard', [InstructorDashboardController::class, 'index']);
+        $group->get('/perfil', [\App\Controllers\Instructor\PerfilController::class, 'index']);
+        $group->post('/perfil', [\App\Controllers\Instructor\PerfilController::class, 'actualizar']);
+        $group->post('/perfil/foto', [\App\Controllers\Instructor\PerfilController::class, 'subirFoto']);
         $group->get('/grupos', [GruposController::class, 'index']);
         $group->get('/grupos/{id}', [GruposController::class, 'ver']);
+        $group->get('/grupos/{id}/exportar', [GruposController::class, 'exportar']);
         $group->get('/asistencias', [InstructorAsistenciasController::class, 'index']);
         $group->post('/asistencias/guardar', [InstructorAsistenciasController::class, 'guardar']);
         $group->get('/calificaciones', [InstructorCalificacionesController::class, 'index']);
+        $group->post('/calificaciones/guardar', [InstructorCalificacionesController::class, 'guardar']);
         $group->get('/reportes', [ReportesController::class, 'index']);
+        $group->get('/alumnos/{id}/perfil', [\App\Controllers\Instructor\AlumnosController::class, 'perfil']);
+        $group->get('/mensajes', [\App\Controllers\Instructor\MensajesController::class, 'index']);
     })->add(AuthMiddleware::class);
 };
+

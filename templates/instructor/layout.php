@@ -33,6 +33,7 @@
                 <?php
                 $menu = [
                     'dashboard' => ['/instructor/dashboard', 'bi-grid-1x2', 'Dashboard'],
+                    'perfil' => ['/instructor/perfil', 'bi-person', 'Mi Perfil'],
                     'grupos' => ['/instructor/grupos', 'bi-people', 'Mis Grupos'],
                     'asistencias' => ['/instructor/asistencias', 'bi-check2-square', 'Asistencias'],
                     'calificaciones' => ['/instructor/calificaciones', 'bi-clipboard-data', 'Calificaciones'],
@@ -66,3 +67,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

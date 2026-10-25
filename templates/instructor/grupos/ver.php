@@ -1,17 +1,19 @@
 <?php
 $grupo = $grupo ?? [];
 $alumnos = $alumnos ?? [];
+$grupoNombre = $grupo['curso'] ?? 'Grupo';
+$grupoDetalle = trim(($grupoNombre) . (isset($grupo['nivel']) && $grupo['nivel'] ? ' - ' . $grupo['nivel'] : ''));
 ?>
 <div class="mb-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-2">
             <li class="breadcrumb-item"><a href="/instructor/grupos" style="color:#94a3b8;">Mis Grupos</a></li>
-            <li class="breadcrumb-item active" style="color:#fff;"><?= htmlspecialchars($grupo['curso'] ?? '') ?></li>
+            <li class="breadcrumb-item active" style="color:#fff;"><?= htmlspecialchars($grupoDetalle ?: $grupoNombre) ?></li>
         </ol>
     </nav>
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="portal-title mb-0"><?= htmlspecialchars($grupo['curso'] ?? 'Grupo') ?></h1>
-        <button class="btn btn-outline-warning"><i class="bi bi-download me-1"></i>Exportar Lista</button>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h1 class="portal-title mb-0"><?= htmlspecialchars($grupoDetalle ?: $grupoNombre) ?></h1>
+        <a href="/instructor/grupos/<?= (int)($grupo['id_grupo'] ?? 0) ?>/exportar" class="btn btn-outline-warning"><i class="bi bi-download me-1"></i>Exportar Lista</a>
     </div>
 </div>
 
@@ -47,9 +49,9 @@ $alumnos = $alumnos ?? [];
                         <td class="fw-bold"><?= (int)$a['asistencia_pct'] ?>%</td>
                         <td class="fw-bold" style="color:#ffc107;"><?= number_format((float)$a['promedio'], 1) ?></td>
                         <td>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-secondary">Perfil</button>
-                                <button class="btn btn-sm btn-outline-secondary">Mensaje</button>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="/instructor/alumnos/<?= (int)$a['id_estudiante'] ?>/perfil" class="btn btn-sm btn-outline-secondary">Perfil</a>
+                                <a href="/instructor/mensajes?alumno=<?= (int)$a['id_estudiante'] ?>" class="btn btn-sm btn-outline-secondary">Mensaje</a>
                             </div>
                         </td>
                     </tr>

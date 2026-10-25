@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Instructor;
 
+use App\Application\Instructor\InstructorService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
@@ -11,10 +12,12 @@ use Slim\Views\PhpRenderer;
 class ReportesController
 {
     private PhpRenderer $view;
+    private InstructorService $service;
 
-    public function __construct(PhpRenderer $view)
+    public function __construct(PhpRenderer $view, InstructorService $service)
     {
         $this->view = $view;
+        $this->service = $service;
     }
 
     public function index(Request $request, Response $response): Response
@@ -24,9 +27,15 @@ class ReportesController
             return $response->withStatus(302)->withHeader('Location', '/');
         }
         $this->view->setLayout('instructor/layout.php');
+        $data = $this->service->reportesInstructor((int) $usuario['id_referencia']);
         return $this->view->render($response, 'instructor/reportes/index.php', [
-            'tituloPagina' => 'Reportes',
+            'tituloPagina' => 'Reportes del Instructor',
             'paginaInstructor' => 'reportes',
+            'grupos' => $data['grupos'],
+            'asistenciaPorGrupo' => $data['asistenciaPorGrupo'],
+            'distribucion' => $data['distribucion'],
+            'resumen' => $data['resumen'],
+            'evolucion' => $data['evolucion'],
         ]);
     }
 }
