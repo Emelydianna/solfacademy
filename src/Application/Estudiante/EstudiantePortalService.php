@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Estudiante;
 
+use App\Application\Formato\Dinero;
 use PDO;
 
 /**
@@ -890,7 +891,7 @@ final class EstudiantePortalService
                 'icono' => 'bi-credit-card',
                 'titulo' => $pago['concepto'],
                 'texto' => $verbo . ' ' . date('d/m', $fechaPago)
-                    . ' · $ ' . number_format((float) $pago['monto_pagado'], 2, '.', ',') . ' — ' . $pago['curso'],
+                    . ' · ' . Dinero::monto((float) $pago['monto_pagado']) . ' — ' . $pago['curso'],
             ];
         }
 

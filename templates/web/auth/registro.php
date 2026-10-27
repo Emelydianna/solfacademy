@@ -12,6 +12,7 @@
 
             <!-- Registro real: crea ESTUDIANTE + USUARIO y abre sesión (fase 2) -->
             <form method="post" action="/registro">
+                <?= \App\Application\Security\Csrf::campo() ?>
                 <?php if (!empty($errorRegistro)): ?>
                     <div class="alert alert-danger py-2 small mb-3" role="alert">
                         <i class="bi bi-exclamation-circle me-1"></i><?= htmlspecialchars($errorRegistro) ?>

@@ -72,6 +72,7 @@ $tipoMsg = $tipoMsg ?? null;
                             <td class="text-end">
                                 <?php if (in_array($r['estado'], ['Pendiente', 'Confirmada'], true)): ?>
                                     <form method="post" action="/estudiante/reservas/<?= (int)$r['id_reserva'] ?>/cancelar" style="display:inline">
+                                        <?= \App\Application\Security\Csrf::campo() ?>
                                         <input type="hidden" name="tipo" value="<?= $r['tipo'] ?>">
                                         <button class="btn btn-sm btn-outline-secondary" onclick="return confirm('¿Cancelar esta reserva?')">Cancelar</button>
                                     </form>

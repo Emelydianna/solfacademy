@@ -98,6 +98,7 @@ $puedeCrear = $hayGrupo && $totalAlumnos > 0;
 
 <?php if ($hayGrupo && $evaluaciones !== [] && $totalAlumnos > 0): ?>
 <form method="post" action="/instructor/calificaciones/guardar">
+    <?= \App\Application\Security\Csrf::campo() ?>
     <input type="hidden" name="id_grupo" value="<?= (int)$idGrupo ?>">
     <input type="hidden" name="evaluacion" value="<?= htmlspecialchars($claveActual) ?>">
     <div class="portal-card p-3 p-md-4">
@@ -175,6 +176,7 @@ $puedeCrear = $hayGrupo && $totalAlumnos > 0;
 <div class="modal fade" id="modalNuevaEvaluacion" tabindex="-1" aria-labelledby="modalNuevaEvaluacionLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form method="post" action="/instructor/calificaciones/crear" class="modal-content" style="background:#0f172a;border:1px solid var(--portal-border);color:#fff;">
+            <?= \App\Application\Security\Csrf::campo() ?>
             <div class="modal-header" style="border-bottom:1px solid var(--portal-border);">
                 <h2 class="modal-title fs-5" id="modalNuevaEvaluacionLabel">Nueva evaluación</h2>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>

@@ -12,6 +12,7 @@
 
             <!-- Autenticación real contra la tabla usuario (fase 2) -->
             <form method="post" action="/login">
+                <?= \App\Application\Security\Csrf::campo() ?>
                 <?php if (!empty($errorLogin)): ?>
                     <div class="alert alert-danger py-2 small mb-3" role="alert">
                         <i class="bi bi-exclamation-circle me-1"></i><?= htmlspecialchars($errorLogin) ?>

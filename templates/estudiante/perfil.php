@@ -79,6 +79,7 @@ $historial = $perfil['historial_instrumentos'] ?? [];
                 </div>
 
                 <form id="form-perfil-principal" method="post" action="/estudiante/perfil" novalidate>
+                    <?= \App\Application\Security\Csrf::campo() ?>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" for="nombre">Nombre</label>
@@ -157,6 +158,7 @@ $historial = $perfil['historial_instrumentos'] ?? [];
                 </div>
 
                 <form method="post" action="/estudiante/perfil/password" novalidate>
+                    <?= \App\Application\Security\Csrf::campo() ?>
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="password_actual">Contraseña actual</label>
@@ -201,6 +203,7 @@ $historial = $perfil['historial_instrumentos'] ?? [];
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content portal-modal">
             <form method="post" action="/estudiante/perfil/foto" enctype="multipart/form-data">
+                <?= \App\Application\Security\Csrf::campo() ?>
                 <div class="modal-header border-0">
                     <h5 class="modal-title">Cambiar Foto de Perfil</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -223,6 +226,7 @@ $historial = $perfil['historial_instrumentos'] ?? [];
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content portal-modal">
             <form method="post" action="/estudiante/perfil/preferencias">
+                <?= \App\Application\Security\Csrf::campo() ?>
                 <div class="modal-header border-0">
                     <h5 class="modal-title">Preferencias Musicales</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

@@ -180,6 +180,12 @@ final class AuthService
             $idReferencia = (int) ($fila['id_estudiante'] ?? 0);
         }
 
+        // El rol admin no tiene fila propia (ni estudiante ni instructor):
+        // sin este nombre, el sidebar y el saludo salían vacíos.
+        if ($rol === 'admin' && $nombre === '') {
+            $nombre = 'Administrador';
+        }
+
         return [
             'id' => (int) $fila['id_usuario'],
             'nombre' => $nombre,

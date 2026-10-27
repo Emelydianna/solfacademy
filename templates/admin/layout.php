@@ -10,8 +10,21 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Estilos del portal (design system dark) -->
     <link href="/css/portal.css" rel="stylesheet">
+    <!-- Chart.js: en el <head> para que los scripts en línea del contenido lo encuentren -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="portal-body">
+
+    <?php
+    // El rol admin no tiene nombre propio en la BD: si la sesión quedó con
+    // el nombre vacío, se muestra "Administrador" en vez de un hueco.
+    $usuarioSesion = $usuarioSesion ?? ($usuario ?? []);
+    $nombreAdmin = trim((string) ($usuarioSesion['nombre'] ?? ''));
+    if ($nombreAdmin === '') {
+        $nombreAdmin = 'Administrador';
+    }
+    $inicialAdmin = mb_strtoupper(mb_substr($nombreAdmin, 0, 1));
+    ?>
 
     <div class="d-flex flex-lg-row align-items-stretch">
 
@@ -31,28 +44,46 @@
             </a>
 
             <!-- Perfil -->
-            <?php $usuarioSesion = $usuarioSesion ?? ($usuario ?? []); ?>
             <div class="portal-profile">
                 <div class="portal-avatar">
-                    <?= htmlspecialchars(mb_strtoupper(mb_substr(trim((string) ($usuarioSesion['nombre'] ?? 'A')), 0, 1))) ?>
+                    <?= htmlspecialchars($inicialAdmin) ?>
                 </div>
-                <div class="portal-profile-name"><?= htmlspecialchars($usuarioSesion['nombre'] ?? 'Administración') ?></div>
-                <span class="portal-profile-badge" style="background:#38bdf8;color:#000;">ADMIN</span>
+                <div class="portal-profile-name"><?= htmlspecialchars($nombreAdmin) ?></div>
+                <span class="portal-profile-badge" style="background:#ffc107;color:#000;">ADMINISTRADOR</span>
             </div>
 
             <!-- Menú -->
             <nav class="portal-menu d-flex flex-column">
                 <?php
-                // Se irá ampliando con los módulos de la fase de admin
+                // Solo el dashboard está construido; el resto de secciones se
+                // irán abriendo en la fase de admin.
                 $menuPortal = [
-                    'dashboard' => ['/admin/dashboard', 'bi-grid-1x2', 'Dashboard'],
+                    ['dashboard',    '/admin/dashboard',      'bi-grid-1x2',           'Dashboard',       true],
+                    ['cursos',       '#',                     'bi-collection-play',    'Cursos',          false],
+                    ['estudiantes',  '#',                     'bi-people',             'Estudiantes',     false],
+                    ['instructores', '#',                     'bi-person-workspace',   'Instructores',    false],
+                    ['categorias',   '#',                     'bi-bookmark-star',      'Categorías',      false],
+                    ['aulas',        '#',                     'bi-door-open',          'Aulas',           false],
+                    ['grupos',       '#',                     'bi-diagram-3',          'Grupos',          false],
+                    ['requisitos',   '#',                     'bi-clipboard-check',    'Requisitos',      false],
+                    ['pagos',        '#',                     'bi-credit-card',        'Pagos',           false],
+                    ['usuarios',     '#',                     'bi-person-badge',       'Usuarios',        false],
+                    ['reportes',     '#',                     'bi-file-earmark-bar-graph', 'Reportes',    false],
+                    ['config',       '#',                     'bi-sliders',            'Configuración',   false],
                 ];
                 $paginaActiva = $paginaAdmin ?? '';
                 ?>
-                <?php foreach ($menuPortal as $clave => [$url, $icono, $texto]): ?>
-                    <a href="<?= $url ?>" class="portal-menu-link <?= $paginaActiva === $clave ? 'active' : '' ?>">
-                        <i class="bi <?= $icono ?>"></i><?= $texto ?>
-                    </a>
+                <?php foreach ($menuPortal as [$clave, $url, $icono, $texto, $disponible]): ?>
+                    <?php if ($disponible): ?>
+                        <a href="<?= $url ?>" class="portal-menu-link <?= $paginaActiva === $clave ? 'active' : '' ?>">
+                            <i class="bi <?= $icono ?>"></i><?= $texto ?>
+                        </a>
+                    <?php else: ?>
+                        <a href="#" class="portal-menu-link" style="opacity:.5;" title="Sección próxima a habilitar">
+                            <i class="bi <?= $icono ?>"></i><?= $texto ?>
+                            <i class="bi bi-lock ms-auto" style="font-size:.8rem;"></i>
+                        </a>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </nav>
 
@@ -70,11 +101,11 @@
                     <i class="bi bi-list fs-4"></i>
                 </button>
                 <div class="ms-auto portal-topbar-user">
-                    <span class="d-none d-md-inline small"><?= htmlspecialchars($usuarioSesion['nombre'] ?? '') ?></span>
+                    <span class="d-none d-md-inline small"><?= htmlspecialchars($nombreAdmin) ?></span>
                     <span class="portal-topbar-avatar d-none d-md-flex">
-                        <?= htmlspecialchars(mb_strtoupper(mb_substr(trim((string) ($usuarioSesion['nombre'] ?? 'A')), 0, 1))) ?>
+                        <?= htmlspecialchars($inicialAdmin) ?>
                     </span>
-                    <span class="portal-profile-badge" style="background:#38bdf8;color:#000;">ADMIN</span>
+                    <span class="portal-profile-badge" style="background:#ffc107;color:#000;">ADMINISTRADOR</span>
                 </div>
             </header>
 
@@ -87,7 +118,7 @@
             <footer class="portal-footer">
                 <span>© 2026 SolfAcademy Academia de Música. Panel de Administración.</span>
                 <div class="d-flex gap-3">
-                    <a href="#">Soporte Académico</a>
+                    <a href="#">Soporte Técnico</a>
                     <a href="#">Reglamento Interno</a>
                 </div>
             </footer>

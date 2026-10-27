@@ -20,7 +20,7 @@ $resumen = $datos['resumen'] ?? [];
 $saldos  = $datos['saldos'] ?? [];
 $historial = $datos['historial'] ?? [];
 
-$dolares = static fn (float $n): string => '$ ' . number_format($n, 2, '.', ',');
+$dolares = static fn (float $n): string => \App\Application\Formato\Dinero::monto($n);
 
 $claseEstado = [
     'Pagado'   => 'portal-pill--verde',

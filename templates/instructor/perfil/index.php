@@ -78,6 +78,7 @@ $fotoUrl = $perfil['foto'] ?? ($fotoPerfilSidebar ?? '');
                 </div>
 
                 <form id="form-perfil-principal" method="post" action="/instructor/perfil" novalidate>
+                    <?= \App\Application\Security\Csrf::campo() ?>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" for="nombre">Nombre</label>
@@ -125,6 +126,7 @@ $fotoUrl = $perfil['foto'] ?? ($fotoPerfilSidebar ?? '');
                 </div>
 
                 <form method="post" action="/instructor/perfil/password" novalidate>
+                    <?= \App\Application\Security\Csrf::campo() ?>
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="password_actual">Contraseña actual</label>
@@ -169,6 +171,7 @@ $fotoUrl = $perfil['foto'] ?? ($fotoPerfilSidebar ?? '');
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content portal-modal">
             <form method="post" action="/instructor/perfil/foto" enctype="multipart/form-data">
+                <?= \App\Application\Security\Csrf::campo() ?>
                 <div class="modal-header border-0">
                     <h5 class="modal-title">Cambiar Foto de Perfil</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

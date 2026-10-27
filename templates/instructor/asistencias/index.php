@@ -60,6 +60,7 @@ $esHoy = $fecha === $hoy;
 
 <?php if ($idGrupo > 0 && count($alumnos) > 0): ?>
 <form method="post" action="/instructor/asistencias/guardar">
+    <?= \App\Application\Security\Csrf::campo() ?>
     <input type="hidden" name="id_grupo" value="<?= $idGrupo ?>">
     <input type="hidden" name="fecha" value="<?= htmlspecialchars($fecha) ?>">
     <div class="portal-card p-3 p-md-4">

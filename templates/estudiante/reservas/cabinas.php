@@ -17,6 +17,7 @@ $tipoMsg = $tipoMsg ?? null;
 
 <div class="portal-card p-3 p-md-4">
     <form method="post" action="/estudiante/reservas/cabinas">
+        <?= \App\Application\Security\Csrf::campo() ?>
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label portal-label">Cabina</label>
