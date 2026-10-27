@@ -168,8 +168,11 @@ final class ReservaService
         if ($idInstructor === 0) {
             return ['ok' => false, 'msg' => 'Grupo inválido.'];
         }
-        $stmt = $this->pdo->prepare('SELECT id_instructor FROM instructor WHERE id_instructor = :id FOR UPDATE');
+        $stmt = $this->pdo->prepare('SELECT activo FROM instructor WHERE id_instructor = :id FOR UPDATE');
         $stmt->execute(['id' => $idInstructor]);
+        if ((int) $stmt->fetchColumn() !== 1) {
+            return ['ok' => false, 'msg' => 'El instructor no está activo.'];
+        }
         $stmt = $this->pdo->prepare('SELECT id_instructor, estado FROM grupo WHERE id_grupo = :id FOR UPDATE');
         $stmt->execute(['id' => $idGrupo]);
         $grupoActual = $stmt->fetch();

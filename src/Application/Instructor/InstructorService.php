@@ -362,25 +362,7 @@ final class InstructorService
 
     public function actualizarPerfilInstructor(int $idInstructor, array $datos): void
     {
-        $sql = "UPDATE instructor SET nombre = :nombre, apellido = :apellido, email = :email, telefono = :telefono WHERE id_instructor = :id";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            'nombre' => trim((string) ($datos['nombre'] ?? '')),
-            'apellido' => trim((string) ($datos['apellido'] ?? '')),
-            'email' => trim((string) ($datos['email'] ?? '')) ?: null,
-            'telefono' => trim((string) ($datos['telefono'] ?? '')) ?: null,
-            'id' => $idInstructor,
-        ]);
-
-        if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['usuario'])) {
-            $nombre = trim(($datos['nombre'] ?? '') . ' ' . ($datos['apellido'] ?? ''));
-            if ($nombre !== '') {
-                $_SESSION['usuario']['nombre'] = $nombre;
-            }
-            if (isset($datos['email'])) {
-                $_SESSION['usuario']['email'] = trim((string) $datos['email']);
-            }
-        }
+        (new InstructorContactoService($this->pdo))->actualizar($idInstructor, $datos);
     }
 
     /**

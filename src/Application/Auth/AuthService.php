@@ -30,7 +30,7 @@ final class AuthService
         $sql = 'SELECT u.id_usuario, u.email_usuario, u.password_hash, u.rol, u.activo,
                        u.id_estudiante, u.id_instructor, u.version_sesion, e.estado AS estudiante_estado,
                        e.nombre AS estudiante_nombre, e.apellido AS estudiante_apellido,
-                       i.nombre AS instructor_nombre, i.apellido AS instructor_apellido
+                       i.nombre AS instructor_nombre, i.apellido AS instructor_apellido, i.activo AS instructor_activo
                 FROM usuario u
                 LEFT JOIN estudiante e ON e.id_estudiante = u.id_estudiante
                 LEFT JOIN instructor i ON i.id_instructor = u.id_instructor
@@ -45,6 +45,7 @@ final class AuthService
             $usuario === false
             || !(int) $usuario['activo']
             || ($usuario['rol'] === 'estudiante' && $usuario['estudiante_estado'] !== 'Activo')
+            || ($usuario['rol'] === 'instructor' && (int) $usuario['instructor_activo'] !== 1)
             || !password_verify($password, $usuario['password_hash'])
         ) {
             return null;

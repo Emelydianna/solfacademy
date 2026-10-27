@@ -26,7 +26,7 @@ final class GruposService
             'cursos' => $this->pdo->query('SELECT id_curso, id_instrumento, nombre, activo, disponible, max_grupos FROM curso ORDER BY nombre')->fetchAll(),
             'instructores' => $this->pdo->query('SELECT id_instructor, nombre, apellido, activo FROM instructor ORDER BY nombre, apellido')->fetchAll(),
             'especialidades' => $this->pdo->query('SELECT id_instructor, id_instrumento FROM instructor_instrumento')->fetchAll(),
-            'aulas' => $this->pdo->query('SELECT id_aula, nombre, capacidad, activa FROM aula ORDER BY nombre')->fetchAll(),
+            'aulas' => $this->pdo->query('SELECT id_aula, nombre, capacidad, activa, tipo_inactividad FROM aula ORDER BY nombre')->fetchAll(),
         ];
     }
 

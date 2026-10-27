@@ -73,6 +73,31 @@ document.addEventListener('DOMContentLoaded', function () {
         alternarCuenta();
     }
 
+    const especialidades = document.querySelector('[data-especialidades]');
+    const agregarEspecialidad = document.querySelector('[data-agregar-especialidad]');
+    if (especialidades && agregarEspecialidad) {
+        const renumerarEspecialidades = function () {
+            const filas = especialidades.querySelectorAll('[data-especialidad]');
+            filas.forEach(function (fila, indice) {
+                fila.querySelectorAll('[data-especialidad-campo]').forEach(function (campo) { campo.name = 'especialidades[' + indice + '][' + campo.dataset.especialidadCampo + ']'; });
+                fila.querySelector('[data-quitar-especialidad]').disabled = filas.length === 1;
+            });
+            agregarEspecialidad.disabled = filas.length >= 50;
+        };
+        agregarEspecialidad.addEventListener('click', function () {
+            especialidades.appendChild(document.getElementById('plantilla-especialidad').content.cloneNode(true));
+            renumerarEspecialidades();
+        });
+        especialidades.addEventListener('click', function (evento) {
+            const boton = evento.target.closest('[data-quitar-especialidad]');
+            if (boton && especialidades.querySelectorAll('[data-especialidad]').length > 1) {
+                boton.closest('[data-especialidad]').remove();
+                renumerarEspecialidades();
+            }
+        });
+        renumerarEspecialidades();
+    }
+
     const modal = document.getElementById('confirmacion-academica');
     if (!modal) return;
     let formularioPendiente = null;

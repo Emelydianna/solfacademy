@@ -1,6 +1,6 @@
 # SolfAcademy
 
-Plataforma de academia de música construida con **Slim 4** + **PHP-DI** y **MySQL/MariaDB**. Incluye sitio público, portales de estudiante e instructor y administración de categorías, instrumentos, cursos, grupos y estudiantes. El catálogo y el detalle de cursos ya leen datos reales de la base de datos.
+Plataforma de academia de música construida con **Slim 4** + **PHP-DI** y **MySQL/MariaDB**. Incluye sitio público, portales de estudiante e instructor y administración de categorías, instrumentos, cursos, grupos, estudiantes, instructores y aulas. El catálogo, los cursos y los perfiles públicos de instructores leen datos reales de la base de datos.
 
 ## Requisitos
 
@@ -121,7 +121,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 
 El script es re-importable: borra y recrea las tablas cada vez que se ejecuta.
 
-### Actualizar una instalación existente: Grupos y Estudiantes
+### Actualizar una instalación existente: gestión administrativa
 
 **No reimportes `database/solfacademy.sql` si tienes datos que conservar.** Ejecuta:
 
@@ -140,6 +140,12 @@ No borra registros, no cambia contraseñas ni infiere suspensiones a partir de
 cuentas que estaban deshabilitadas. Las instalaciones nuevas ya incluyen los
 campos y triggers en el SQL base.
 
+La misma migración añade `aula.tipo_inactividad` (`General` / `Mantenimiento`).
+Se conserva `aula.activa` como indicador de habilitación: si está deshabilitada,
+el nuevo campo distingue mantenimiento de otra inactividad. Las aulas existentes
+reciben `General`; no se presume que estén en mantenimiento. Vuelve a ejecutar
+el comando al actualizar a los módulos de Instructores y Aulas.
+
 ### Evitar errores comunes
 
 - **"Unknown database solfacademy"** → aún no importaste `database/solfacademy.sql`.
@@ -156,13 +162,14 @@ campos y triggers en el SQL base.
 | GET | `/cursos` | Catálogo con filtros (instrumento, nivel, horario), búsqueda y orden |
 | GET | `/cursos/{id}` | Detalle de curso |
 | GET | `/instructores/{id}` | Perfil de instructor |
+| GET | `/instructores/{id}/foto` | Foto pública solo de un instructor activo |
 | GET / POST | `/login`, `/registro` | Autenticación y alta de estudiantes |
 | GET | `/logout` | Cierra la sesión |
 
 ### Roles y portales
 
 La tabla `usuario` da a cada cuenta un `rol` (`estudiante`, `instructor` o `admin`). Al iniciar sesión, `AuthService` normaliza el usuario en la sesión como
-`['id', 'nombre', 'email', 'rol', 'id_referencia']`, donde **`id_referencia` es el `id_estudiante` o el `id_instructor`** según el rol: es la llave que usa
+`['id', 'nombre', 'email', 'rol', 'id_referencia', 'version_sesion']`, donde **`id_referencia` es el `id_estudiante` o el `id_instructor`** según el rol: es la llave que usa
 cada portal para acotar sus consultas.
 
 Cada grupo de rutas está protegido por **`App\Application\Middleware\RequireRole`**:
@@ -229,6 +236,16 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET / POST | `/admin/estudiantes/{id}` | Ficha académica / guardar datos personales |
 | GET | `/admin/estudiantes/{id}/editar` | Formulario de edición |
 | POST | `/admin/estudiantes/{id}/estado` | Suspender/liberar cupos o reactivar |
+| GET / POST | `/admin/instructores` | Listado filtrado / crear instructor, especialidades y cuenta opcional |
+| GET | `/admin/instructores/nuevo` | Formulario de alta |
+| GET / POST | `/admin/instructores/{id}` | Ficha, carga e historial / guardar edición |
+| GET | `/admin/instructores/{id}/editar` | Formulario de edición |
+| POST | `/admin/instructores/{id}/estado` | Suspender/reactivar sin cancelar matrículas |
+| GET / POST | `/admin/aulas` | Listado con disponibilidad calculada / crear aula |
+| GET | `/admin/aulas/nuevo` | Formulario de alta |
+| GET / POST | `/admin/aulas/{id}` | Agenda e historial / guardar datos y capacidad |
+| GET | `/admin/aulas/{id}/editar` | Formulario de edición |
+| POST | `/admin/aulas/{id}/estado` | Habilitar, deshabilitar o poner en mantenimiento |
 
 La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
 cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
@@ -258,8 +275,8 @@ reservas incompatibles simultáneas. Se guarda grupo y horarios en transacción.
 No se cambia el curso de un grupo con matrículas; la reasignación de instructor
 requiere confirmación y resolver primero sus clases extras futuras.
 No se borran grupos. Para cerrar uno deben resolverse sus matrículas vigentes.
-Las aulas y los instructores se seleccionan de los registros ya existentes;
-sus CRUD completos aún están pendientes.
+Las aulas y los instructores se administran desde sus propios módulos y se
+seleccionan desde los registros reales. El selector señala aulas en mantenimiento.
 
 #### Estudiantes y suspensión
 
@@ -287,6 +304,44 @@ El middleware comprueba en cada petición autenticada el estado de la cuenta,
 el estado académico y una versión de sesión. Una sesión anterior a la suspensión
 no vuelve a funcionar al reactivar: el estudiante debe iniciar sesión de nuevo.
 
+#### Instructores
+
+El directorio permite buscar por nombre, contacto o especialidad, filtrar por
+instrumento y estado y paginar sin duplicar instructores. Las especialidades
+son instrumentos reales, con nivel de dominio y experiencia por instrumento.
+La ficha muestra grupos abiertos, carga semanal configurada, historial y
+clases extras futuras. La columna Calificación indica **Sin valoraciones**:
+no existen reseñas docentes y no se confunden con las notas de sus alumnos.
+
+El alta tiene cuenta opcional de rol fijo `instructor`. Ficha, especialidades,
+cuenta y foto se guardan en transacción, conservando la sesión del admin. El
+correo se sincroniza también al editar desde el portal del instructor. No se
+puede quitar una especialidad requerida por sus grupos activos o planeados.
+No se borran instructores: suspender exige resolver antes grupos abiertos y
+clases extras futuras, bloquea el acceso e invalida sesiones, sin cancelar
+matrículas de alumnos. Reactivar restaura solo el acceso previamente habilitado.
+
+Las fotos se validan por contenido y MIME (JPEG/PNG/GIF/WebP, hasta 2 MB y 8000 px
+por lado), se guardan con nombres aleatorios en `var/uploads/perfiles` y solo se
+retira la anterior después de guardar correctamente. El endpoint público
+`/instructores/{id}/foto` comprueba que el instructor esté activo y que el archivo
+pertenezca a su prefijo; no abre la ruta privada de fotos de estudiantes.
+
+#### Aulas
+
+Se administran nombre, ubicación, capacidad (1–255) y recursos, con búsqueda y
+paginación. El ID corresponde a `id_aula`, no a una numeración ficticia. Los
+recursos se presentan como etiquetas y el horario de uso muestra las franjas
+de grupos reales, con su agenda y fechas; no representa horarios de apertura.
+
+**Disponible ahora** y **Ocupada según agenda** se calculan al cargar/actualizar
+usando día, hora y fechas de grupos activos o planeados. Se muestra la hora y
+zona de consulta. No son mediciones de presencia ni un estado editable.
+La habilitación se cambia con confirmación desde la ficha: Activa, Inactiva o
+Mantenimiento. No se deshabilita un aula con grupos abiertos ni se reduce su
+capacidad por debajo de la configurada en ellos. Los bloqueos se comparten con
+la gestión de grupos y se conserva el historial; no se borran aulas.
+
 ## Estructura del proyecto
 
 ```
@@ -296,11 +351,13 @@ app/dependencies.php       → definiciones del contenedor (logger, PDO)
 app/routes.php             → rutas de la aplicación
 database/solfacademy.sql   → esquema + datos de prueba
 scripts/comprobar-db.php   → verificación de conexión
+scripts/migrar-gestion.php → migración incremental sin reimportar los datos
 scripts/generar-comprobantes.php → genera los PDF de /public/comprobantes
 src/Application/Auth/      → AuthService (login, registro, sesión)
 src/Application/Middleware/ → RequireRole, AuthMiddleware, sesión y vistas
 src/Application/Estudiante/→ lógica del portal del estudiante
 src/Application/Instructor/→ InstructorService (grupos, notas, asistencia, fichas)
+src/Application/Perfil/    → almacenamiento y validación de fotos
 src/Application/Admin/     → dashboard y gestión académica
 src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
@@ -319,10 +376,11 @@ public/js/admin-academica.js → selector categoría/instrumento y confirmacione
 public/comprobantes/       → PDF de comprobante de pago (generados)
 ```
 
-La homepage usa categorías reales; los bloques de instructores y testimonios,
-así como el perfil público del instructor, conservan los ejemplos de
-`src/Data/SampleData.php` hasta abordar su módulo. El catálogo, el detalle del
-curso y los portales autenticados usan PDO.
+La homepage usa categorías e instructores reales. Solo el bloque de testimonios
+conserva los ejemplos de `src/Data/SampleData.php`. Los perfiles de instructores
+no inventan biografías, puntuaciones ni reseñas; muestran especialidades,
+experiencia y cursos publicados desde PDO. El catálogo, el detalle del curso
+y los portales autenticados también usan PDO.
 
 ## Licencia
 

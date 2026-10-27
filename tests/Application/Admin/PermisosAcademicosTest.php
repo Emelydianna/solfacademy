@@ -34,7 +34,7 @@ final class PermisosAcademicosTest extends TestCase
     public static function accesos(): array
     {
         $casos = [];
-        foreach (['categorias', 'instrumentos', 'cursos', 'grupos', 'estudiantes'] as $seccion) {
+        foreach (['categorias', 'instrumentos', 'cursos', 'grupos', 'estudiantes', 'instructores', 'aulas'] as $seccion) {
             foreach (['', 'estudiante', 'instructor'] as $rol) {
                 $casos[$seccion . '-' . ($rol ?: 'anonimo')] = [$seccion, $rol];
             }
@@ -60,6 +60,8 @@ final class PermisosAcademicosTest extends TestCase
             '/admin/categorias/1', '/admin/instrumentos/1', '/admin/cursos/1',
             '/admin/categorias/1/eliminar', '/admin/instrumentos/1/eliminar', '/admin/cursos/1/estado',
             '/admin/grupos', '/admin/grupos/1', '/admin/estudiantes', '/admin/estudiantes/1', '/admin/estudiantes/1/estado',
+            '/admin/instructores', '/admin/instructores/1', '/admin/instructores/1/estado',
+            '/admin/aulas', '/admin/aulas/1', '/admin/aulas/1/estado',
         ]);
     }
 

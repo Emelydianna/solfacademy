@@ -183,6 +183,7 @@ CREATE TABLE aula (
     recursos    VARCHAR(255) NULL,
     ubicacion   VARCHAR(150) NULL,
     activa      TINYINT(1) NOT NULL DEFAULT 1,
+    tipo_inactividad ENUM('General','Mantenimiento') NOT NULL DEFAULT 'General',
     PRIMARY KEY (id_aula)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

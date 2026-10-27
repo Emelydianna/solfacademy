@@ -21,6 +21,9 @@ final class MigracionGestion
                 'version_sesion' => 'INT UNSIGNED NOT NULL DEFAULT 0',
                 'reactivar_tras_suspension' => 'TINYINT(1) NOT NULL DEFAULT 0',
             ],
+            'aula' => [
+                'tipo_inactividad' => "ENUM('General','Mantenimiento') NOT NULL DEFAULT 'General'",
+            ],
         ];
         foreach ($definiciones as $tabla => $campos) {
             $existentes = $pdo->query("SHOW COLUMNS FROM $tabla")->fetchAll(PDO::FETCH_COLUMN);

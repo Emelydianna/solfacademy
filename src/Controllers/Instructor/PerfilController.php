@@ -6,7 +6,7 @@ namespace App\Controllers\Instructor;
 
 use App\Application\Auth\AuthService;
 use App\Application\Instructor\InstructorService;
-use App\Application\Perfil\FotoPerfilStorage;
+use App\Application\Perfil\InstructorFotoService;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -19,12 +19,14 @@ class PerfilController
     private PhpRenderer $view;
     private InstructorService $service;
     private AuthService $auth;
+    private InstructorFotoService $fotos;
 
-    public function __construct(PhpRenderer $view, InstructorService $service, AuthService $auth)
+    public function __construct(PhpRenderer $view, InstructorService $service, AuthService $auth, InstructorFotoService $fotos)
     {
         $this->view = $view;
         $this->service = $service;
         $this->auth = $auth;
+        $this->fotos = $fotos;
     }
 
     public function index(Request $request, Response $response): Response
@@ -76,6 +78,8 @@ class PerfilController
                 } else {
                     throw $e;
                 }
+            } catch (\DomainException $e) {
+                $errores['email'] = $e->getMessage();
             } catch (\Throwable $e) {
                 $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'No se pudo actualizar el perfil.'];
                 return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
@@ -151,49 +155,18 @@ class PerfilController
         $usuario = $_SESSION['usuario'] ?? [];
         $idInstructor = (int) $usuario['id_referencia'];
         $uploadedFiles = $request->getUploadedFiles();
-        if (empty($uploadedFiles['foto'])) {
+        if (!isset($uploadedFiles['foto']) || !$uploadedFiles['foto'] instanceof \Psr\Http\Message\UploadedFileInterface) {
             $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'Selecciona una imagen para subir.'];
             return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
         }
-        $file = $uploadedFiles['foto'];
-        if ($file->getError() !== UPLOAD_ERR_OK) {
-            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'Error al subir la imagen.'];
-            return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
-        }
-        $size = $file->getSize();
-        if ($size > 2 * 1024 * 1024) {
-            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'La imagen no debe superar 2MB.'];
-            return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
-        }
-        $clientName = $file->getClientFilename();
-        $ext = strtolower(pathinfo($clientName ?? '', PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
-            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'Formato de imagen no válido.'];
-            return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
-        }
-        $nombreArchivo = 'perfil_instructor_' . $idInstructor . '_' . time() . '.' . $ext;
-        $directorio = dirname(__DIR__, 3) . '/var/uploads/perfiles';
-        if (!is_dir($directorio)) {
-            @mkdir($directorio, 0755, true);
-        }
-        $rutaCompleta = $directorio . '/' . $nombreArchivo;
         try {
-            $file->moveTo($rutaCompleta);
-        } catch (\Throwable $e) {
-            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'No se pudo guardar la imagen.'];
+            $this->fotos->guardar($idInstructor, $uploadedFiles['foto']);
+        } catch (\DomainException $e) {
+            $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => $e->getMessage()];
             return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
-        }
-        $rutaPublica = '/perfil/foto/' . $nombreArchivo;
-        $fotoAnterior = $this->service->fotoInstructor($idInstructor);
-        try {
-            $this->service->actualizarFotoInstructor($idInstructor, $rutaPublica);
         } catch (\Throwable $e) {
             $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'No se pudo guardar la foto en el perfil.'];
             return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
-        }
-        // La nueva ya está en la BD: se retira la anterior del disco
-        if ($fotoAnterior !== $rutaPublica) {
-            FotoPerfilStorage::borrarAnterior($fotoAnterior, FotoPerfilStorage::prefijoInstructor($idInstructor));
         }
         $_SESSION[self::FLASH] = ['tipo' => 'exito', 'mensaje' => 'Foto de perfil actualizada correctamente.'];
         return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
@@ -209,7 +182,7 @@ class PerfilController
     private function leerValores(Request $request): array
     {
         $datos = (array) $request->getParsedBody();
-        $limpiar = static fn (string $clave): string => trim((string) ($datos[$clave] ?? ''));
+        $limpiar = static fn (string $clave): string => \App\Application\Admin\GestionAcademicaService::texto($datos, $clave);
 
         return [
             'nombre' => $limpiar('nombre'),

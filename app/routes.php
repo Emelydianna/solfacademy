@@ -43,6 +43,7 @@ return function (App $app) {
 
     // Perfil de instructor (pantalla 4 del prototipo)
     $app->get('/instructores/{id}', [InstructorProfileController::class, 'profile']);
+    $app->get('/instructores/{id:[1-9][0-9]*}/foto', [InstructorProfileController::class, 'foto']);
 
     // Login y registro (pantalla 5 del prototipo + autenticación real)
     $app->get('/login', [AuthController::class, 'loginForm']);
@@ -137,6 +138,20 @@ return function (App $app) {
     // ==========================================
     $app->group('/admin', function (Group $group) {
         $group->get('/dashboard', [\App\Controllers\Admin\DashboardController::class, 'index']);
+        $group->get('/instructores', [\App\Controllers\Admin\InstructoresController::class, 'index']);
+        $group->get('/instructores/nuevo', [\App\Controllers\Admin\InstructoresController::class, 'formulario']);
+        $group->post('/instructores', [\App\Controllers\Admin\InstructoresController::class, 'guardar']);
+        $group->get('/instructores/{id:[1-9][0-9]*}', [\App\Controllers\Admin\InstructoresController::class, 'ver']);
+        $group->get('/instructores/{id:[1-9][0-9]*}/editar', [\App\Controllers\Admin\InstructoresController::class, 'formulario']);
+        $group->post('/instructores/{id:[1-9][0-9]*}', [\App\Controllers\Admin\InstructoresController::class, 'guardar']);
+        $group->post('/instructores/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\InstructoresController::class, 'estado']);
+        $group->get('/aulas', [\App\Controllers\Admin\AulasController::class, 'index']);
+        $group->get('/aulas/nuevo', [\App\Controllers\Admin\AulasController::class, 'formulario']);
+        $group->post('/aulas', [\App\Controllers\Admin\AulasController::class, 'guardar']);
+        $group->get('/aulas/{id:[1-9][0-9]*}', [\App\Controllers\Admin\AulasController::class, 'ver']);
+        $group->get('/aulas/{id:[1-9][0-9]*}/editar', [\App\Controllers\Admin\AulasController::class, 'formulario']);
+        $group->post('/aulas/{id:[1-9][0-9]*}', [\App\Controllers\Admin\AulasController::class, 'guardar']);
+        $group->post('/aulas/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\AulasController::class, 'estado']);
         $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
         $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
         $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);

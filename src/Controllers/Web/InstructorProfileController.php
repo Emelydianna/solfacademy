@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers\Web;
 
-use App\Data\SampleData;
+use App\Application\Catalogo\InstructoresPublicosService;
+use App\Application\Perfil\FotoInstructorStorage;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
@@ -12,23 +13,25 @@ use Slim\Views\PhpRenderer;
 /**
  * Pantalla 4 del prototipo: Perfil de Instructor (GET /instructores/{id}).
  *
- * Muestra biografía, especialidades, experiencia, valoración y los cursos
- * que imparte. Cuando haya BD se sustituye SampleData::instructorDetalle()
- * por consultas sobre INSTRUCTOR, INSTRUCTOR-INSTRUMENTO y CURSO.
+ * Muestra especialidades, experiencia y cursos reales de instructores activos.
  */
 class InstructorProfileController
 {
     private PhpRenderer $view;
+    private InstructoresPublicosService $service;
+    private FotoInstructorStorage $fotos;
 
-    public function __construct(PhpRenderer $view)
+    public function __construct(PhpRenderer $view, InstructoresPublicosService $service, FotoInstructorStorage $fotos)
     {
         $this->view = $view;
+        $this->service = $service;
+        $this->fotos = $fotos;
     }
 
     public function profile(Request $request, Response $response, array $args): Response
     {
         $id = (int) ($args['id'] ?? 0);
-        $instructor = SampleData::instructorDetalle($id);
+        $instructor = $this->service->detalle($id);
 
         $this->view->setLayout('web/layout.php');
 
@@ -46,5 +49,24 @@ class InstructorProfileController
             'paginaActiva' => 'instructores',
             'instructor' => $instructor,
         ]);
+    }
+
+    public function foto(Request $request, Response $response, array $args): Response
+    {
+        $id = (int) $args['id'];
+        $ruta = $this->fotos->ruta($this->service->foto($id), $id);
+        if ($ruta === null) {
+            return $response->withStatus(404)->withHeader('Cache-Control', 'no-store');
+        }
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($ruta);
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
+            return $response->withStatus(404)->withHeader('Cache-Control', 'no-store');
+        }
+        $archivo = @fopen($ruta, 'rb');
+        if ($archivo === false) {
+            return $response->withStatus(404);
+        }
+        return $response->withHeader('Content-Type', $mime)->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Cache-Control', 'no-store')->withBody(new \Slim\Psr7\Stream($archivo));
     }
 }

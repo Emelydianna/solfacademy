@@ -66,19 +66,11 @@
                     <div class="card instructor-card h-100 text-center">
                         <a href="/instructores/<?= (int) $instructor['id_instructor'] ?>" class="instructor-card-link">
                             <div class="card-body p-4">
-                            <!-- TODO: sustituir por la foto real del instructor cuando haya assets -->
-                            <div class="instructor-photo mx-auto mb-3">
-                                <?= htmlspecialchars(mb_strtoupper(mb_substr((string) $instructor['nombre'], 0, 1) . mb_substr((string) $instructor['apellido'], 0, 1))) ?>
-                            </div>
+                            <?php $claseAvatar = 'instructor-photo'; require __DIR__ . '/instructores/avatar.php'; ?>
                             <h5 class="card-title mb-1"><?= htmlspecialchars((string) $instructor['nombre'] . ' ' . $instructor['apellido']) ?></h5>
-                            <p class="instructor-role"><?= htmlspecialchars((string) $instructor['rol']) ?></p>
-                            <div class="stars mb-2" aria-label="Valoración de <?= htmlspecialchars((string) $instructor['valoracion']) ?> de 5">
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <i class="bi <?= $i <= (int) round((float) $instructor['valoracion']) ? 'bi-star-fill' : 'bi-star' ?>"></i>
-                                <?php endfor; ?>
-                                <span class="rating-number"><?= htmlspecialchars((string) $instructor['valoracion']) ?></span>
-                            </div>
-                            <p class="instructor-bio mb-0"><?= htmlspecialchars((string) $instructor['bio']) ?></p>
+                            <p class="instructor-role"><?= htmlspecialchars(implode(', ', array_column($instructor['especialidades'], 'nombre')) ?: 'Especialidades por definir') ?></p>
+                            <p class="instructor-bio mb-2"><?= (int) $instructor['anios_experiencia'] ?> años de experiencia musical</p>
+                            <small class="text-secondary">Sin valoraciones</small>
                             </div>
                         </a>
                     </div>
