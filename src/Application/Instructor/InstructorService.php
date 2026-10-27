@@ -794,4 +794,14 @@ final class InstructorService
         $stmt = $this->pdo->prepare("UPDATE instructor SET foto = :foto WHERE id_instructor = :id");
         $stmt->execute(['foto' => $foto, 'id' => $idInstructor]);
     }
+
+    /** Ruta pública de la foto del instructor; null si todavía no tiene. */
+    public function fotoInstructor(int $idInstructor): ?string
+    {
+        $stmt = $this->pdo->prepare("SELECT foto FROM instructor WHERE id_instructor = :id");
+        $stmt->execute(['id' => $idInstructor]);
+        $foto = (string) ($stmt->fetchColumn() ?: '');
+
+        return $foto !== '' ? $foto : null;
+    }
 }

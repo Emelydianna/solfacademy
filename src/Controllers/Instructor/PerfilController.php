@@ -6,6 +6,7 @@ namespace App\Controllers\Instructor;
 
 use App\Application\Auth\AuthService;
 use App\Application\Instructor\InstructorService;
+use App\Application\Perfil\FotoPerfilStorage;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -183,11 +184,16 @@ class PerfilController
             return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
         }
         $rutaPublica = '/perfil/foto/' . $nombreArchivo;
+        $fotoAnterior = $this->service->fotoInstructor($idInstructor);
         try {
             $this->service->actualizarFotoInstructor($idInstructor, $rutaPublica);
         } catch (\Throwable $e) {
             $_SESSION[self::FLASH] = ['tipo' => 'error', 'mensaje' => 'No se pudo guardar la foto en el perfil.'];
             return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');
+        }
+        // La nueva ya está en la BD: se retira la anterior del disco
+        if ($fotoAnterior !== $rutaPublica) {
+            FotoPerfilStorage::borrarAnterior($fotoAnterior, FotoPerfilStorage::prefijoInstructor($idInstructor));
         }
         $_SESSION[self::FLASH] = ['tipo' => 'exito', 'mensaje' => 'Foto de perfil actualizada correctamente.'];
         return $response->withStatus(302)->withHeader('Location', '/instructor/perfil');

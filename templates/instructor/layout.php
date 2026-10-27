@@ -32,9 +32,9 @@
 
             <!-- Perfil -->
             <?php
-            // La foto la pasa el controlador cuando la conoce (p. ej. el
-            // perfil); si no, se muestran las iniciales. Antes aquí había
-            // dos consultas PDO incrustadas que se ejecutaban en cada render.
+            // La foto la resuelve ViewDataMiddleware para todas las pantallas
+            // (`fotoPerfil`); el controlador puede refinarla con `$perfil`.
+            // Sin foto se muestran las iniciales.
             $usuarioSesion = $usuarioSesion ?? ($usuario ?? []);
             $fotoPerfil = $fotoPerfil ?? ($perfil['foto'] ?? null);
             ?>

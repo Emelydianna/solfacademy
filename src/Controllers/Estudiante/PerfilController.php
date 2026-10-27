@@ -6,6 +6,7 @@ namespace App\Controllers\Estudiante;
 
 use App\Application\Auth\AuthService;
 use App\Application\Estudiante\EstudiantePortalService;
+use App\Application\Perfil\FotoPerfilStorage;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -308,8 +309,15 @@ class PerfilController
         // Guardar ruta relativa desde public o directa; servir desde var no es público directo
         $rutaPublica = '/perfil/foto/' . $nombreArchivo;
         $pdo = $this->getPdo();
+        $stmt = $pdo->prepare('SELECT ruta FROM estudiante_foto WHERE id_estudiante = :id');
+        $stmt->execute(['id' => $idEstudiante]);
+        $fotoAnterior = (string) ($stmt->fetchColumn() ?: '');
         $stmt = $pdo->prepare('REPLACE INTO estudiante_foto (id_estudiante, ruta) VALUES (:id, :ruta)');
         $stmt->execute(['id' => $idEstudiante, 'ruta' => $rutaPublica]);
+        // La nueva ya está en la BD: se retira la anterior del disco
+        if ($fotoAnterior !== $rutaPublica) {
+            FotoPerfilStorage::borrarAnterior($fotoAnterior !== '' ? $fotoAnterior : null, FotoPerfilStorage::prefijoEstudiante($idEstudiante));
+        }
         $_SESSION[self::FLASH] = ['tipo' => 'exito', 'mensaje' => 'Foto de perfil actualizada correctamente.'];
         return $response->withStatus(302)->withHeader('Location', '/estudiante/perfil');
     }
