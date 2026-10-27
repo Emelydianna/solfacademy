@@ -29,9 +29,6 @@ class PerfilController
     public function index(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $this->view->setLayout('instructor/layout.php');
         $perfil = $this->service->perfilInstructor((int) $usuario['id_referencia']);
@@ -52,9 +49,6 @@ class PerfilController
     public function actualizar(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $valores = $this->leerValores($request);
         $errores = $this->validarPerfil($valores);
@@ -103,9 +97,6 @@ class PerfilController
     public function cambiarPassword(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $datos = (array) $request->getParsedBody();
         $actual = (string) ($datos['password_actual'] ?? '');
@@ -157,9 +148,6 @@ class PerfilController
     public function subirFoto(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $idInstructor = (int) $usuario['id_referencia'];
         $uploadedFiles = $request->getUploadedFiles();
         if (empty($uploadedFiles['foto'])) {

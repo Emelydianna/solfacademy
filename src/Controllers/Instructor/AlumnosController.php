@@ -20,18 +20,31 @@ class AlumnosController
         $this->service = $service;
     }
 
+    /**
+     * Ficha académica de un alumno desde el punto de vista del instructor.
+     * Solo es visible si el alumno está inscrito en alguno de sus grupos.
+     */
     public function perfil(Request $request, Response $response, array $args): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
+
         $idEstudiante = (int) ($args['id'] ?? 0);
+        $ficha = $this->service->fichaAlumno((int) $usuario['id_referencia'], $idEstudiante);
+
         $this->view->setLayout('instructor/layout.php');
+
+        if ($ficha === null) {
+            return $this->view->render($response->withStatus(404), 'instructor/alumnos/no-encontrado.php', [
+                'tituloPagina' => 'Alumno no encontrado',
+                'paginaInstructor' => 'grupos',
+                'idEstudiante' => $idEstudiante,
+            ]);
+        }
+
         return $this->view->render($response, 'instructor/alumnos/perfil.php', [
             'tituloPagina' => 'Perfil Académico del Alumno',
             'paginaInstructor' => 'grupos',
-            'idEstudiante' => $idEstudiante,
+            'ficha' => $ficha,
         ]);
     }
 }

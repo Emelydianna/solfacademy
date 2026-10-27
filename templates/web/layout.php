@@ -44,8 +44,19 @@
                 </ul>
                 <?php if (!empty($usuarioSesion)): ?>
                     <div class="d-flex align-items-center gap-3">
-                        <?php if (($usuarioSesion['rol'] ?? '') === 'estudiante'): ?>
-                            <a href="/estudiante/dashboard" class="nav-link text-white">Mi portal</a>
+                        <?php
+                        // Cada rol tiene su portal; el enlace apunta al suyo
+                        $portalRol = match (($usuarioSesion['rol'] ?? '')) {
+                            'estudiante' => ['/estudiante/dashboard', 'Mi portal'],
+                            'instructor' => ['/instructor/dashboard', 'Mi portal'],
+                            'admin'      => ['/admin/dashboard', 'Panel admin'],
+                            default      => null,
+                        };
+                        ?>
+                        <?php if ($portalRol !== null): ?>
+                            <a href="<?= $portalRol[0] ?>" class="nav-link text-white">
+                                <i class="bi bi-box-arrow-in-right me-1"></i><?= $portalRol[1] ?>
+                            </a>
                         <?php endif; ?>
                         <span class="d-flex align-items-center gap-2">
                             <i class="bi bi-person-circle fs-5"></i>

@@ -1,6 +1,7 @@
 <?php
 $data = $data ?? ['kpis'=>[], 'clasesHoy'=>[], 'diaHoy'=>date('l'), 'avisos'=>[]];
 $usuario = $usuario ?? [];
+$avisos = $data['avisos'] ?? [];
 $nombre = explode(' ', $usuario['nombre'] ?? 'Carlos')[0];
 ?>
 <div class="mb-4">
@@ -21,7 +22,7 @@ $nombre = explode(' ', $usuario['nombre'] ?? 'Carlos')[0];
 </div>
 
 <div class="row g-4">
-    <div class="col-lg-8">
+    <div class="<?= empty($avisos) ? 'col-lg-12' : 'col-lg-8' ?>">
         <div class="portal-card p-3 p-md-4">
             <h2 class="portal-card-title mb-3">Clases de Hoy (<?= htmlspecialchars($data['diaHoy']) ?>)</h2>
             <?php if (empty($data['clasesHoy'])): ?>
@@ -40,10 +41,11 @@ $nombre = explode(' ', $usuario['nombre'] ?? 'Carlos')[0];
             <?php endif; ?>
         </div>
     </div>
+    <?php if (!empty($avisos)): ?>
     <div class="col-lg-4">
         <div class="portal-card p-3 p-md-4 h-100">
             <h2 class="portal-card-title mb-3">Avisos Administrativos</h2>
-            <?php foreach ($data['avisos'] as $a): ?>
+            <?php foreach ($avisos as $a): ?>
                 <div class="mb-3 pb-3" style="border-bottom:1px solid var(--portal-border);">
                     <div class="fw-semibold"><?= htmlspecialchars($a['titulo']) ?></div>
                     <div class="small" style="color:#94a3b8;"><?= htmlspecialchars($a['texto']) ?></div>
@@ -51,4 +53,5 @@ $nombre = explode(' ', $usuario['nombre'] ?? 'Carlos')[0];
             <?php endforeach; ?>
         </div>
     </div>
+    <?php endif; ?>
 </div>

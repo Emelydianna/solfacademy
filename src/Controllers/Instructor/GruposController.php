@@ -23,9 +23,6 @@ class GruposController
     public function index(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $this->view->setLayout('instructor/layout.php');
         $grupos = $this->service->misGrupos((int) $usuario['id_referencia']);
         return $this->view->render($response, 'instructor/grupos/index.php', [
@@ -38,10 +35,10 @@ class GruposController
     public function ver(Request $request, Response $response, array $args): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $idGrupo = (int) ($args['id'] ?? 0);
+        if (!$this->service->grupoPerteneceInstructor((int) $usuario['id_referencia'], $idGrupo)) {
+            return $response->withStatus(404);
+        }
         $this->view->setLayout('instructor/layout.php');
         $data = $this->service->estudiantesGrupo((int) $usuario['id_referencia'], $idGrupo);
         return $this->view->render($response, 'instructor/grupos/ver.php', [
@@ -55,10 +52,10 @@ class GruposController
     public function exportar(Request $request, Response $response, array $args): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $idGrupo = (int) ($args['id'] ?? 0);
+        if (!$this->service->grupoPerteneceInstructor((int) $usuario['id_referencia'], $idGrupo)) {
+            return $response->withStatus(404);
+        }
         $data = $this->service->estudiantesGrupo((int) $usuario['id_referencia'], $idGrupo);
         $alumnos = $data['alumnos'] ?? [];
         $grupo = $data['grupo'] ?? [];

@@ -27,10 +27,6 @@ class CalificacionesController
     {
         $usuario = $_SESSION['usuario'] ?? [];
 
-        // El portal es solo para alumnos (instructores/admin: fase futura)
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $this->view->setLayout('estudiante/layout.php');
 
@@ -44,9 +40,6 @@ class CalificacionesController
     public function descargarBoletin(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $idEstudiante = (int) $usuario['id_referencia'];
         $params = $request->getQueryParams();

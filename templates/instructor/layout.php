@@ -31,25 +31,17 @@
             </a>
 
             <!-- Perfil -->
+            <?php
+            // La foto la pasa el controlador cuando la conoce (p. ej. el
+            // perfil); si no, se muestran las iniciales. Antes aquí había
+            // dos consultas PDO incrustadas que se ejecutaban en cada render.
+            $usuarioSesion = $usuarioSesion ?? ($usuario ?? []);
+            $fotoPerfil = $fotoPerfil ?? ($perfil['foto'] ?? null);
+            ?>
             <div class="portal-profile">
-                <?php
-                $usuarioSesion = $usuarioSesion ?? ($usuario ?? []);
-                $fotoSidebar = $fotoPerfilSidebar ?? ($perfil['foto'] ?? null);
-                if (!$fotoSidebar && isset($_SESSION['usuario']['id_referencia'])) {
-                    try {
-                        $cdb = require __DIR__ . '/../../config/db.php';
-                        $pdob = new PDO(sprintf('mysql:host=%s;dbname=%s;charset=%s', $cdb['host'], $cdb['dbname'], $cdb['charset']), $cdb['user'], $cdb['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-                        $stb = $pdob->prepare('SELECT foto FROM instructor WHERE id_instructor = :id');
-                        $stb->execute(['id' => (int) $_SESSION['usuario']['id_referencia']]);
-                        $fotoSidebar = $stb->fetchColumn() ?: null;
-                    } catch (Throwable $e) {
-                        $fotoSidebar = null;
-                    }
-                }
-                ?>
-                <?php if ($fotoSidebar): ?>
+                <?php if (!empty($fotoPerfil)): ?>
                     <div class="portal-avatar" style="padding:0;overflow:hidden;">
-                        <img src="<?= htmlspecialchars($fotoSidebar) ?>" alt="Foto" style="width:100%;height:100%;object-fit:cover;">
+                        <img src="<?= htmlspecialchars((string) $fotoPerfil) ?>" alt="Foto" style="width:100%;height:100%;object-fit:cover;">
                     </div>
                 <?php else: ?>
                     <div class="portal-avatar">
@@ -99,23 +91,9 @@
                         <span class="portal-bell-dot"></span>
                     </a>
                     <span class="d-none d-md-inline small"><?= htmlspecialchars($usuarioSesion['nombre'] ?? '') ?></span>
-                    <?php
-                    $fotoTop = $fotoPerfilSidebar ?? ($perfil['foto'] ?? null);
-                    if (!$fotoTop && isset($_SESSION['usuario']['id_referencia'])) {
-                        try {
-                            $cdb2 = require __DIR__ . '/../../config/db.php';
-                            $pdob2 = new PDO(sprintf('mysql:host=%s;dbname=%s;charset=%s', $cdb2['host'], $cdb2['dbname'], $cdb2['charset']), $cdb2['user'], $cdb2['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-                            $stb2 = $pdob2->prepare('SELECT foto FROM instructor WHERE id_instructor = :id');
-                            $stb2->execute(['id' => (int) $_SESSION['usuario']['id_referencia']]);
-                            $fotoTop = $stb2->fetchColumn() ?: null;
-                        } catch (Throwable $e) {
-                            $fotoTop = null;
-                        }
-                    }
-                    ?>
-                    <?php if ($fotoTop): ?>
+                    <?php if (!empty($fotoPerfil)): ?>
                         <span class="portal-topbar-avatar d-none d-md-flex" style="padding:0;overflow:hidden;">
-                            <img src="<?= htmlspecialchars($fotoTop) ?>" alt="Foto" style="width:100%;height:100%;object-fit:cover;">
+                            <img src="<?= htmlspecialchars((string) $fotoPerfil) ?>" alt="Foto" style="width:100%;height:100%;object-fit:cover;">
                         </span>
                     <?php else: ?>
                         <span class="portal-topbar-avatar d-none d-md-flex">

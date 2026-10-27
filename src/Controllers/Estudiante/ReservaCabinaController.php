@@ -23,9 +23,6 @@ class ReservaCabinaController
     public function crearFormulario(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $this->view->setLayout('estudiante/layout.php');
         $mensaje = $_SESSION['reserva_msg'] ?? null;
@@ -44,9 +41,6 @@ class ReservaCabinaController
     public function crear(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $body = (array) $request->getParsedBody();
         $res = $this->reserva->reservarCabina((int) $usuario['id_referencia'], $body);

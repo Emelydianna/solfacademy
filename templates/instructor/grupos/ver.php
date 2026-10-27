@@ -45,7 +45,12 @@ $grupoDetalle = trim(($grupoNombre) . (isset($grupo['nivel']) && $grupo['nivel']
                                         <?= htmlspecialchars(mb_strtoupper(mb_substr($a['nombre'],0,1).mb_substr($a['apellido'],0,1))) ?>
                                     <?php endif; ?>
                                 </div>
-                                <span class="fw-semibold"><?= htmlspecialchars($a['nombre'].' '.$a['apellido']) ?></span>
+                                <span class="fw-semibold">
+                                    <a href="/instructor/alumnos/<?= (int)$a['id_estudiante'] ?>/perfil" class="text-white text-decoration-none">
+                                        <?= htmlspecialchars($a['nombre'].' '.$a['apellido']) ?>
+                                        <i class="bi bi-box-arrow-up-right small ms-1" style="color:#94a3b8;"></i>
+                                    </a>
+                                </span>
                             </div>
                         </td>
                         <td style="color:#94a3b8;"><?= htmlspecialchars($a['email']) ?></td>

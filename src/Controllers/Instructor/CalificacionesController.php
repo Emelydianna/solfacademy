@@ -9,6 +9,17 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
 
+/**
+ * Portal del instructor — calificaciones.
+ *
+ * IMPORTANTE: en la base de datos `evaluacion` guarda UNA FILA POR
+ * INSCRIPCIÓN, no una por grupo. Para referirse a "la evaluación X de
+ * este grupo" se usa el par (tipo, fecha_evaluacion), que es lo que
+ * comparten todas las matrículas del mismo grupo.
+ *
+ * Ese par viaja codificado como `base64(tipo)|fecha` en el parámetro
+ * `evaluacion` del formulario y del query string.
+ */
 class CalificacionesController
 {
     private PhpRenderer $view;
@@ -23,17 +34,18 @@ class CalificacionesController
     public function index(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
+
         $params = $request->getQueryParams();
         $idGrupo = isset($params['grupo']) ? (int) $params['grupo'] : 0;
-        $idEvaluacion = isset($params['evaluacion']) ? (int) $params['evaluacion'] : null;
+        [$tipo, $fecha] = $this->parsearClave($params['evaluacion'] ?? '');
+
         $this->view->setLayout('instructor/layout.php');
-        $data = $this->service->calificacionesPorGrupo((int) $usuario['id_referencia'], $idGrupo, $idEvaluacion);
+        $data = $this->service->calificacionesPorGrupo((int) $usuario['id_referencia'], $idGrupo, $tipo, $fecha);
+
         $mensaje = $_SESSION['calif_msg'] ?? null;
         $tipoMsg = $_SESSION['calif_msg_tipo'] ?? null;
         unset($_SESSION['calif_msg'], $_SESSION['calif_msg_tipo']);
+
         return $this->view->render($response, 'instructor/calificaciones/index.php', [
             'tituloPagina' => 'Ingresar Calificaciones',
             'paginaInstructor' => 'calificaciones',
@@ -42,7 +54,7 @@ class CalificacionesController
             'alumnos' => $data['alumnos'],
             'evaluaciones' => $data['evaluaciones'],
             'idGrupo' => $data['idGrupo'],
-            'idEvaluacion' => $data['idEvaluacion'],
+            'claveEvaluacion' => $this->claveEvaluacion((string) $data['tipo'], $data['fecha']),
             'mensaje' => $mensaje,
             'tipoMsg' => $tipoMsg,
         ]);
@@ -51,17 +63,87 @@ class CalificacionesController
     public function guardar(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
+
         $body = (array) $request->getParsedBody();
         $idGrupo = (int) ($body['id_grupo'] ?? 0);
-        $idEvaluacion = (int) ($body['id_evaluacion'] ?? 0);
-        $calificaciones = $body['calificacion'] ?? [];
-        $observaciones = $body['observaciones'] ?? [];
-        $this->service->guardarCalificaciones((int) $usuario['id_referencia'], $idGrupo, $idEvaluacion, $calificaciones, $observaciones);
-        $_SESSION['calif_msg'] = 'Calificaciones guardadas correctamente.';
-        $_SESSION['calif_msg_tipo'] = 'success';
-        return $response->withStatus(302)->withHeader('Location', '/instructor/calificaciones?grupo=' . $idGrupo . '&evaluacion=' . $idEvaluacion);
+        [$tipo, $fecha] = $this->parsearClave($body['evaluacion'] ?? '');
+
+        $ok = $this->service->guardarCalificaciones(
+            (int) $usuario['id_referencia'],
+            $idGrupo,
+            $tipo,
+            $fecha,
+            (array) ($body['calificacion'] ?? []),
+            (array) ($body['observaciones'] ?? [])
+        );
+
+        $_SESSION['calif_msg'] = $ok
+            ? 'Calificaciones guardadas correctamente.'
+            : 'No se pudieron guardar las calificaciones. Revisa que la evaluación exista en el grupo.';
+        $_SESSION['calif_msg_tipo'] = $ok ? 'success' : 'error';
+
+        return $response->withStatus(302)->withHeader(
+            'Location',
+            '/instructor/calificaciones?grupo=' . $idGrupo
+            . '&evaluacion=' . urlencode($this->claveEvaluacion($tipo, $fecha))
+        );
+    }
+
+    /**
+     * Crea una evaluación para TODAS las inscripciones activas del grupo.
+     */
+    public function crear(Request $request, Response $response): Response
+    {
+        $usuario = $_SESSION['usuario'] ?? [];
+
+        $body = (array) $request->getParsedBody();
+        $idGrupo = (int) ($body['id_grupo'] ?? 0);
+
+        $resultado = $this->service->crearEvaluacion((int) $usuario['id_referencia'], $idGrupo, [
+            'tipo'             => (string) ($body['tipo'] ?? ''),
+            'fecha_evaluacion' => (string) ($body['fecha_evaluacion'] ?? ''),
+            'descripcion'      => (string) ($body['descripcion'] ?? ''),
+        ]);
+
+        $_SESSION['calif_msg'] = $resultado['msg'];
+        $_SESSION['calif_msg_tipo'] = $resultado['ok'] ? 'success' : 'error';
+
+        return $response->withStatus(302)->withHeader('Location', '/instructor/calificaciones?grupo=' . $idGrupo);
+    }
+
+    private function claveEvaluacion(string $tipo, ?string $fecha): string
+    {
+        if ($tipo === '') {
+            return '';
+        }
+
+        return base64_encode($tipo) . '|' . ($fecha ?? '');
+    }
+
+    /**
+     * Invierte claveEvaluacion(). Devuelve ['', null] si el valor no es válido.
+     *
+     * @return array{0: string, 1: string|null}
+     */
+    private function parsearClave(mixed $valor): array
+    {
+        $valor = trim((string) $valor);
+        if ($valor === '') {
+            return ['', null];
+        }
+
+        $pos = strpos($valor, '|');
+        if ($pos === false) {
+            return ['', null];
+        }
+
+        $tipo = base64_decode(substr($valor, 0, $pos), true);
+        if ($tipo === false || $tipo === '') {
+            return ['', null];
+        }
+
+        $fecha = trim(substr($valor, $pos + 1));
+
+        return [$tipo, $fecha !== '' ? $fecha : null];
     }
 }

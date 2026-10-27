@@ -8,6 +8,11 @@
 --  ESTUDIANTE, USUARIO, INSCRIPCIÓN, EVALUACIÓN, ASISTENCIA, PAGO,
 --  PRÁCTICA ESTUDIANTE.
 --
+--  Ampliaciones propias de la implementación (fase 2):
+--  CABINA, RESERVA CABINA, RESERVA CLASE EXTRA (reservas del portal
+--  del estudiante) y ESTUDIANTE FOTO, ESTUDIANTE PREFERENCIAS,
+--  ESTUDIANTE INSTRUMENTO HISTORIAL (perfil del estudiante).
+--
 --  Notas respecto al diagrama original:
 --   · usuario incluye "password_hash" (autenticación con
 --     password_hash() de PHP) y "id_instructor" para que un
@@ -41,6 +46,12 @@ DROP TABLE IF EXISTS asistencia;
 DROP TABLE IF EXISTS evaluacion;
 DROP TABLE IF EXISTS inscripcion;
 DROP TABLE IF EXISTS practica_estudiante;
+DROP TABLE IF EXISTS reserva_clase_extra;
+DROP TABLE IF EXISTS reserva_cabina;
+DROP TABLE IF EXISTS cabina;
+DROP TABLE IF EXISTS estudiante_instrumento_historial;
+DROP TABLE IF EXISTS estudiante_preferencias;
+DROP TABLE IF EXISTS estudiante_foto;
 DROP TABLE IF EXISTS usuario;
 DROP TABLE IF EXISTS estudiante;
 DROP TABLE IF EXISTS horario;
@@ -85,6 +96,7 @@ CREATE TABLE instructor (
     apellido           VARCHAR(100) NOT NULL,
     email              VARCHAR(150) NULL,
     telefono           VARCHAR(20) NULL,
+    foto               VARCHAR(255) NULL,
     anios_experiencia  TINYINT UNSIGNED NOT NULL DEFAULT 0,
     activo             TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (id_instructor),
@@ -312,6 +324,113 @@ CREATE TABLE practica_estudiante (
     UNIQUE KEY uq_practica_estudiante_fecha (id_estudiante, fecha),
     CONSTRAINT fk_practica_estudiante FOREIGN KEY (id_estudiante)
         REFERENCES estudiante (id_estudiante)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+--  PERFIL DEL ESTUDIANTE
+--  (foto, preferencias musicales e historial de instrumentos)
+-- ============================================================
+
+-- Última foto subida; el portal usa REPLACE sobre la clave única
+-- para que cada estudiante solo tenga una.
+CREATE TABLE estudiante_foto (
+    id_foto       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_estudiante INT UNSIGNED NOT NULL,
+    ruta          VARCHAR(255) NOT NULL,
+    fecha_subida  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_foto),
+    UNIQUE KEY uq_est_foto (id_estudiante),
+    CONSTRAINT fk_foto_est FOREIGN KEY (id_estudiante)
+        REFERENCES estudiante (id_estudiante)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE estudiante_preferencias (
+    id_pref            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_estudiante      INT UNSIGNED NOT NULL,
+    generos_favoritos  VARCHAR(255) NULL,
+    objetivo_academia  VARCHAR(255) NULL,
+    PRIMARY KEY (id_pref),
+    UNIQUE KEY uq_pref_est (id_estudiante),
+    CONSTRAINT fk_pref_est FOREIGN KEY (id_estudiante)
+        REFERENCES estudiante (id_estudiante)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Qué ha estudiado el alumno antes (se muestra en su ficha)
+CREATE TABLE estudiante_instrumento_historial (
+    id_historial INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_estudiante INT UNSIGNED NOT NULL,
+    instrumento  VARCHAR(100) NOT NULL,
+    periodo      VARCHAR(100) NOT NULL,
+    nivel        VARCHAR(100) NOT NULL,
+    orden        INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (id_historial),
+    KEY idx_hist_est (id_estudiante),
+    CONSTRAINT fk_hist_estudiante FOREIGN KEY (id_estudiante)
+        REFERENCES estudiante (id_estudiante)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+--  CABINAS Y RESERVAS
+--  (reserva_clase_extra también toca grupo e instructor: el
+--  estudiante pide una clase extra con el profesor de su grupo)
+-- ============================================================
+
+CREATE TABLE cabina (
+    id_cabina      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    nombre         VARCHAR(100) NOT NULL,
+    tipo           VARCHAR(50) NOT NULL DEFAULT 'piano',
+    capacidad      TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    estado         ENUM('Activa','Inactiva') NOT NULL DEFAULT 'Activa',
+    observaciones  TEXT NULL,
+    PRIMARY KEY (id_cabina)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE reserva_cabina (
+    id_reserva         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_estudiante      INT UNSIGNED NOT NULL,
+    id_cabina          INT UNSIGNED NOT NULL,
+    fecha              DATE NOT NULL,
+    hora_inicio        TIME NOT NULL,
+    hora_fin           TIME NOT NULL,
+    estado             ENUM('Pendiente','Confirmada','Cancelada','Asistida','No asistió') NOT NULL DEFAULT 'Pendiente',
+    motivo             VARCHAR(255) NULL,
+    fecha_creacion     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_reserva),
+    -- Una cabina no puede estar ocupada dos veces en el mismo hueco
+    UNIQUE KEY uq_cabina_fecha_hora (id_cabina, fecha, hora_inicio),
+    KEY fk_reserva_cabina_estudiante (id_estudiante),
+    CONSTRAINT fk_reserva_cabina_cabina FOREIGN KEY (id_cabina)
+        REFERENCES cabina (id_cabina),
+    CONSTRAINT fk_reserva_cabina_estudiante FOREIGN KEY (id_estudiante)
+        REFERENCES estudiante (id_estudiante),
+    CHECK (hora_fin > hora_inicio)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE reserva_clase_extra (
+    id_reserva          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_estudiante       INT UNSIGNED NOT NULL,
+    id_grupo            INT UNSIGNED NOT NULL,
+    id_instructor       INT UNSIGNED NOT NULL,
+    fecha               DATE NOT NULL,
+    hora_inicio         TIME NOT NULL,
+    hora_fin            TIME NOT NULL,
+    estado              ENUM('Pendiente','Confirmada','Cancelada','Asistida','No asistió') NOT NULL DEFAULT 'Pendiente',
+    motivo              VARCHAR(255) NOT NULL,
+    observaciones_admin TEXT NULL,
+    fecha_creacion      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_reserva),
+    KEY fk_reserva_extra_estudiante (id_estudiante),
+    KEY fk_reserva_extra_grupo (id_grupo),
+    KEY fk_reserva_extra_instructor (id_instructor),
+    CONSTRAINT fk_reserva_extra_estudiante FOREIGN KEY (id_estudiante)
+        REFERENCES estudiante (id_estudiante),
+    CONSTRAINT fk_reserva_extra_grupo FOREIGN KEY (id_grupo)
+        REFERENCES grupo (id_grupo),
+    CONSTRAINT fk_reserva_extra_instructor FOREIGN KEY (id_instructor)
+        REFERENCES instructor (id_instructor),
+    CHECK (hora_fin > hora_inicio)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -795,6 +914,23 @@ INSERT INTO practica_estudiante (id_estudiante, fecha, horas) VALUES
     (4, DATE_SUB(CURDATE(), INTERVAL 1 DAY), 4.00),
     (4, CURDATE(),                           1.00);
 
+-- Perfil del estudiante: foto, preferencias e historial ----------
+-- (La foto no se siembra: los archivos viven en var/uploads, que
+--  no está versionado. El portal muestra las iniciales si no hay.)
+INSERT INTO estudiante_preferencias (id_estudiante, generos_favoritos, objetivo_academia) VALUES
+    (4, 'Jazz, Pop', 'Dominar técnica, ensamble e improvisación');
+
+INSERT INTO estudiante_instrumento_historial (id_estudiante, instrumento, periodo, nivel, orden) VALUES
+    (1, 'Piano',             '2022 - Presente', 'Intermedio Avanzado', 1),
+    (1, 'Teoría y Armonía',  '2023',            'Básico Completado',   2),
+    (1, 'Guitarra Acústica', '2021 - 2022',     'Básico Iniciado',     3);
+
+-- Cabinas de práctica --------------------------------------------
+INSERT INTO cabina (id_cabina, nombre, tipo, capacidad, estado, observaciones) VALUES
+    (1, 'Cabina Piano 1', 'piano', 1, 'Activa', 'Piano vertical y atril'),
+    (2, 'Cabina Piano 2', 'piano', 1, 'Activa', 'Piano digital con cascos'),
+    (3, 'Cabina Piano 3', 'piano', 1, 'Activa', 'Piano vertical, junto a la recepción');
+
 -- ============================================================
 --  VERIFICACIÓN: Contar registros en cada tabla
 -- ============================================================
@@ -814,4 +950,10 @@ UNION ALL SELECT 'inscripcion',          COUNT(*) FROM inscripcion
 UNION ALL SELECT 'pago',                 COUNT(*) FROM pago
 UNION ALL SELECT 'evaluacion',           COUNT(*) FROM evaluacion
 UNION ALL SELECT 'asistencia',           COUNT(*) FROM asistencia
-UNION ALL SELECT 'practica_estudiante',  COUNT(*) FROM practica_estudiante;
+UNION ALL SELECT 'practica_estudiante',  COUNT(*) FROM practica_estudiante
+UNION ALL SELECT 'estudiante_foto',      COUNT(*) FROM estudiante_foto
+UNION ALL SELECT 'estudiante_preferencias', COUNT(*) FROM estudiante_preferencias
+UNION ALL SELECT 'estudiante_instrumento_historial', COUNT(*) FROM estudiante_instrumento_historial
+UNION ALL SELECT 'cabina',               COUNT(*) FROM cabina
+UNION ALL SELECT 'reserva_cabina',       COUNT(*) FROM reserva_cabina
+UNION ALL SELECT 'reserva_clase_extra',  COUNT(*) FROM reserva_clase_extra;

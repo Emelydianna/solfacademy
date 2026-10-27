@@ -23,9 +23,6 @@ class AsistenciasController
     public function index(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $params = $request->getQueryParams();
         $idGrupo = isset($params['grupo']) ? (int) $params['grupo'] : 0;
         $fecha = $params['fecha'] ?? date('Y-m-d');
@@ -50,9 +47,6 @@ class AsistenciasController
     public function guardar(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'instructor') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $body = (array) $request->getParsedBody();
         $idGrupo = (int) ($body['id_grupo'] ?? 0);
         $fecha = $body['fecha'] ?? date('Y-m-d');

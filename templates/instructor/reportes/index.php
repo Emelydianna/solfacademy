@@ -11,24 +11,6 @@ $totalDist = max(1, (int)($distribucion['excelente']??0) + (int)($distribucion['
     <p class="portal-subtitle mb-0">Analíticas de rendimiento estudiantil, asistencia y evolución académica</p>
 </div>
 
-<div class="portal-card p-3 p-md-4 mb-4">
-    <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="text-uppercase small fw-bold" style="color:#ffc107;">Filtros</span>
-    </div>
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <select class="form-select" style="max-width:260px;background:#0B0F19;color:#fff;border:1px solid var(--portal-border);">
-            <option>Todos los Grupos</option>
-            <?php foreach ($grupos as $g): ?>
-                <option><?= htmlspecialchars($g['curso'] ?? '') ?></option>
-            <?php endforeach; ?>
-        </select>
-        <select class="form-select" style="max-width:220px;background:#0B0F19;color:#fff;border:1px solid var(--portal-border);">
-            <option>Ciclo Octubre 2026</option>
-        </select>
-        <button class="btn btn-warning fw-bold px-4">FILTRAR</button>
-    </div>
-</div>
-
 <div class="row g-3 mb-4">
     <div class="col-lg-4">
         <div class="portal-card p-3 p-md-4 h-100">
@@ -112,7 +94,12 @@ const asistenciaLabels = <?= json_encode(array_map(fn($x)=>$x['grupo'], $asisten
 const asistenciaData = <?= json_encode(array_map(fn($x)=>(float)$x['pct'], $asistenciaPorGrupo)) ?>;
 const distData = [<?= (int)($distribucion['excelente']??0) ?>, <?= (int)($distribucion['aprobado']??0) ?>, <?= (int)($distribucion['reprobado']??0) ?>];
 const evoLabels = <?= json_encode(array_map(fn($x)=>$x['mes'], $evolucion)) ?>;
-const evoData = <?= json_encode(array_map(fn($x)=>(float)$x['promedio'], $evolucion)) ?>;
+const evoRaw = <?= json_encode(array_map(fn($x)=>$x['promedio'], $evolucion)) ?>;
+// null = mes sin datos; se omiten en la gráfica
+const evoData = evoRaw.map(v => (v === null || v === undefined) ? null : Number(v));
+const evoConDatos = evoData.filter(v => v !== null);
+const evoMin = evoConDatos.length ? Math.max(0, Math.min(...evoConDatos) - 1) : 0;
+const evoMax = evoConDatos.length ? Math.min(10, Math.max(...evoConDatos) + 1) : 10;
 
 new Chart(document.getElementById('chartAsistencia'), {
     type: 'bar',
@@ -162,14 +149,22 @@ new Chart(document.getElementById('chartEvolucion'), {
             pointBackgroundColor: '#fff',
             pointBorderColor: '#ffc107',
             pointRadius: 4,
+            spanGaps: false,
             fill: false
         }]
     },
     options: {
-        plugins: { legend: { display: false } },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: c => c.parsed.y === null ? 'Sin datos' : 'Promedio: ' + c.parsed.y + ' / 10'
+                }
+            }
+        },
         scales: {
             x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' } },
-            y: { min: 7, max: 10, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' } }
+            y: { min: evoMin, max: evoMax, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' } }
         }
     }
 });

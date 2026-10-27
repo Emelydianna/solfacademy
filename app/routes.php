@@ -10,6 +10,7 @@ use App\Controllers\Web\CourseDetailController;
 use App\Controllers\Web\HomeController;
 use App\Controllers\Web\InstructorProfileController;
 use App\Application\Middleware\AuthMiddleware;
+use App\Application\Middleware\RequireRole;
 use App\Controllers\Estudiante\AsistenciasController;
 use App\Controllers\Estudiante\CalendarioController;
 use App\Controllers\Estudiante\CalificacionesController;
@@ -73,7 +74,7 @@ return function (App $app) {
         $group->get('/reservas/extras', [ReservaExtraController::class, 'crearFormulario']);
         $group->post('/reservas/extras', [ReservaExtraController::class, 'crear']);
         $group->post('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
-    })->add(AuthMiddleware::class);
+    })->add(new RequireRole('estudiante'));
 
     $app->options('/{routes:.*}', function (Request $request, Response $response) {
        
@@ -125,10 +126,17 @@ return function (App $app) {
         $group->get('/asistencias', [InstructorAsistenciasController::class, 'index']);
         $group->post('/asistencias/guardar', [InstructorAsistenciasController::class, 'guardar']);
         $group->get('/calificaciones', [InstructorCalificacionesController::class, 'index']);
+        $group->post('/calificaciones/crear', [InstructorCalificacionesController::class, 'crear']);
         $group->post('/calificaciones/guardar', [InstructorCalificacionesController::class, 'guardar']);
         $group->get('/reportes', [ReportesController::class, 'index']);
         $group->get('/alumnos/{id}/perfil', [\App\Controllers\Instructor\AlumnosController::class, 'perfil']);
-        $group->get('/mensajes', [\App\Controllers\Instructor\MensajesController::class, 'index']);
-    })->add(AuthMiddleware::class);
+    })->add(new RequireRole('instructor'));
+
+    // ==========================================
+    // 4. RUTAS ADMINISTRACIÓN (base para la fase de admin)
+    // ==========================================
+    $app->group('/admin', function (Group $group) {
+        $group->get('/dashboard', [\App\Controllers\Admin\DashboardController::class, 'index']);
+    })->add(new RequireRole('admin'));
 };
 

@@ -27,10 +27,6 @@ class CalendarioController
     {
         $usuario = $_SESSION['usuario'] ?? [];
 
-        // El portal es solo para alumnos (instructores/admin: fase futura)
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $this->view->setLayout('estudiante/layout.php');
 

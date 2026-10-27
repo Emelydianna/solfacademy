@@ -41,10 +41,6 @@ class PerfilController
     {
         $usuario = $_SESSION['usuario'] ?? [];
 
-        // El portal es solo para alumnos (instructores/admin: fase futura)
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $perfil = $this->portal->perfil((int) $usuario['id_referencia']);
 
@@ -67,9 +63,6 @@ class PerfilController
     {
         $usuario = $_SESSION['usuario'] ?? [];
 
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $idEstudiante = (int) $usuario['id_referencia'];
         $idUsuario = (int) $usuario['id'];
@@ -112,9 +105,6 @@ class PerfilController
     {
         $usuario = $_SESSION['usuario'] ?? [];
 
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
 
         $datos = (array) $request->getParsedBody();
         $actual = (string) ($datos['password_actual'] ?? '');
@@ -281,9 +271,6 @@ class PerfilController
     public function subirFoto(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $idEstudiante = (int) $usuario['id_referencia'];
         $uploadedFiles = $request->getUploadedFiles();
         if (empty($uploadedFiles['foto'])) {
@@ -330,9 +317,6 @@ class PerfilController
     public function guardarPreferencias(Request $request, Response $response): Response
     {
         $usuario = $_SESSION['usuario'] ?? [];
-        if (($usuario['rol'] ?? '') !== 'estudiante') {
-            return $response->withStatus(302)->withHeader('Location', '/');
-        }
         $idEstudiante = (int) $usuario['id_referencia'];
         $datos = (array) $request->getParsedBody();
         $generos = trim((string) ($datos['generos_favoritos'] ?? ''));
