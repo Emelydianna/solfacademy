@@ -137,12 +137,44 @@ final class ReservaService
             return ['ok' => false, 'msg' => 'No puedes reservar en una fecha pasada.'];
         }
 
+        $this->pdo->beginTransaction();
+        try {
+            return $this->reservarClaseExtraBloqueada($idEstudiante, $idGrupo, $fecha, $horaInicio, $horaFin, $motivo);
+        } catch (\PDOException $e) {
+            if ((string) $e->getCode() !== '40001') {
+                throw $e;
+            }
+            return ['ok' => false, 'msg' => 'Hubo un cambio simultáneo. Recarga e inténtalo de nuevo.'];
+        } finally {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+        }
+    }
+
+    private function reservarClaseExtraBloqueada(int $idEstudiante, int $idGrupo, string $fecha, string $horaInicio, string $horaFin, string $motivo): array
+    {
+        // El mismo bloqueo de instructor que usa la administración impide
+        // reservar una clase extra mientras se valida un horario de grupo.
+        $stmt = $this->pdo->prepare('SELECT estado FROM estudiante WHERE id_estudiante = :id FOR UPDATE');
+        $stmt->execute(['id' => $idEstudiante]);
+        if ($stmt->fetchColumn() !== 'Activo') {
+            return ['ok' => false, 'msg' => 'El estudiante no está activo.'];
+        }
         // Obtener instructor del grupo
         $stmt = $this->pdo->prepare("SELECT id_instructor FROM grupo WHERE id_grupo = :g");
         $stmt->execute(['g' => $idGrupo]);
         $idInstructor = (int) $stmt->fetchColumn();
         if ($idInstructor === 0) {
             return ['ok' => false, 'msg' => 'Grupo inválido.'];
+        }
+        $stmt = $this->pdo->prepare('SELECT id_instructor FROM instructor WHERE id_instructor = :id FOR UPDATE');
+        $stmt->execute(['id' => $idInstructor]);
+        $stmt = $this->pdo->prepare('SELECT id_instructor, estado FROM grupo WHERE id_grupo = :id FOR UPDATE');
+        $stmt->execute(['id' => $idGrupo]);
+        $grupoActual = $stmt->fetch();
+        if (!$grupoActual || (int) $grupoActual['id_instructor'] !== $idInstructor || $grupoActual['estado'] !== 'activo') {
+            return ['ok' => false, 'msg' => 'El grupo cambió o no está activo. Recarga el formulario.'];
         }
 
         // Verificar que el alumno esté inscrito activo en ese grupo
@@ -152,6 +184,20 @@ final class ReservaService
             return ['ok' => false, 'msg' => 'Solo puedes solicitar clases extras para cursos en los que estás inscrito activamente.'];
         }
 
+        if (!\App\Application\Admin\ListadoAdmin::fecha($fecha)
+            || !preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/D', $horaInicio)
+            || !preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/D', $horaFin)) {
+            return ['ok' => false, 'msg' => 'Fecha u horas no válidas.'];
+        }
+        $dia = \App\Application\Admin\GruposService::DIAS[(int) (new \DateTimeImmutable($fecha))->format('N') - 1];
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM grupo g JOIN horario h ON h.id_grupo = g.id_grupo
+            WHERE g.id_instructor = :id AND g.estado IN ('activo','planeado')
+              AND g.fecha_inicio <= :fecha_inicio AND (g.fecha_fin IS NULL OR g.fecha_fin >= :fecha_fin)
+              AND h.dia_semana = :dia AND h.hora_inicio < :fin AND h.hora_fin > :inicio");
+        $stmt->execute(['id' => $idInstructor, 'fecha_inicio' => $fecha, 'fecha_fin' => $fecha, 'dia' => $dia, 'fin' => $horaFin, 'inicio' => $horaInicio]);
+        if ((int) $stmt->fetchColumn()) {
+            return ['ok' => false, 'msg' => 'El instructor tiene un grupo en ese horario.'];
+        }
         // Verificar disponibilidad instructor
         $sql = "SELECT COUNT(*) FROM reserva_clase_extra
                 WHERE id_instructor = :ins AND fecha = :fecha AND estado IN ('Pendiente','Confirmada')
@@ -174,6 +220,7 @@ final class ReservaService
             'fin' => $horaFin,
             'motivo' => $motivo,
         ]);
+        $this->pdo->commit();
         return ['ok' => true, 'msg' => 'Solicitud de clase extra enviada. Quedará pendiente de confirmación.'];
     }
 

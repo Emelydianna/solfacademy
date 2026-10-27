@@ -3,6 +3,7 @@
 namespace App\Controllers\Web;
 
 use App\Data\SampleData;
+use App\Application\Catalogo\CatalogoService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
@@ -10,10 +11,12 @@ use Slim\Views\PhpRenderer;
 class HomeController
 {
     private PhpRenderer $view;
+    private CatalogoService $catalogo;
 
-    public function __construct(PhpRenderer $view)
+    public function __construct(PhpRenderer $view, CatalogoService $catalogo)
     {
         $this->view = $view;
+        $this->catalogo = $catalogo;
     }
 
     public function home(Request $request, Response $response): Response
@@ -23,8 +26,8 @@ class HomeController
         return $this->view->render($response, 'web/home.php', [
             'tituloPagina' => 'SolfAcademy — Aprende de los mejores músicos',
             'paginaActiva' => 'inicio',
-            // Datos de ejemplo con la forma de las tablas del esquema
-            'categorias' => SampleData::categorias(),
+            'categorias' => $this->catalogo->categorias(),
+            // Instructores y testimonios conservan la maqueta hasta su módulo.
             'instructores' => SampleData::instructores(),
             'testimonios' => SampleData::testimonios(),
         ]);

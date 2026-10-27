@@ -1,0 +1,58 @@
+/* Componentes acotados a la gestión académica; no alteran otros portales. */
+.admin-academica { --bs-border-color: var(--portal-border); }
+.admin-academica .portal-card { border-radius: 1rem; }
+.admin-academica .portal-card-title { font-size: 1.1rem; line-height: 1.35; }
+.admin-academica .table-responsive { overflow-y: hidden; scrollbar-color: #344158 var(--portal-card); }
+.admin-academica .admin-btn-primary { background: var(--portal-gold); color: #0b0f19; font-weight: 700; border: 1px solid var(--portal-gold); }
+.admin-academica .admin-btn-primary:hover { background: var(--portal-gold-2); border-color: var(--portal-gold-2); }
+.admin-academica .admin-btn-outline { color: var(--portal-text); border: 1px solid #526078; }
+.admin-academica .admin-btn-outline:hover { background: var(--portal-surface-2); color: #fff; }
+.admin-academica .form-label { font-size: .82rem; font-weight: 600; color: var(--portal-text); }
+.admin-academica legend.form-label { float: none; width: auto; }
+.admin-academica .form-control, .admin-academica .form-select, .admin-academica .input-group-text { background-color: var(--portal-surface-2); color: var(--portal-text); border-color: #344158; }
+.admin-academica .form-control::placeholder { color: var(--portal-muted); }
+.admin-academica .form-control:focus, .admin-academica .form-select:focus { border-color: var(--portal-gold); box-shadow: 0 0 0 .2rem rgb(255 193 7 / 12%); }
+.admin-academica .form-select { color-scheme: dark; }
+.admin-academica input[type="date"], .admin-academica input[type="time"] { color-scheme: dark; }
+.admin-academica .admin-actions { position: sticky; right: 0; background: var(--portal-card); box-shadow: -4px 0 8px rgb(11 15 25 / 15%); }
+.admin-academica .form-check-input { background-color: var(--portal-surface-2); border-color: #64748b; }
+.admin-academica .form-check-input:checked { background-color: #a67800; border-color: var(--portal-gold); }
+.admin-academica .form-check-input:focus { box-shadow: 0 0 0 .2rem rgb(255 193 7 / 15%); }
+.admin-academica .form-control.is-invalid, .admin-academica .form-select.is-invalid { border-color: var(--portal-red); }
+.admin-academica .invalid-feedback { color: #fca5a5; }
+.admin-academica .admin-tabs { border-bottom: 1px solid var(--portal-border); gap: .5rem; }
+.admin-academica .admin-tabs .nav-link { color: var(--portal-muted); padding: .75rem 1.25rem; }
+.admin-academica .admin-tabs .nav-link.active { color: var(--portal-gold); border-bottom: 2px solid var(--portal-gold); }
+.admin-academica .admin-table { --bs-table-bg: transparent; --bs-table-color: var(--portal-text); --bs-table-border-color: var(--portal-border); font-size: .86rem; }
+.admin-academica .admin-table th { color: var(--portal-muted); font-size: .68rem; letter-spacing: .06em; background: rgb(11 15 25 / 35%); white-space: nowrap; }
+.admin-academica .admin-table td, .admin-academica .admin-table th { padding: 1rem; }
+.admin-academica .admin-name-cell { min-width: 180px; max-width: 340px; overflow-wrap: anywhere; }
+.admin-academica .admin-row-selected { background: rgb(255 193 7 / 5%); }
+.admin-academica .admin-muted { color: var(--portal-muted); }
+.admin-academica .admin-border { border-color: var(--portal-border) !important; }
+.admin-academica .admin-count, .admin-academica .admin-eyebrow { color: var(--portal-gold); font-size: .7rem; font-weight: 700; letter-spacing: .04em; }
+.admin-academica .admin-count { padding: .35rem .65rem; background: rgb(255 193 7 / 10%); border-radius: 2rem; white-space: nowrap; }
+.admin-academica .admin-badge { display: inline-block; padding: .3rem .65rem; font-size: .74rem; border-radius: 2rem; white-space: nowrap; }
+.admin-academica .admin-badge-success { color: #6ee7b7; background: rgb(52 211 153 / 12%); }
+.admin-academica .admin-badge-danger { color: #fca5a5; background: rgb(248 113 113 / 12%); }
+.admin-academica .admin-badge-warning { color: #fcd34d; background: rgb(255 193 7 / 12%); }
+.admin-academica .admin-icon-btn { padding: .35rem .55rem; border: 1px solid transparent; }
+.admin-academica .admin-icon-btn:hover { background: var(--portal-surface-2); border-color: var(--portal-border); }
+.admin-academica .admin-edit { color: var(--portal-gold); }
+.admin-academica .admin-delete { color: var(--portal-red); }
+.admin-academica .admin-restore { color: var(--portal-green); }
+.admin-academica .page-link { background: var(--portal-surface-2); color: var(--portal-text); border-color: var(--portal-border); }
+.admin-academica .active > .page-link { background: var(--portal-gold); color: #0b0f19; border-color: var(--portal-gold); }
+.admin-academica .disabled > .page-link { background: transparent; color: #69778d; }
+.admin-academica .modal-content { color: var(--portal-text); background: var(--portal-card); border-color: var(--portal-border); border-radius: 1rem; }
+.admin-academica .modal-header, .admin-academica .modal-footer { border-color: var(--portal-border); }
+.admin-academica .admin-editor { scroll-margin-top: 1rem; }
+.admin-academica .admin-student-avatar { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: rgb(255 193 7 / 12%); color: var(--portal-gold); font-weight: 700; overflow: hidden; flex-shrink: 0; }
+.admin-academica .admin-student-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.admin-academica .admin-student-avatar-lg { width: 64px; height: 64px; font-size: 1.3rem; }
+.admin-academica a:focus-visible, .admin-academica button:focus-visible { outline: 2px solid var(--portal-gold); outline-offset: 3px; }
+@media (min-width: 1400px) { .admin-academica .admin-editor { position: sticky; top: 1rem; } }
+@media (min-width: 1200px) and (max-width: 1399px) {
+    .admin-academica .admin-table td, .admin-academica .admin-table th { padding: .75rem; }
+    .admin-academica .admin-name-cell { min-width: 160px; }
+}

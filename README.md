@@ -1,6 +1,6 @@
 # SolfAcademy
 
-Plataforma de academia de música construida con **Slim 4** + **PHP-DI** y **MySQL/MariaDB**. El sitio web público (homepage, catálogo de cursos, detalle de curso, perfiles de instructores, login/registro) está desarrollado siguiendo el prototipo de diseño; la parte autenticada (matrículas, horarios, pagos) corresponde a la fase 2.
+Plataforma de academia de música construida con **Slim 4** + **PHP-DI** y **MySQL/MariaDB**. Incluye sitio público, portales de estudiante e instructor y administración de categorías, instrumentos, cursos, grupos y estudiantes. El catálogo y el detalle de cursos ya leen datos reales de la base de datos.
 
 ## Requisitos
 
@@ -35,6 +35,17 @@ Ejecuta las pruebas con:
 ```bash
 composer test
 ```
+
+Las pruebas de integración académica se habilitan explícitamente:
+
+```bash
+SOLFACADEMY_TEST_DB=1 vendor/bin/phpunit --do-not-cache-result
+```
+
+Usan la conexión de `config/db.php` y necesitan permiso `CREATE TEMPORARY TABLES`.
+Crean tablas **temporales y vacías**, visibles solo en su propia conexión, con la
+estructura de las existentes. No reimportan el SQL ni modifican registros reales.
+Sin esa variable, las pruebas de integración se omiten; las de permisos y CSRF sí se ejecutan.
 
 ## Configuración de la base de datos
 
@@ -110,6 +121,25 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 
 El script es re-importable: borra y recrea las tablas cada vez que se ejecuta.
 
+### Actualizar una instalación existente: Grupos y Estudiantes
+
+**No reimportes `database/solfacademy.sql` si tienes datos que conservar.** Ejecuta:
+
+```bash
+php scripts/migrar-gestion.php
+```
+
+La migración es incremental e idempotente. Añade `estudiante.estado`
+(`Activo` / `Suspendido`), fecha y motivo de la última suspensión, y los campos
+de revocación de sesiones/restauración de acceso en `usuario`. Instala dos
+triggers que impiden nuevas matrículas vigentes de alumnos suspendidos,
+incluidas las que pasan por el procedimiento almacenado existente.
+Requiere permisos `ALTER`, `TRIGGER` y lectura de metadatos. MySQL aplica el DDL
+por pasos; si falla un permiso, corrígelo y vuelve a ejecutar el script.
+No borra registros, no cambia contraseñas ni infiere suspensiones a partir de
+cuentas que estaban deshabilitadas. Las instalaciones nuevas ya incluyen los
+campos y triggers en el SQL base.
+
 ### Evitar errores comunes
 
 - **"Unknown database solfacademy"** → aún no importaste `database/solfacademy.sql`.
@@ -183,7 +213,79 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/admin/dashboard` | Base del panel (módulos pendientes de la fase de admin) |
+| GET | `/admin/dashboard` | Indicadores globales, ingresos, matrículas, alertas y actividad reciente |
+| GET / POST | `/admin/categorias` | Buscar, listar y crear categorías |
+| GET / POST | `/admin/instrumentos` | Buscar, listar y crear instrumentos |
+| GET / POST | `/admin/cursos` | Buscar, filtrar, listar y crear cursos |
+| POST | `/admin/{seccion}/{id}` | Editar categoría, instrumento o curso |
+| POST | `/admin/categorias/{id}/eliminar` | Eliminar solo si no hay instrumentos relacionados |
+| POST | `/admin/instrumentos/{id}/eliminar` | Eliminar solo si no hay cursos o instructores relacionados |
+| POST | `/admin/cursos/{id}/estado` | Desactivar/reactivar sin borrar historial |
+| GET / POST | `/admin/grupos` | Listar/filtrar y crear grupos con horarios |
+| GET / POST | `/admin/grupos/{id}` | Ver grupo y alumnos / guardar edición |
+| GET | `/admin/estudiantes` | Directorio, búsqueda, filtros y paginación |
+| GET | `/admin/estudiantes/nuevo` | Formulario de alta con cuenta opcional |
+| POST | `/admin/estudiantes` | Crear ficha y, opcionalmente, cuenta |
+| GET / POST | `/admin/estudiantes/{id}` | Ficha académica / guardar datos personales |
+| GET | `/admin/estudiantes/{id}/editar` | Formulario de edición |
+| POST | `/admin/estudiantes/{id}/estado` | Suspender/liberar cupos o reactivar |
+
+La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
+cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
+Cada página contiene hasta 10 registros y todos los formularios POST llevan
+el campo `_csrf`, validado por el middleware global.
+
+Los instructores se asignan a **grupos**, no directamente a cursos. El precio
+se presenta en **USD como precio del curso**, no como mensualidad. Editarlo no
+modifica `inscripcion.precio_inscripcion` de matrículas existentes.
+Solo los cursos activos y disponibles aparecen en `/cursos` y `/cursos/{id}`;
+se muestran grupos activos o planeados, horarios y requisitos reales. Cuando
+faltan datos se indica expresamente; no se generan temarios ni reseñas ficticias.
+La gestión de requisitos queda para los siguientes módulos.
+
+#### Grupos
+
+El formulario se abre con `?editar={id}`; `?curso={id}` filtra el listado y
+preselecciona el curso al crear. Permite asignar instructor, aula, cupos, fechas,
+estado y hasta 21 franjas semanales. Filtra instructores activos por el
+instrumento que dominan y conserva visibles las asignaciones anteriores para
+revisión. Las nuevas asignaciones se validan también en servidor.
+
+Se comprueban capacidad del aula, plazas ya ocupadas (`Activa` + `Pendiente`),
+máximo de grupos del curso y cruces de instructor/aula por día, horas y fechas.
+Los grupos y las clases extras comparten bloqueos de instructor para evitar
+reservas incompatibles simultáneas. Se guarda grupo y horarios en transacción.
+No se cambia el curso de un grupo con matrículas; la reasignación de instructor
+requiere confirmación y resolver primero sus clases extras futuras.
+No se borran grupos. Para cerrar uno deben resolverse sus matrículas vigentes.
+Las aulas y los instructores se seleccionan de los registros ya existentes;
+sus CRUD completos aún están pendientes.
+
+#### Estudiantes y suspensión
+
+El alta crea una ficha sin cuenta por defecto. Si se elige crear cuenta, pide
+contraseña inicial y confirmación (8–72 bytes), guarda solo su hash y mantiene
+la sesión del administrador. La edición sincroniza el email de ficha y cuenta
+en una transacción; nunca rellena contraseñas en respuestas de error.
+Un estudiante puede tener varios instrumentos, derivados de sus matrículas.
+La ficha muestra notas, asistencia, importes pagados y saldo calculado, sin
+modificar pagos. La gestión de nuevas matrículas se abordará por separado.
+
+Suspender requiere motivo y confirmación de las matrículas afectadas. En una
+única transacción cancela las `Activas` y `Pendientes`, libera sus cupos,
+marca al estudiante como suspendido y deshabilita sus cuentas. Conserva notas,
+asistencias, matrículas finalizadas y pagos; no genera devoluciones ni modifica
+reservas. Si las matrículas cambiaron desde que se abrió la ficha, exige volver
+a revisarlas antes de confirmar.
+
+Reactivar no restaura matrículas canceladas: restablece únicamente las cuentas
+que estaban activas antes de suspender. Una cuenta previamente deshabilitada
+se mantiene deshabilitada. Deshabilitar solo el acceso desde Editar no libera
+cupos: para retirar al alumno hay que usar Suspender.
+
+El middleware comprueba en cada petición autenticada el estado de la cuenta,
+el estado académico y una versión de sesión. Una sesión anterior a la suspensión
+no vuelve a funcionar al reactivar: el estudiante debe iniciar sesión de nuevo.
 
 ## Estructura del proyecto
 
@@ -199,10 +301,12 @@ src/Application/Auth/      → AuthService (login, registro, sesión)
 src/Application/Middleware/ → RequireRole, AuthMiddleware, sesión y vistas
 src/Application/Estudiante/→ lógica del portal del estudiante
 src/Application/Instructor/→ InstructorService (grupos, notas, asistencia, fichas)
+src/Application/Admin/     → dashboard y gestión académica
+src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
 src/Controllers/Estudiante/→ controladores del portal del estudiante
 src/Controllers/Instructor/→ controladores del portal del instructor
-src/Controllers/Admin/     → base del panel de administración
+src/Controllers/Admin/     → dashboard y controladores de gestión académica
 src/Data/SampleData.php    → datos de ejemplo de la web pública
 templates/web/             → vistas (layout.php + secciones)
 templates/estudiante/      → vistas del portal del estudiante
@@ -210,10 +314,15 @@ templates/instructor/      → vistas del portal del instructor
 templates/admin/           → vistas del panel de administración
 public/css/style.css       → estilos globales
 public/css/portal.css      → design system del portal (tema oscuro)
+public/css/admin-academica.css → componentes de gestión sin alterar otros portales
+public/js/admin-academica.js → selector categoría/instrumento y confirmaciones
 public/comprobantes/       → PDF de comprobante de pago (generados)
 ```
 
-Los datos de ejemplo de la web pública viven en `src/Data/SampleData.php` con la misma forma que las tablas; los portales autenticados ya usan consultas PDO.
+La homepage usa categorías reales; los bloques de instructores y testimonios,
+así como el perfil público del instructor, conservan los ejemplos de
+`src/Data/SampleData.php` hasta abordar su módulo. El catálogo, el detalle del
+curso y los portales autenticados usan PDO.
 
 ## Licencia
 

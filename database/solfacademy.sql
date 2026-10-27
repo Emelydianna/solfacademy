@@ -229,6 +229,9 @@ CREATE TABLE estudiante (
     telefono          VARCHAR(20) NULL,
     fecha_inscripcion DATE NULL,
     direccion         VARCHAR(255) NULL,
+    estado            ENUM('Activo','Suspendido') NOT NULL DEFAULT 'Activo',
+    suspension_fecha  DATETIME NULL,
+    suspension_motivo VARCHAR(255) NULL,
     PRIMARY KEY (id_estudiante),
     UNIQUE KEY uq_estudiante_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -242,6 +245,8 @@ CREATE TABLE usuario (
     rol           ENUM('estudiante','instructor','admin') NOT NULL DEFAULT 'estudiante',
     activo        TINYINT(1) NOT NULL DEFAULT 1,
     ultimo_acceso DATETIME NULL,
+    version_sesion INT UNSIGNED NOT NULL DEFAULT 0,
+    reactivar_tras_suspension TINYINT(1) NOT NULL DEFAULT 0,
     PRIMARY KEY (id_usuario),
     UNIQUE KEY uq_usuario_email (email_usuario),
     CONSTRAINT fk_usuario_estudiante FOREIGN KEY (id_estudiante)
@@ -434,6 +439,31 @@ CREATE TABLE reserva_clase_extra (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Los suspendidos conservan su historial, pero no pueden tomar nuevos cupos.
+-- En instalaciones existentes: php scripts/migrar-gestion.php (sin reimportar).
+DELIMITER $$
+CREATE TRIGGER bi_inscripcion_estudiante_activo BEFORE INSERT ON inscripcion FOR EACH ROW
+BEGIN
+    DECLARE v_estado VARCHAR(20) DEFAULT NULL;
+    IF NEW.estado IN ('Activa','Pendiente') THEN
+        SELECT estado INTO v_estado FROM estudiante WHERE id_estudiante = NEW.id_estudiante FOR UPDATE;
+        IF v_estado IS NULL OR v_estado <> 'Activo' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se puede matricular a un estudiante suspendido o inexistente';
+        END IF;
+    END IF;
+END$$
+CREATE TRIGGER bu_inscripcion_estudiante_activo BEFORE UPDATE ON inscripcion FOR EACH ROW
+BEGIN
+    DECLARE v_estado VARCHAR(20) DEFAULT NULL;
+    IF NEW.estado IN ('Activa','Pendiente') AND (OLD.estado NOT IN ('Activa','Pendiente') OR NEW.id_estudiante <> OLD.id_estudiante OR NEW.id_grupo <> OLD.id_grupo) THEN
+        SELECT estado INTO v_estado FROM estudiante WHERE id_estudiante = NEW.id_estudiante FOR UPDATE;
+        IF v_estado IS NULL OR v_estado <> 'Activo' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se puede matricular a un estudiante suspendido o inexistente';
+        END IF;
+    END IF;
+END$$
+DELIMITER ;
 
 -- ============================================================
 --  VISTAS

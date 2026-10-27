@@ -137,6 +137,21 @@ return function (App $app) {
     // ==========================================
     $app->group('/admin', function (Group $group) {
         $group->get('/dashboard', [\App\Controllers\Admin\DashboardController::class, 'index']);
+        $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
+        $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
+        $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);
+        $group->post('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'guardar']);
+        $group->get('/estudiantes', [\App\Controllers\Admin\EstudiantesController::class, 'index']);
+        $group->get('/estudiantes/nuevo', [\App\Controllers\Admin\EstudiantesController::class, 'formulario']);
+        $group->post('/estudiantes', [\App\Controllers\Admin\EstudiantesController::class, 'guardar']);
+        $group->get('/estudiantes/{id:[1-9][0-9]*}', [\App\Controllers\Admin\EstudiantesController::class, 'ver']);
+        $group->get('/estudiantes/{id:[1-9][0-9]*}/editar', [\App\Controllers\Admin\EstudiantesController::class, 'formulario']);
+        $group->post('/estudiantes/{id:[1-9][0-9]*}', [\App\Controllers\Admin\EstudiantesController::class, 'guardar']);
+        $group->post('/estudiantes/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\EstudiantesController::class, 'estado']);
+        $group->get('/{seccion:categorias|instrumentos|cursos}', [\App\Controllers\Admin\GestionAcademicaController::class, 'index']);
+        $group->post('/{seccion:categorias|instrumentos|cursos}', [\App\Controllers\Admin\GestionAcademicaController::class, 'guardar']);
+        $group->post('/{seccion:categorias|instrumentos|cursos}/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GestionAcademicaController::class, 'guardar']);
+        $group->post('/{seccion:categorias|instrumentos}/{id:[1-9][0-9]*}/eliminar', [\App\Controllers\Admin\GestionAcademicaController::class, 'eliminar']);
+        $group->post('/cursos/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\GestionAcademicaController::class, 'estado']);
     })->add(new RequireRole('admin'));
 };
-

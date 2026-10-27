@@ -70,7 +70,7 @@
                                 <span class="input-group-text search-icon bg-white border-end-0">
                                     <i class="bi bi-search"></i>
                                 </span>
-                                <input type="search" name="q" class="form-control border-start-0"
+                                <input type="search" name="q" class="form-control border-start-0" maxlength="150" aria-label="Buscar cursos"
                                        placeholder="Buscar por instrumento o profesor..."
                                        value="<?= htmlspecialchars($filtros['q'] ?? '') ?>">
                             </div>
@@ -78,7 +78,7 @@
                         <div class="col-md-5">
                             <div class="d-flex justify-content-md-end align-items-center gap-2">
                                 <label for="orden" class="text-nowrap small text-muted">Ordenar por</label>
-                                <select name="orden" id="orden" class="form-select w-auto">
+                                <select name="orden" id="orden" class="form-select w-auto" onchange="this.form.submit()">
                                     <option value="populares" <?= ($filtros['orden'] ?? 'populares') === 'populares' ? 'selected' : '' ?>>Más populares</option>
                                     <option value="precio-asc" <?= ($filtros['orden'] ?? '') === 'precio-asc' ? 'selected' : '' ?>>Precio: menor a mayor</option>
                                     <option value="precio-desc" <?= ($filtros['orden'] ?? '') === 'precio-desc' ? 'selected' : '' ?>>Precio: mayor a menor</option>
@@ -88,6 +88,7 @@
                         </div>
                     </div>
 
+                    <button type="submit" class="btn btn-accent btn-sm mb-3">APLICAR FILTROS</button>
                     <p class="catalog-count mb-4">
                         Mostrando <strong><?= count($cursos ?? []) ?></strong> de <strong><?= (int) ($totalCursos ?? 0) ?></strong> cursos
                     </p>
@@ -111,7 +112,7 @@
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                                 <span class="instrument-badge"><?= htmlspecialchars((string) $curso['instrumento']) ?></span>
-                                                <span class="nivel-badge nivel-<?= mb_strtolower((string) $curso['nivel']) ?>">
+                                                <span class="nivel-badge nivel-<?= htmlspecialchars(mb_strtolower((string) $curso['nivel'])) ?>">
                                                     <?= htmlspecialchars((string) $curso['nivel']) ?>
                                                 </span>
                                             </div>
@@ -122,7 +123,7 @@
                                             </div>
                                         </div>
                                         <div class="card-footer catalog-card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                            <span class="price-tag"><?= htmlspecialchars(\App\Application\Formato\Dinero::monto((float) $curso['precio'], 0)) ?><small>/mes</small></span>
+                                            <span class="price-tag"><?= htmlspecialchars(\App\Application\Formato\Dinero::monto((float) $curso['precio'])) ?></span>
                                             <span class="schedule-line"><i class="bi bi-clock me-1"></i><?= htmlspecialchars((string) $curso['horario']) ?></span>
                                             <!-- Inscripción requiere sesión: fase 2 de la aplicación -->
                                             <a href="/cursos/<?= (int) $curso['id_curso'] ?>" class="btn btn-accent btn-sm px-3 fw-semibold">VER CURSO</a>

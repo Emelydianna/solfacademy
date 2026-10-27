@@ -28,7 +28,7 @@ final class AuthService
     public function intentarLogin(string $email, string $password): ?array
     {
         $sql = 'SELECT u.id_usuario, u.email_usuario, u.password_hash, u.rol, u.activo,
-                       u.id_estudiante, u.id_instructor,
+                       u.id_estudiante, u.id_instructor, u.version_sesion, e.estado AS estudiante_estado,
                        e.nombre AS estudiante_nombre, e.apellido AS estudiante_apellido,
                        i.nombre AS instructor_nombre, i.apellido AS instructor_apellido
                 FROM usuario u
@@ -44,6 +44,7 @@ final class AuthService
         if (
             $usuario === false
             || !(int) $usuario['activo']
+            || ($usuario['rol'] === 'estudiante' && $usuario['estudiante_estado'] !== 'Activo')
             || !password_verify($password, $usuario['password_hash'])
         ) {
             return null;
@@ -63,7 +64,7 @@ final class AuthService
 
         try {
             $stmt = $this->pdo->prepare(
-                'INSERT INTO estudiante (nombre, apellido, email) VALUES (:nombre, :apellido, :email)'
+                'INSERT INTO estudiante (nombre, apellido, email, fecha_inscripcion) VALUES (:nombre, :apellido, :email, CURDATE())'
             );
             $stmt->execute(['nombre' => $nombre, 'apellido' => $apellido, 'email' => $email]);
             $idEstudiante = (int) $this->pdo->lastInsertId();
@@ -192,6 +193,7 @@ final class AuthService
             'email' => (string) $fila['email_usuario'],
             'rol' => $rol,
             'id_referencia' => $idReferencia,
+            'version_sesion' => (int) ($fila['version_sesion'] ?? 0),
         ];
     }
 }

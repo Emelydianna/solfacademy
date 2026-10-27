@@ -10,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Estilos del portal (design system dark) -->
     <link href="/css/portal.css" rel="stylesheet">
+    <link href="/css/admin-academica.css" rel="stylesheet">
     <!-- Chart.js: en el <head> para que los scripts en línea del contenido lo encuentren -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -55,16 +56,15 @@
             <!-- Menú -->
             <nav class="portal-menu d-flex flex-column">
                 <?php
-                // Solo el dashboard está construido; el resto de secciones se
-                // irán abriendo en la fase de admin.
+                // Se habilitan únicamente los módulos implementados.
                 $menuPortal = [
                     ['dashboard',    '/admin/dashboard',      'bi-grid-1x2',           'Dashboard',       true],
-                    ['cursos',       '#',                     'bi-collection-play',    'Cursos',          false],
-                    ['estudiantes',  '#',                     'bi-people',             'Estudiantes',     false],
+                    ['cursos',       '/admin/cursos',         'bi-collection-play',    'Cursos',          true],
+                    ['estudiantes',  '/admin/estudiantes',    'bi-people',             'Estudiantes',     true],
                     ['instructores', '#',                     'bi-person-workspace',   'Instructores',    false],
-                    ['categorias',   '#',                     'bi-bookmark-star',      'Categorías',      false],
+                    ['categorias',   '/admin/categorias',     'bi-bookmark-star',      'Categorías',      true],
                     ['aulas',        '#',                     'bi-door-open',          'Aulas',           false],
-                    ['grupos',       '#',                     'bi-diagram-3',          'Grupos',          false],
+                    ['grupos',       '/admin/grupos',         'bi-diagram-3',          'Grupos',          true],
                     ['requisitos',   '#',                     'bi-clipboard-check',    'Requisitos',      false],
                     ['pagos',        '#',                     'bi-credit-card',        'Pagos',           false],
                     ['usuarios',     '#',                     'bi-person-badge',       'Usuarios',        false],
