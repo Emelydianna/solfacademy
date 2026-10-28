@@ -41,6 +41,7 @@ CREATE DATABASE IF NOT EXISTS solfacademy
 USE solfacademy;
 
 -- Borra las tablas si ya existieren (re-importable) -----------
+DROP TABLE IF EXISTS inscripcion_auditoria;
 DROP TABLE IF EXISTS pago;
 DROP TABLE IF EXISTS asistencia;
 DROP TABLE IF EXISTS evaluacion;
@@ -230,6 +231,7 @@ CREATE TABLE estudiante (
     telefono          VARCHAR(20) NULL,
     fecha_inscripcion DATE NULL,
     direccion         VARCHAR(255) NULL,
+    fecha_nacimiento  DATE NULL,
     estado            ENUM('Activo','Suspendido') NOT NULL DEFAULT 'Activo',
     suspension_fecha  DATETIME NULL,
     suspension_motivo VARCHAR(255) NULL,
@@ -264,6 +266,9 @@ CREATE TABLE inscripcion (
     estado             ENUM('Pendiente','Activa','Cancelada','Finalizada') NOT NULL DEFAULT 'Activa',
     precio_inscripcion DECIMAL(8,2) NULL,   -- precio congelado al matricular
     observaciones      TEXT NULL,
+    revisado_por       INT UNSIGNED NULL,
+    fecha_revision     DATETIME NULL,
+    motivo_revision    VARCHAR(255) NULL,
     PRIMARY KEY (id_inscripcion),
     CONSTRAINT fk_inscripcion_estudiante FOREIGN KEY (id_estudiante)
         REFERENCES estudiante (id_estudiante),
@@ -291,6 +296,23 @@ CREATE TABLE pago (
     CONSTRAINT fk_pago_usuario FOREIGN KEY (creado_por)
         REFERENCES usuario (id_usuario),
     CHECK (monto_pagado > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Historial de cambios de estado de una matrícula; nunca se borra.
+CREATE TABLE inscripcion_auditoria (
+    id_auditoria     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_inscripcion   INT UNSIGNED NOT NULL,
+    estado_anterior  VARCHAR(20) NULL,
+    estado_nuevo     VARCHAR(20) NOT NULL,
+    motivo           VARCHAR(255) NULL,
+    id_usuario       INT UNSIGNED NOT NULL,
+    fecha            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_auditoria),
+    KEY idx_auditoria_inscripcion (id_inscripcion),
+    CONSTRAINT fk_auditoria_inscripcion FOREIGN KEY (id_inscripcion)
+        REFERENCES inscripcion (id_inscripcion),
+    CONSTRAINT fk_auditoria_usuario FOREIGN KEY (id_usuario)
+        REFERENCES usuario (id_usuario)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE evaluacion (

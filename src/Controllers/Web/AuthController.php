@@ -34,6 +34,7 @@ class AuthController
         return $this->view->render($response, 'web/auth/login.php', [
             'tituloPagina' => 'Iniciar Sesión — SolfAcademy',
             'paginaActiva' => 'login',
+            'next' => $this->destinoSeguro($request->getQueryParams()['next'] ?? null),
         ]);
     }
 
@@ -55,10 +56,11 @@ class AuthController
                 'paginaActiva' => 'login',
                 'errorLogin' => 'El correo o la contraseña no son correctos.',
                 'emailAnterior' => $email,
+                'next' => $this->destinoSeguro($datos['next'] ?? null),
             ]);
         }
 
-        return $this->redirigirSegunRol($response, (string) $usuario['rol']);
+        return $this->redirigirSegunRol($response, (string) $usuario['rol'], $this->destinoSeguro($datos['next'] ?? null));
     }
 
     public function registerForm(Request $request, Response $response): Response
@@ -130,15 +132,24 @@ class AuthController
         return $response->withStatus(302)->withHeader('Location', '/');
     }
 
-    private function redirigirSegunRol(Response $response, string $rol): Response
+    private function redirigirSegunRol(Response $response, string $rol, ?string $destinoEstudiante = null): Response
     {
         $destino = match ($rol) {
-            'estudiante' => '/estudiante/dashboard',
+            'estudiante' => $destinoEstudiante ?? '/estudiante/dashboard',
             'instructor' => '/instructor/dashboard',
             'admin' => '/admin/dashboard',
             default => '/',
         };
 
         return $response->withStatus(302)->withHeader('Location', $destino);
+    }
+
+    /** Solo conserva rutas internas del portal del estudiante. */
+    private function destinoSeguro(mixed $destino): ?string
+    {
+        if (!is_string($destino) || !str_starts_with($destino, '/estudiante/') || str_starts_with($destino, '//')) {
+            return null;
+        }
+        return $destino;
     }
 }

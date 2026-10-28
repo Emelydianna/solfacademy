@@ -30,10 +30,14 @@ class MisCursosController
 
         $this->view->setLayout('estudiante/layout.php');
 
+        $flash = $_SESSION['matricula_flash'] ?? null;
+        unset($_SESSION['matricula_flash']);
+
         return $this->view->render($response, 'estudiante/cursos.php', [
             'tituloPagina' => 'Mis Cursos — Portal del Estudiante',
             'paginaPortal' => 'cursos',
             'cursos' => $this->portal->misCursos((int) $usuario['id_referencia']),
+            'flash' => $flash,
         ]);
     }
 }

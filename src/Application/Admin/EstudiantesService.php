@@ -101,7 +101,7 @@ final class EstudiantesService
     {
         $v = [];
         $errores = [];
-        foreach (['nombre', 'apellido', 'email', 'telefono', 'direccion', 'fecha_inscripcion', 'crear_cuenta', 'acceso_activo'] as $campo) {
+        foreach (['nombre', 'apellido', 'email', 'telefono', 'direccion', 'fecha_inscripcion', 'fecha_nacimiento', 'crear_cuenta', 'acceso_activo'] as $campo) {
             $v[$campo] = GestionAcademicaService::texto($datos, $campo);
         }
         foreach (['nombre', 'apellido'] as $campo) {
@@ -123,6 +123,9 @@ final class EstudiantesService
         }
         if ($v['fecha_inscripcion'] !== '' && (!ListadoAdmin::fecha($v['fecha_inscripcion']) || $v['fecha_inscripcion'] > date('Y-m-d'))) {
             $errores['fecha_inscripcion'] = 'Indica una fecha válida, no futura.';
+        }
+        if ($v['fecha_nacimiento'] !== '' && (!ListadoAdmin::fecha($v['fecha_nacimiento']) || $v['fecha_nacimiento'] > date('Y-m-d'))) {
+            $errores['fecha_nacimiento'] = 'Indica una fecha de nacimiento válida, no futura.';
         }
         if (!in_array($v['acceso_activo'], ['', '0', '1'], true)) {
             $errores['acceso_activo'] = 'Selecciona un estado de acceso válido.';
@@ -171,10 +174,11 @@ final class EstudiantesService
             if ($duplicado || (int) $stmt->fetchColumn() > 0) {
                 throw new DomainException('Ya existe una ficha o cuenta con ese correo electrónico.', 1);
             }
-            $campos = array_intersect_key($v, array_flip(['nombre', 'apellido', 'email', 'telefono', 'direccion', 'fecha_inscripcion']));
+            $campos = array_intersect_key($v, array_flip(['nombre', 'apellido', 'email', 'telefono', 'direccion', 'fecha_inscripcion', 'fecha_nacimiento']));
             $campos['telefono'] = $campos['telefono'] ?: null;
             $campos['direccion'] = $campos['direccion'] ?: null;
             $campos['fecha_inscripcion'] = $campos['fecha_inscripcion'] ?: null;
+            $campos['fecha_nacimiento'] = $campos['fecha_nacimiento'] ?: null;
             if ($id) {
                 $sql = 'UPDATE estudiante SET ' . implode(', ', array_map(static fn ($c): string => "$c = :$c", array_keys($campos))) . ' WHERE id_estudiante = :id';
                 $campos['id'] = $id;

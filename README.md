@@ -146,6 +146,12 @@ el nuevo campo distingue mantenimiento de otra inactividad. Las aulas existentes
 reciben `General`; no se presume que estén en mantenimiento. Vuelve a ejecutar
 el comando al actualizar a los módulos de Instructores y Aulas.
 
+Para Requisitos y Matrículas añade `estudiante.fecha_nacimiento` (opcional),
+campos de revisión de `inscripcion` y la tabla de historial
+`inscripcion_auditoria`. Ejecuta nuevamente el mismo comando; no importa
+ni borra registros. La edad de alumnos existentes queda vacía hasta que se
+configure, sin inventar fechas históricas.
+
 ### Evitar errores comunes
 
 - **"Unknown database solfacademy"** → aún no importaste `database/solfacademy.sql`.
@@ -198,6 +204,8 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET / POST | `/estudiante/reservas/cabinas` | Reservar cabina de práctica |
 | GET / POST | `/estudiante/reservas/extras` | Pedir clase extra con el profesor del grupo |
 | POST | `/estudiante/reservas/{id}/cancelar` | Cancelar una reserva propia |
+| GET / POST | `/estudiante/matricular/{grupo}` | Revisar grupo/requisitos y enviar solicitud pendiente |
+| POST | `/estudiante/matriculas/{id}/cancelar` | Cancelar una solicitud propia pendiente |
 
 #### Portal del instructor — `/instructor/*`
 
@@ -246,6 +254,12 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET / POST | `/admin/aulas/{id}` | Agenda e historial / guardar datos y capacidad |
 | GET | `/admin/aulas/{id}/editar` | Formulario de edición |
 | POST | `/admin/aulas/{id}/estado` | Habilitar, deshabilitar o poner en mantenimiento |
+| GET | `/admin/requisitos` | Listar y buscar requisitos de cursos |
+| GET / POST | `/admin/requisitos/{id}` | Consultar o guardar requisitos de un curso |
+| GET | `/admin/matriculas` | Listar y filtrar solicitudes e inscripciones |
+| GET | `/admin/matriculas/{id}` | Revisar requisitos, cupo e historial |
+| POST | `/admin/matriculas/{id}/aprobar` | Aprobar una solicitud pendiente con confirmación |
+| POST | `/admin/matriculas/{id}/rechazar` | Rechazar y liberar cupo con motivo |
 
 La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
 cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
@@ -256,9 +270,52 @@ Los instructores se asignan a **grupos**, no directamente a cursos. El precio
 se presenta en **USD como precio del curso**, no como mensualidad. Editarlo no
 modifica `inscripcion.precio_inscripcion` de matrículas existentes.
 Solo los cursos activos y disponibles aparecen en `/cursos` y `/cursos/{id}`;
-se muestran grupos activos o planeados, horarios y requisitos reales. Cuando
+se muestran grupos activos con cupos, horarios y requisitos reales. Cuando
 faltan datos se indica expresamente; no se generan temarios ni reseñas ficticias.
-La gestión de requisitos queda para los siguientes módulos.
+
+El detalle de curso permite a un estudiante autenticado solicitar matrícula en
+un grupo con lugares. Sin sesión, la ruta de solicitud redirige a
+`/login?next=…` y el login vuelve automáticamente al formulario. Si el curso
+no tiene requisitos configurados, se dice claramente; no se muestran como
+"pendientes" condiciones inexistentes.
+
+#### Requisitos
+
+`/admin/requisitos` lista todos los cursos y permite distinguir los que tienen
+condiciones configuradas. El formulario administra nivel mínimo, rango de edad,
+conocimientos, instrumento propio/alquiler y descripción. Solo puede existir un
+requisito por curso y se actualiza dentro de transacción.
+
+La edad se verifica automáticamente cuando `estudiante.fecha_nacimiento` existe;
+si falta, el estudiante puede enviar la solicitud, pero el administrador debe
+confirmarla manualmente antes de aprobar. Nivel y conocimientos siempre requieren
+revisión explícita. No se infiere aprobación por matrículas anteriores.
+
+#### Matrículas desde el portal
+
+`/estudiante/matricular/{grupo}` muestra curso, grupo, instructor, aula, fechas,
+horarios, lugares, requisitos y precio. El estudiante debe confirmar que revisó
+la información. Al enviar:
+
+- se bloquean curso, estudiante y grupo en el orden usado por Grupos;
+- se comprueba estudiante activo, grupo activo, curso habilitado, cupo,
+  matrícula vigente del mismo curso y conflictos de horario;
+- se crea `Pendiente`, congelando `precio_inscripcion`;
+- se registra el evento inicial en `inscripcion_auditoria`;
+- **no se crea ningún pago**.
+
+`Activa + Pendiente` ocupan lugar. Una matrícula pendiente queda visible en
+Mis Cursos, donde el propio estudiante puede cancelarla y liberar el cupo.
+Las solicitudes no vencen automáticamente por ahora; la lista administrativa
+muestra su antigüedad.
+
+`/admin/matriculas` filtra por estudiante, curso y estado. El detalle revisa
+edad, nivel, conocimientos, instrumento, conflictos, grupo, cupo y precio. La
+aprobación exige confirmar requisitos y, si no hay fecha de nacimiento,
+confirmar la edad manualmente; vuelve a validar estudiante, grupo, duplicados,
+horarios, edad y capacidad. El rechazo exige motivo. Aprobar no significa que
+la matrícula esté pagada. Cada decisión queda en la auditoría con responsable,
+fecha y motivo; los registros existentes pueden no tener historial anterior.
 
 #### Grupos
 
@@ -286,7 +343,8 @@ la sesión del administrador. La edición sincroniza el email de ficha y cuenta
 en una transacción; nunca rellena contraseñas en respuestas de error.
 Un estudiante puede tener varios instrumentos, derivados de sus matrículas.
 La ficha muestra notas, asistencia, importes pagados y saldo calculado, sin
-modificar pagos. La gestión de nuevas matrículas se abordará por separado.
+modificar pagos. Su fecha de nacimiento es opcional y alimenta la verificación
+de requisitos cuando esté registrada.
 
 Suspender requiere motivo y confirmación de las matrículas afectadas. En una
 única transacción cancela las `Activas` y `Pendientes`, libera sus cupos,
@@ -359,6 +417,7 @@ src/Application/Estudiante/→ lógica del portal del estudiante
 src/Application/Instructor/→ InstructorService (grupos, notas, asistencia, fichas)
 src/Application/Perfil/    → almacenamiento y validación de fotos
 src/Application/Admin/     → dashboard y gestión académica
+src/Application/Academico/ → requisitos y ciclo de matrículas
 src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
 src/Controllers/Estudiante/→ controladores del portal del estudiante

@@ -9,7 +9,7 @@
                 <h2 class="portal-card-title mb-4">Ficha personal</h2>
                 <div class="row"><div class="col-md-6"><?php $input('nombre', 'Nombre *', 'text', 'required maxlength="100" autocomplete="given-name"'); ?></div><div class="col-md-6"><?php $input('apellido', 'Apellidos *', 'text', 'required maxlength="100" autocomplete="family-name"'); ?></div></div>
                 <?php $input('email', 'Correo electrónico *', 'email', 'required maxlength="150" autocomplete="email"'); ?>
-                <div class="row"><div class="col-md-6"><?php $input('telefono', 'Teléfono', 'tel', 'maxlength="20" autocomplete="tel"'); ?></div><div class="col-md-6"><?php $input('fecha_inscripcion', 'Fecha de registro', 'date', 'max="' . date('Y-m-d') . '"'); ?></div></div>
+                <div class="row"><div class="col-md-4"><?php $input('telefono', 'Teléfono', 'tel', 'maxlength="20" autocomplete="tel"'); ?></div><div class="col-md-4"><?php $input('fecha_inscripcion', 'Fecha de registro', 'date', 'max="' . date('Y-m-d') . '"'); ?></div><div class="col-md-4"><?php $input('fecha_nacimiento', 'Fecha de nacimiento', 'date', 'max="' . date('Y-m-d') . '"'); ?></div></div>
                 <?php $input('direccion', 'Dirección', 'text', 'maxlength="255" autocomplete="street-address"'); ?>
                 <?php if ($idEdicion && !$valor('fecha_inscripcion')): ?><p class="small admin-muted">La ficha no tiene fecha de registro. Puedes conservarla vacía; no se inventará una fecha histórica.</p><?php endif; ?>
             </div><div class="col-lg-5">

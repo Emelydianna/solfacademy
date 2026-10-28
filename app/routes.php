@@ -16,6 +16,7 @@ use App\Controllers\Estudiante\CalendarioController;
 use App\Controllers\Estudiante\CalificacionesController;
 use App\Controllers\Estudiante\DashboardController;
 use App\Controllers\Estudiante\MisCursosController;
+use App\Controllers\Estudiante\MatriculaController;
 use App\Controllers\Estudiante\PagosController;
 use App\Controllers\Estudiante\PerfilController;
 use App\Controllers\Estudiante\ReservaCabinaController;
@@ -75,6 +76,9 @@ return function (App $app) {
         $group->get('/reservas/extras', [ReservaExtraController::class, 'crearFormulario']);
         $group->post('/reservas/extras', [ReservaExtraController::class, 'crear']);
         $group->post('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
+        $group->get('/matricular/{grupo:[1-9][0-9]*}', [MatriculaController::class, 'solicitar']);
+        $group->post('/matricular/{grupo:[1-9][0-9]*}', [MatriculaController::class, 'confirmar']);
+        $group->post('/matriculas/{id:[1-9][0-9]*}/cancelar', [MatriculaController::class, 'cancelar']);
     })->add(new RequireRole('estudiante'));
 
     $app->options('/{routes:.*}', function (Request $request, Response $response) {
@@ -152,6 +156,13 @@ return function (App $app) {
         $group->get('/aulas/{id:[1-9][0-9]*}/editar', [\App\Controllers\Admin\AulasController::class, 'formulario']);
         $group->post('/aulas/{id:[1-9][0-9]*}', [\App\Controllers\Admin\AulasController::class, 'guardar']);
         $group->post('/aulas/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\AulasController::class, 'estado']);
+        $group->get('/requisitos', [\App\Controllers\Admin\RequisitosController::class, 'index']);
+        $group->get('/requisitos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\RequisitosController::class, 'formulario']);
+        $group->post('/requisitos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\RequisitosController::class, 'guardar']);
+        $group->get('/matriculas', [\App\Controllers\Admin\MatriculasController::class, 'index']);
+        $group->get('/matriculas/{id:[1-9][0-9]*}', [\App\Controllers\Admin\MatriculasController::class, 'detalle']);
+        $group->post('/matriculas/{id:[1-9][0-9]*}/aprobar', [\App\Controllers\Admin\MatriculasController::class, 'aprobar']);
+        $group->post('/matriculas/{id:[1-9][0-9]*}/rechazar', [\App\Controllers\Admin\MatriculasController::class, 'rechazar']);
         $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
         $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
         $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);

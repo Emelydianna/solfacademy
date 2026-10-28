@@ -16,6 +16,7 @@ final class MigracionGestion
                 'estado' => "ENUM('Activo','Suspendido') NOT NULL DEFAULT 'Activo'",
                 'suspension_fecha' => 'DATETIME NULL',
                 'suspension_motivo' => 'VARCHAR(255) NULL',
+                'fecha_nacimiento' => 'DATE NULL',
             ],
             'usuario' => [
                 'version_sesion' => 'INT UNSIGNED NOT NULL DEFAULT 0',
@@ -23,6 +24,11 @@ final class MigracionGestion
             ],
             'aula' => [
                 'tipo_inactividad' => "ENUM('General','Mantenimiento') NOT NULL DEFAULT 'General'",
+            ],
+            'inscripcion' => [
+                'revisado_por' => 'INT UNSIGNED NULL',
+                'fecha_revision' => 'DATETIME NULL',
+                'motivo_revision' => 'VARCHAR(255) NULL',
             ],
         ];
         foreach ($definiciones as $tabla => $campos) {
@@ -37,6 +43,19 @@ final class MigracionGestion
                 $pdo->exec("ALTER TABLE $tabla " . implode(', ', $agregar));
             }
         }
+        $pdo->exec('CREATE TABLE IF NOT EXISTS inscripcion_auditoria (
+            id_auditoria INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            id_inscripcion INT UNSIGNED NOT NULL,
+            estado_anterior VARCHAR(20) NULL,
+            estado_nuevo VARCHAR(20) NOT NULL,
+            motivo VARCHAR(255) NULL,
+            id_usuario INT UNSIGNED NOT NULL,
+            fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id_auditoria),
+            KEY idx_auditoria_inscripcion (id_inscripcion),
+            CONSTRAINT fk_auditoria_inscripcion FOREIGN KEY (id_inscripcion)
+                REFERENCES inscripcion (id_inscripcion)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
     }
 
     public static function aplicar(PDO $pdo): void

@@ -8,6 +8,7 @@
 .admin-academica .admin-btn-outline { color: var(--portal-text); border: 1px solid #526078; }
 .admin-academica .admin-btn-outline:hover { background: var(--portal-surface-2); color: #fff; }
 .admin-academica .form-label { font-size: .82rem; font-weight: 600; color: var(--portal-text); }
+.admin-academica .form-text, .admin-academica .form-check-label { color: var(--portal-muted); }
 .admin-academica legend.form-label { float: none; width: auto; }
 .admin-academica .form-control, .admin-academica .form-select, .admin-academica .input-group-text { background-color: var(--portal-surface-2); color: var(--portal-text); border-color: #344158; }
 .admin-academica .form-control::placeholder { color: var(--portal-muted); }

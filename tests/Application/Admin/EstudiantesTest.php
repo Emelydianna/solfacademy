@@ -151,12 +151,12 @@ final class EstudiantesTest extends GestionOperativaTestCase
         $_SESSION['usuario'] = $sesion;
         $r = $app->handle($this->createRequest('GET', '/estudiante/dashboard'));
         $this->assertSame(302, $r->getStatusCode());
-        $this->assertSame('/login', $r->getHeaderLine('Location'));
+        $this->assertSame('/login?next=%2Festudiante%2Fdashboard', $r->getHeaderLine('Location'));
         $this->assertArrayNotHasKey('usuario', $_SESSION);
         $_SESSION['usuario'] = $sesion;
         $token = Csrf::token();
         $r = $app->handle($this->createRequest('POST', '/estudiante/reservas/extras')->withParsedBody(['_csrf' => $token]));
-        $this->assertSame('/login', $r->getHeaderLine('Location'));
+        $this->assertSame('/login?next=%2Festudiante%2Freservas%2Fextras', $r->getHeaderLine('Location'));
         $this->assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM reserva_clase_extra')->fetchColumn());
     }
 

@@ -23,16 +23,23 @@ $e = static fn ($valor): string => htmlspecialchars((string) ($valor ?? ''), ENT
             <div class="card content-card"><div class="card-body p-4">
                 <h2 class="content-card-title h4">Grupos y horarios</h2>
                 <?php if (!$curso['grupos']): ?>
-                    <p class="content-text mb-0">Este curso aún no tiene grupos activos o planeados. Consulta en administración para conocer las próximas fechas.</p>
+                    <p class="content-text mb-0">Este curso aún no tiene grupos activos disponibles.</p>
                 <?php else: ?>
                     <?php foreach ($curso['grupos'] as $grupo): ?>
                         <section class="mb-4">
                             <h3 class="h6 text-white">Grupo #<?= (int) $grupo['id_grupo'] ?> · <?= $e($grupo['instructor']) ?></h3>
-                            <p class="content-text mb-1"><?= $e($grupo['aula']) ?> · <?= $grupo['estado'] === 'planeado' ? 'Planeado' : 'Activo' ?></p>
+                            <p class="content-text mb-1"><?= $e($grupo['aula']) ?> · <?= (int) $grupo['lugares'] ?> lugares disponibles</p>
                             <p class="content-text mb-1">Inicio: <?= $e($grupo['fecha_inicio']) ?><?= $grupo['fecha_fin'] ? ' · Fin: ' . $e($grupo['fecha_fin']) : '' ?></p>
                             <?php if ($grupo['horarios']): ?>
-                                <ul class="content-text mb-0"><?php foreach ($grupo['horarios'] as $horario): ?><li><?= $e($horario) ?></li><?php endforeach; ?></ul>
-                            <?php else: ?><p class="content-text mb-0">Horario por definir.</p><?php endif; ?>
+                                <ul class="content-text mb-2"><?php foreach ($grupo['horarios'] as $horario): ?><li><?= $e($horario['dia_semana'] . ' ' . $horario['hora_inicio'] . '–' . $horario['hora_fin']) ?></li><?php endforeach; ?></ul>
+                            <?php else: ?><p class="content-text mb-2">Horario por definir.</p><?php endif; ?>
+                            <?php if (!empty($curso['matricula_vigente'])): ?>
+                                <span class="btn btn-outline-light fw-semibold disabled">Matrícula <?= $e($curso['matricula_vigente']['estado']) ?></span>
+                            <?php elseif ($grupo['lugares'] < 1): ?>
+                                <span class="btn btn-outline-light fw-semibold disabled">Grupo lleno</span>
+                            <?php else: ?>
+                                <a href="/estudiante/matricular/<?= (int) $grupo['id_grupo'] ?>" class="btn btn-accent fw-semibold">SOLICITAR MATRÍCULA</a>
+                            <?php endif; ?>
                         </section>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -60,7 +67,7 @@ $e = static fn ($valor): string => htmlspecialchars((string) ($valor ?? ''), ENT
                     <?php if ($requisito['conocimientos_previos']): ?><p class="content-text"><?= $e($requisito['conocimientos_previos']) ?></p><?php endif; ?>
                     <?php if ($requisito['descripcion_general']): ?><p class="content-text"><?= nl2br($e($requisito['descripcion_general'])) ?></p><?php endif; ?>
                     <?php if ($requisito['necesita_instrumento']): ?><p class="content-text mb-0">Requiere instrumento propio<?= $requisito['puede_alquilar'] ? ' o de alquiler' : '' ?>.</p><?php endif; ?>
-                <?php else: ?><p class="content-text mb-0">Requisitos pendientes de publicación. Consulta con administración.</p><?php endif; ?>
+                <?php else: ?><p class="content-text mb-0">Este curso no tiene requisitos configurados. Administración revisará la solicitud.</p><?php endif; ?>
             </div></div>
         </div>
     </div></div>

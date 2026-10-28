@@ -34,6 +34,10 @@ $diasCortos = [
     <?php endif; ?>
 </div>
 
+<?php if (!empty($flash)): ?>
+    <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> mb-4"><?= htmlspecialchars($flash['mensaje']) ?></div>
+<?php endif; ?>
+
 <?php if (count($cursos) === 0): ?>
     <div class="portal-card p-4 text-center">
         <i class="bi bi-journal-x fs-1 d-block mb-2" style="color: var(--portal-muted);"></i>
@@ -116,6 +120,11 @@ $diasCortos = [
 
                     <!-- Acción inferior -->
                     <div class="px-3 pb-3">
+                        <?php if ($curso['estado'] === 'Pendiente'): ?>
+                            <form method="post" action="/estudiante/matriculas/<?= (int) $curso['id_inscripcion'] ?>/cancelar" class="mb-2" data-confirm="¿Cancelar esta solicitud? El lugar se liberará inmediatamente.">
+                                <?= \App\Application\Security\Csrf::campo() ?><button type="submit" class="btn btn-outline-danger w-100 fw-bold">Cancelar solicitud</button>
+                            </form>
+                        <?php endif; ?>
                         <?php if ($finalizado): ?>
                             <button type="button"
                                     class="btn btn-accent w-100 fw-bold"
@@ -167,5 +176,12 @@ $diasCortos = [
             if (titulo) elTitulo.textContent = titulo;
             if (mensaje) elMensaje.textContent = mensaje;
         });
+    });
+
+    document.addEventListener('submit', function (evento) {
+        var formulario = evento.target.closest('form[data-confirm]');
+        if (formulario && !window.confirm(formulario.getAttribute('data-confirm'))) {
+            evento.preventDefault();
+        }
     });
 </script>

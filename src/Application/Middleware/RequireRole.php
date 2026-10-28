@@ -48,9 +48,14 @@ final class RequireRole implements Middleware
 
         $usuario = $_SESSION['usuario'] ?? null;
 
-        // No hay sesión: al login
+        // No hay sesión: al login, conservando una ruta válida del portal.
         if ($usuario === null || $usuario === []) {
-            return $this->redirigir('/login');
+            $destino = '/login';
+            $ruta = (string) $request->getUri()->getPath();
+            if (str_starts_with($ruta, '/estudiante/')) {
+                $destino .= '?next=' . rawurlencode($ruta);
+            }
+            return $this->redirigir($destino);
         }
 
         $rolActual = (string) ($usuario['rol'] ?? '');
