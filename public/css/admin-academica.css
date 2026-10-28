@@ -37,6 +37,20 @@
 .admin-academica .admin-badge-success { color: #6ee7b7; background: rgb(52 211 153 / 12%); }
 .admin-academica .admin-badge-danger { color: #fca5a5; background: rgb(248 113 113 / 12%); }
 .admin-academica .admin-badge-warning { color: #fcd34d; background: rgb(255 193 7 / 12%); }
+/* Badges de rol: colores distintivos por perfil (módulo Usuarios). */
+.admin-academica .admin-badge-rol-admin { color: #e2e8f0; background: rgb(100 116 139 / 22%); border: 1px solid rgb(148 163 184 / 25%); }
+.admin-academica .admin-badge-rol-instructor { color: #7dd3fc; background: rgb(14 165 233 / 14%); }
+.admin-academica .admin-badge-rol-estudiante { color: #86efac; background: rgb(34 197 94 / 14%); }
+/* Píldoras de filtro por rol: activa en amarillo de marca. */
+.admin-academica .admin-rol-tab { display: inline-block; padding: .4rem .95rem; border: 1px solid #526078; border-radius: 2rem; font-size: .8rem; font-weight: 600; color: var(--portal-text); background: transparent; text-decoration: none; white-space: nowrap; }
+.admin-academica .admin-rol-tab:hover { background: var(--portal-surface-2); color: #fff; border-color: var(--portal-gold); }
+.admin-academica .admin-rol-tab.active { background: var(--portal-gold); border-color: var(--portal-gold); color: #0b0f19; }
+.admin-academica .admin-rol-tab:focus-visible { outline: 2px solid var(--portal-gold); outline-offset: 2px; }
+/* Estado de cuenta con punto indicador: • Activo / • Bloqueado. */
+.admin-academica .admin-dot::before { content: '• '; font-size: 1rem; line-height: 0; vertical-align: middle; }
+.admin-academica .admin-dot-activo::before { color: #6ee7b7; }
+.admin-academica .admin-dot-bloqueado::before { color: #f87171; }
+.admin-academica .admin-fecha-actual { color: var(--portal-muted); font-size: .82rem; white-space: nowrap; }
 .admin-academica .admin-icon-btn { padding: .35rem .55rem; border: 1px solid transparent; }
 .admin-academica .admin-icon-btn:hover { background: var(--portal-surface-2); border-color: var(--portal-border); }
 .admin-academica .admin-edit { color: var(--portal-gold); }

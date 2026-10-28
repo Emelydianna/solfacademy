@@ -93,7 +93,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 | Cobro | `pago` (con `referencia_pago`, `comprobante_url`, `creado_por` y verificación: `verificado_por`, `fecha_verificacion`, `motivo_verificacion`) |
 | Perfil del alumno | `estudiante_foto`, `estudiante_preferencias`, `estudiante_instrumento_historial` |
 | Reservas | `cabina`, `reserva_cabina`, `reserva_clase_extra` (también toca `grupo` e `instructor`) |
-| Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`) |
+| Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`; listado, alta y bloqueo en `/admin/usuarios`) |
 
 > **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. Todos los usuarios de prueba usan la contraseña `solfacademy123` (por ejemplo `admin@solfacademy.com` o `laura.gomez@ejemplo.com`).
 >
@@ -277,6 +277,10 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET | `/admin/pagos/comprobante/{archivo}` | Sirve el comprobante (solo panel autenticado) |
 | GET / POST | `/admin/descuentos`, `/admin/descuentos/nuevo`, `/admin/descuentos/{id}` | Listar, crear y editar códigos de descuento |
 | POST | `/admin/descuentos/{id}/estado` | Activar/desactivar (nunca se borra un cupón) |
+| GET | `/admin/usuarios` | Cuentas de acceso con píldoras por rol, búsqueda y estado |
+| GET / POST | `/admin/usuarios/nuevo`, `/admin/usuarios` | Alta de cuenta (admin, o persona sin cuenta) |
+| GET | `/admin/usuarios/{id}` | Ficha de la cuenta y acciones de seguridad |
+| POST | `/admin/usuarios/{id}/bloqueo` | Bloquear/reactivar (invalida sesiones abiertas) |
 
 La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
 cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
@@ -459,6 +463,33 @@ Mantenimiento. No se deshabilita un aula con grupos abiertos ni se reduce su
 capacidad por debajo de la configurada en ellos. Los bloqueos se comparten con
 la gestión de grupos y se conserva el historial; no se borran aulas.
 
+#### Usuarios
+
+`/admin/usuarios` lista las cuentas de acceso con píldoras de filtro por rol
+(Todos, Admin, Instructor, Estudiante —el ENUM de `usuario` no admite más),
+búsqueda por correo/nombre/`#id` y filtro de estado. Cada fila muestra avatar
+o iniciales, correo, badge de rol con color propio, el último acceso en
+términos relativos (`Fecha::relativo`: "Activo ahora", "Hace 12 min", "Ayer",
+"Nunca ha entrado") y `• Activo` / `• Bloqueado`. La cuenta administrativa no
+tiene ficha de persona, así que se presenta como "Administrador", igual que en
+el sidebar.
+
+Las acciones son de seguridad, no de edición: el correo y los datos
+personales se siguen cambiando desde Estudiantes/Instructores, donde ya se
+sincronizan en transacción. **Bloquear** pone `activo = 0` y suma
+`version_sesion`, de modo que cualquier sesión abierta deja de valer en la
+siguiente petición (`CuentaService::vigente`); no se puede bloquear la cuenta
+propia, y no se reactiva una cuenta cuyo estudiante esté suspendido o cuyo
+instructor esté inactivo: primero se reactiva a la persona desde su ficha.
+Las cuentas nunca se borran.
+
+El alta (`/admin/usuarios/nuevo`) crea una cuenta admin sin persona, o da
+acceso a un instructor/estudiante **sin cuenta** y activo: el correo se toma
+de la ficha (y queda bloqueado en el formulario) para no desincronizarlo, la
+contraseña solo se guarda con `password_hash()` y una persona sin correo en
+su ficha lo completa al crear la cuenta. La contraseña solo se guarda con
+`password_hash()`, debe tener 8–72 bytes y teclearse dos veces.
+
 ## Estructura del proyecto
 
 ```
@@ -477,8 +508,9 @@ src/Application/Instructor/→ InstructorService (grupos, notas, asistencia, fic
 src/Application/Perfil/    → almacenamiento y validación de fotos
 src/Application/Pagos/     → ComprobanteStorage (subida y lectura de archivos)
 src/Application/Descuentos/→ DescuentosService (códigos y su aplicación al matricular)
-src/Application/Admin/     → dashboard, verificación de pagos y gestión académica
+src/Application/Admin/     → dashboard, verificación de pagos, usuarios y gestión académica
 src/Application/Academico/ → requisitos y ciclo de matrículas
+src/Application/Formato/   → Dinero y Fecha (formatos sin depender del locale)
 src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
 src/Controllers/Estudiante/→ controladores del portal del estudiante

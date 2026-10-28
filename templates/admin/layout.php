@@ -69,7 +69,7 @@
                     ['matriculas',   '/admin/matriculas',    'bi-journal-check',      'Matrículas',      true],
                     ['descuentos',   '/admin/descuentos',    'bi-ticket-percent',     'Descuentos',      true],
                     ['pagos',        '/admin/pagos',          'bi-credit-card',        'Pagos',           true],
-                    ['usuarios',     '#',                     'bi-person-badge',       'Usuarios',        false],
+                    ['usuarios',     '/admin/usuarios',      'bi-person-badge',       'Usuarios',        true],
                     ['reportes',     '#',                     'bi-file-earmark-bar-graph', 'Reportes',    false],
                     ['config',       '#',                     'bi-sliders',            'Configuración',   false],
                 ];

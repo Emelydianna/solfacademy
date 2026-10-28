@@ -176,6 +176,11 @@ return function (App $app) {
         $group->get('/descuentos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\DescuentosController::class, 'formulario']);
         $group->post('/descuentos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\DescuentosController::class, 'guardar']);
         $group->post('/descuentos/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\DescuentosController::class, 'estado']);
+        $group->get('/usuarios', [\App\Controllers\Admin\UsuariosController::class, 'index']);
+        $group->get('/usuarios/nuevo', [\App\Controllers\Admin\UsuariosController::class, 'nuevo']);
+        $group->post('/usuarios', [\App\Controllers\Admin\UsuariosController::class, 'guardar']);
+        $group->get('/usuarios/{id:[1-9][0-9]*}', [\App\Controllers\Admin\UsuariosController::class, 'detalle']);
+        $group->post('/usuarios/{id:[1-9][0-9]*}/bloqueo', [\App\Controllers\Admin\UsuariosController::class, 'bloqueo']);
         $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
         $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
         $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);
