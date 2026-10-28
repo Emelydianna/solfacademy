@@ -47,7 +47,15 @@ $capacidadValida = (int) $matricula['ocupados'] <= (int) $matricula['capacidad_m
         <div class="col-lg-5"><section class="portal-card p-4 h-100">
             <h2 class="portal-card-title">Grupo y reserva de cupo</h2>
             <p><?= $e($matricula['instructor']) ?> · <?= $e($matricula['aula']) ?></p><p class="mb-1"><?= $e(ucfirst((string) $matricula['grupo_estado'])) ?> · Ocupación actual: <?= (int) $matricula['ocupados'] ?> de <?= (int) $matricula['capacidad_maxima'] ?></p>
-            <p>Precio congelado: <strong><?= $matricula['precio_inscripcion'] !== null ? '$ ' . number_format((float) $matricula['precio_inscripcion'], 2) : 'Sin precio' ?></strong></p>
+            <p>Precio congelado: <strong><?= $matricula['precio_inscripcion'] !== null ? '$ ' . number_format((float) $matricula['precio_inscripcion'], 2) : 'Sin precio' ?></strong>
+                <?php if (!empty($matricula['descuento_codigo'])): ?>
+                    <i class="bi bi-ticket-percent" title="Descuento aplicado al matricular"></i>
+                    <small class="admin-muted d-block">Con descuento <strong><?= $e($matricula['descuento_codigo']) ?></strong>
+                        (<?= $matricula['descuento_porcentaje'] !== null
+                            ? $e((float) $matricula['descuento_porcentaje']) . '%'
+                            : '$ ' . number_format((float) $matricula['descuento_monto_fijo'], 2) ?>)</small>
+                <?php endif; ?>
+            </p>
             <?php foreach ($matricula['horarios'] as $h): ?><p class="small admin-muted mb-1"><?= $e($h['dia_semana'] . ' ' . $h['hora_inicio'] . '–' . $h['hora_fin']) ?></p><?php endforeach; ?>
             <?php if ($matricula['estado'] === 'Pendiente'): ?>
                 <hr class="admin-border">

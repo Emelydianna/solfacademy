@@ -269,11 +269,14 @@ CREATE TABLE inscripcion (
     revisado_por       INT UNSIGNED NULL,
     fecha_revision     DATETIME NULL,
     motivo_revision    VARCHAR(255) NULL,
+    id_descuento       INT UNSIGNED NULL,   -- cupón aplicado al matricular
     PRIMARY KEY (id_inscripcion),
     CONSTRAINT fk_inscripcion_estudiante FOREIGN KEY (id_estudiante)
         REFERENCES estudiante (id_estudiante),
     CONSTRAINT fk_inscripcion_grupo FOREIGN KEY (id_grupo)
-        REFERENCES grupo (id_grupo)
+        REFERENCES grupo (id_grupo),
+    CONSTRAINT fk_inscripcion_descuento FOREIGN KEY (id_descuento)
+        REFERENCES descuento (id_descuento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- El estado de pago de una inscripción se calcula siempre
@@ -290,10 +293,15 @@ CREATE TABLE pago (
     comprobante_url VARCHAR(255) NULL,
     observaciones   TEXT NULL,
     creado_por      INT UNSIGNED NULL,      -- usuario administrador que lo registró
+    verificado_por  INT UNSIGNED NULL,      -- administrador que validó el comprobante
+    fecha_verificacion DATETIME NULL,
+    motivo_verificacion VARCHAR(255) NULL,  -- motivo del rechazo
     PRIMARY KEY (id_pago),
     CONSTRAINT fk_pago_inscripcion FOREIGN KEY (id_inscripcion)
         REFERENCES inscripcion (id_inscripcion),
     CONSTRAINT fk_pago_usuario FOREIGN KEY (creado_por)
+        REFERENCES usuario (id_usuario),
+    CONSTRAINT fk_pago_verificado_por FOREIGN KEY (verificado_por)
         REFERENCES usuario (id_usuario),
     CHECK (monto_pagado > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -15,10 +15,10 @@ use Slim\Psr7\Stream;
 /**
  * Bloquea las peticiones POST/PUT/PATCH/DELETE sin token CSRF válido.
  *
- * Cubre las 15 rutas mutantes de la app (login, registro, perfiles,
- * reservas, asistencias, calificaciones) sin tener que acordarse cada
- * controlador de validar nada: si el token falta, no coincide o pertenece
- * a otra sesión, responde 403.
+ * Cubre las rutas mutantes de la app (login, registro, perfiles, reservas,
+ * asistencias, calificaciones, envío de comprobantes y formularios del panel)
+ * sin tener que acordarse cada controlador de validar nada: si el token falta,
+ * no coincide o pertenece a otra sesión, responde 403.
  *
  * Los métodos seguros (GET/HEAD/OPTIONS) pasan sin más.
  */

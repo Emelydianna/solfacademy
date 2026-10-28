@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Application\Estudiante;
 
 use App\Application\Formato\Dinero;
+use App\Application\Pagos\ComprobanteStorage;
 use PDO;
+use PDOException;
+use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * Consultas del Portal del Estudiante contra la base de datos real.
@@ -14,6 +17,9 @@ use PDO;
  */
 final class EstudiantePortalService
 {
+    /** Métodos de pago aceptados al enviar un comprobante. */
+    public const METODOS_PAGO = ['Efectivo', 'Transferencia bancaria', 'Tarjeta de crédito', 'PayPal'];
+
     private PDO $pdo;
 
     public function __construct(PDO $pdo)
@@ -482,6 +488,8 @@ final class EstudiantePortalService
      *
      * El saldo se deriva de la vista v_inscripciones_detalle:
      * saldo = precio_inscripcion (congelado) - SUM(pago.monto_pagado).
+     * Un comprobante recién enviado queda en 'Pendiente' y no descuenta
+     * hasta que el administrador lo verifique.
      *
      * @param array{estado?: string|null} $filtros
      * @return array{resumen: array<string, mixed>, saldos: array<int, array<string, mixed>>, historial: array<int, array<string, mixed>>}
@@ -489,9 +497,15 @@ final class EstudiantePortalService
     public function pagos(int $idEstudiante, array $filtros = []): array
     {
         // ---- Estado de cuenta por inscripción (vista) ----
+        // comprobante_pendiente: ya hay un comprobante enviado esperando
+        // verificación; mientras tanto no descuenta del saldo.
         $stmt = $this->pdo->prepare(
             "SELECT v.id_inscripcion, v.curso, v.fecha, v.estado,
-                    v.precio_inscripcion, v.total_pagado, v.saldo_pendiente
+                    v.precio_inscripcion, v.total_pagado, v.saldo_pendiente,
+                    EXISTS (SELECT 1 FROM pago p
+                            WHERE p.id_inscripcion = v.id_inscripcion
+                              AND p.estado = 'Pendiente'
+                              AND p.comprobante_url IS NOT NULL) AS comprobante_pendiente
              FROM v_inscripciones_detalle v
              JOIN inscripcion i ON i.id_inscripcion = v.id_inscripcion
              WHERE i.id_estudiante = :id
@@ -509,6 +523,8 @@ final class EstudiantePortalService
                        p.referencia_pago,
                        p.comprobante_url,
                        p.observaciones,
+                       p.fecha_verificacion,
+                       p.motivo_verificacion,
                        c.nombre AS curso
                 FROM pago p
                 JOIN inscripcion i ON i.id_inscripcion = p.id_inscripcion
@@ -530,13 +546,27 @@ final class EstudiantePortalService
         $stmt->execute($params);
         $historial = $stmt->fetchAll();
 
-        // ¿Existe el archivo del comprobante en /public?
+        // ¿Existe el archivo del comprobante? Puede ser un PDF generado
+        // en /public (registros antiguos) o un archivo subido por el
+        // estudiante, servido desde una ruta protegida por sesión.
         $raizPublic = dirname(__DIR__, 3) . '/public';
         foreach ($historial as &$mov) {
             $url = is_string($mov['comprobante_url']) ? (string) $mov['comprobante_url'] : '';
-            $mov['comprobante_disponible'] = $url !== ''
-                && !str_contains($url, '..')
-                && is_file($raizPublic . $url);
+            if (ComprobanteStorage::esSubido($url)) {
+                $archivo = ComprobanteStorage::archivoDe($url);
+                $mov['comprobante_subido'] = $archivo !== '';
+                $mov['comprobante_enlace'] = $archivo !== ''
+                    ? '/estudiante/pagos/comprobante/' . rawurlencode($archivo)
+                    : '';
+                $mov['comprobante_disponible'] = $mov['comprobante_subido']
+                    && is_file(ComprobanteStorage::rutaAbsoluta($archivo));
+            } else {
+                $mov['comprobante_subido'] = false;
+                $mov['comprobante_enlace'] = '';
+                $mov['comprobante_disponible'] = $url !== ''
+                    && !str_contains($url, '..')
+                    && is_file($raizPublic . $url);
+            }
         }
         unset($mov);
 
@@ -580,6 +610,146 @@ final class EstudiantePortalService
             'saldos'    => $saldos,
             'historial' => $historial,
         ];
+    }
+
+    /**
+     * Envía un comprobante de pago desde el portal del estudiante.
+     *
+     * Crea el movimiento en estado 'Pendiente' —no descuenta saldo— y
+     * guarda el archivo en var/uploads/comprobantes. Administración lo
+     * verifica desde /admin/pagos (aprobar → 'Pagado', rechazar → 'Fallido').
+     *
+     * @param array{monto?: mixed, metodo?: mixed, referencia?: mixed} $datos
+     * @return array{ok: bool, mensaje: string}
+     */
+    public function enviarComprobante(int $idEstudiante, int $idInscripcion, array $datos, ?UploadedFileInterface $file): array
+    {
+        $error = ComprobanteStorage::validar($file);
+        if ($error !== null) {
+            return ['ok' => false, 'mensaje' => $error];
+        }
+
+        $monto = trim((string) ($datos['monto'] ?? ''));
+        if ($monto === '' || !is_numeric($monto) || (float) $monto <= 0) {
+            return ['ok' => false, 'mensaje' => 'Indica el monto pagado (mayor a cero).'];
+        }
+        $monto = round((float) $monto, 2);
+
+        $metodo = trim((string) ($datos['metodo'] ?? ''));
+        if (!in_array($metodo, self::METODOS_PAGO, true)) {
+            return ['ok' => false, 'mensaje' => 'Selecciona el método de pago.'];
+        }
+
+        $referencia = trim((string) ($datos['referencia'] ?? ''));
+        if (mb_strlen($referencia) > 100) {
+            return ['ok' => false, 'mensaje' => 'La referencia no puede superar 100 caracteres.'];
+        }
+
+        $url = '';
+        try {
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare(
+                "SELECT i.id_inscripcion, i.estado, i.precio_inscripcion,
+                        COALESCE((SELECT SUM(p.monto_pagado) FROM pago p
+                                  WHERE p.id_inscripcion = i.id_inscripcion
+                                    AND p.estado = 'Pagado'), 0) AS total_pagado
+                 FROM inscripcion i
+                 WHERE i.id_inscripcion = :id AND i.id_estudiante = :estudiante
+                 FOR UPDATE"
+            );
+            $stmt->execute(['id' => $idInscripcion, 'estudiante' => $idEstudiante]);
+            $inscripcion = $stmt->fetch();
+
+            if (!$inscripcion) {
+                $this->pdo->rollBack();
+                return ['ok' => false, 'mensaje' => 'La matrícula no existe o no te pertenece.'];
+            }
+            if (!in_array($inscripcion['estado'], ['Activa', 'Pendiente'], true)) {
+                $this->pdo->rollBack();
+                return ['ok' => false, 'mensaje' => 'Solo puedes enviar comprobantes de matrículas activas o pendientes.'];
+            }
+            if ($inscripcion['precio_inscripcion'] === null) {
+                $this->pdo->rollBack();
+                return ['ok' => false, 'mensaje' => 'Esta matrícula no tiene precio configurado; contacta a administración.'];
+            }
+
+            $saldo = round((float) $inscripcion['precio_inscripcion'] - (float) $inscripcion['total_pagado'], 2);
+            if ($saldo <= 0) {
+                $this->pdo->rollBack();
+                return ['ok' => false, 'mensaje' => 'Esta matrícula ya está saldada; no tiene saldo por pagar.'];
+            }
+            if ($monto > $saldo) {
+                $this->pdo->rollBack();
+                return ['ok' => false, 'mensaje' => 'El monto supera el saldo pendiente de esta matrícula (' . Dinero::monto($saldo) . ').'];
+            }
+
+            $stmt = $this->pdo->prepare(
+                "SELECT COUNT(*) FROM pago
+                 WHERE id_inscripcion = :inscripcion AND estado = 'Pendiente' AND comprobante_url IS NOT NULL"
+            );
+            $stmt->execute(['inscripcion' => $idInscripcion]);
+            if ((int) $stmt->fetchColumn() > 0) {
+                $this->pdo->rollBack();
+                return ['ok' => false, 'mensaje' => 'Ya tienes un comprobante en verificación para esta matrícula.'];
+            }
+
+            // Primer pago de la matrícula → Inscripción; a partir de ahí, Mensualidad.
+            $concepto = (float) $inscripcion['total_pagado'] > 0 ? 'Mensualidad' : 'Inscripción';
+
+            $this->pdo->prepare(
+                'INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto, metodo,
+                                   estado, referencia_pago, observaciones)
+                 VALUES (:inscripcion, CURDATE(), :monto, :concepto, :metodo,
+                         \'Pendiente\', :referencia, :observaciones)'
+            )->execute([
+                'inscripcion' => $idInscripcion,
+                'monto'       => $monto,
+                'concepto'    => $concepto,
+                'metodo'      => $metodo,
+                'referencia'  => $referencia !== '' ? $referencia : null,
+                'observaciones' => 'Comprobante enviado desde el portal del estudiante',
+            ]);
+            $idPago = (int) $this->pdo->lastInsertId();
+
+            /** @var UploadedFileInterface $file */
+            $url = ComprobanteStorage::guardar($file, $idPago);
+            $this->pdo->prepare('UPDATE pago SET comprobante_url = :url WHERE id_pago = :id')
+                ->execute(['url' => $url, 'id' => $idPago]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            // El archivo ya se movió pero la fila no quedó confirmada.
+            ComprobanteStorage::borrar($url !== '' ? $url : null);
+            if ($e instanceof PDOException && (string) $e->getCode() === '40001') {
+                return ['ok' => false, 'mensaje' => 'Hubo una operación simultánea. Recarga e inténtalo de nuevo.'];
+            }
+            throw $e;
+        }
+
+        return ['ok' => true, 'mensaje' => 'Comprobante enviado. Administración lo verificará y el saldo se actualizará al aprobarlo.'];
+    }
+
+    /**
+     * ¿El archivo del comprobante pertenece a este estudiante?
+     * Se usa al servirlo desde /estudiante/pagos/comprobante/{archivo}.
+     */
+    public function comprobantePropio(int $idEstudiante, string $archivo): bool
+    {
+        $idPago = ComprobanteStorage::idPagoDe($archivo);
+        if ($idPago < 1) {
+            return false;
+        }
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM pago p
+             JOIN inscripcion i ON i.id_inscripcion = p.id_inscripcion
+             WHERE p.id_pago = :pago AND i.id_estudiante = :estudiante'
+        );
+        $stmt->execute(['pago' => $idPago, 'estudiante' => $idEstudiante]);
+        return (int) $stmt->fetchColumn() > 0;
     }
 
     /**

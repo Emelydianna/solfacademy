@@ -223,7 +223,10 @@ final class AdminDashboardService
 
     private function notificaciones(): int
     {
-        $pagos = (int) $this->uno("SELECT COUNT(*) FROM pago WHERE estado IN ('Pendiente', 'Fallido')");
+        // Solo lo que está en cola de verificación para administración:
+        // los comprobantes rechazados los retoma el estudiante.
+        $pagos = (int) $this->uno("SELECT COUNT(*) FROM pago
+            WHERE estado = 'Pendiente' AND comprobante_url IS NOT NULL");
         $matriculas = (int) $this->uno("SELECT COUNT(*) FROM inscripcion WHERE estado = 'Pendiente'");
 
         return $pagos + $matriculas;
@@ -326,23 +329,24 @@ final class AdminDashboardService
         $alertas = [];
 
         $fallidos = (int) $this->uno("SELECT COUNT(*) FROM pago WHERE estado = 'Fallido'");
-        $montoFallido = (float) $this->uno("SELECT COALESCE(SUM(monto_pagado), 0) FROM pago WHERE estado = 'Fallido'");
         if ($fallidos > 0) {
             $alertas[] = [
-                'severidad' => 'urgente',
-                'titulo'    => $fallidos . ($fallidos === 1 ? ' pago fallido' : ' pagos fallidos'),
-                'texto'     => Dinero::monto($montoFallido) . ' no se pudieron cobrar',
+                'severidad' => 'pendiente',
+                'titulo'    => $fallidos . ($fallidos === 1 ? ' comprobante rechazado' : ' comprobantes rechazados'),
+                'texto'     => 'Esperando que el estudiante envíe otro comprobante',
                 'icono'     => 'bi-exclamation-octagon-fill',
             ];
         }
 
-        $pendientes = (int) $this->uno("SELECT COUNT(*) FROM pago WHERE estado = 'Pendiente'");
+        $pendientes = (int) $this->uno("SELECT COUNT(*) FROM pago
+            WHERE estado = 'Pendiente' AND comprobante_url IS NOT NULL");
         if ($pendientes > 0) {
-            $montoPendiente = (float) $this->uno("SELECT COALESCE(SUM(monto_pagado), 0) FROM pago WHERE estado = 'Pendiente'");
+            $montoPendiente = (float) $this->uno("SELECT COALESCE(SUM(monto_pagado), 0) FROM pago
+                WHERE estado = 'Pendiente' AND comprobante_url IS NOT NULL");
             $alertas[] = [
                 'severidad' => 'pendiente',
-                'titulo'    => $pendientes . ($pendientes === 1 ? ' pago pendiente' : ' pagos pendientes'),
-                'texto'     => Dinero::monto($montoPendiente) . ' por confirmar',
+                'titulo'    => $pendientes . ($pendientes === 1 ? ' comprobante por verificar' : ' comprobantes por verificar'),
+                'texto'     => Dinero::monto($montoPendiente) . ' esperando verificación en Pagos',
                 'icono'     => 'bi-clock-history',
             ];
         }

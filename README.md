@@ -86,18 +86,20 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 |---|---|
 | Catálogo | `categoria`, `instrumento`, `curso` |
 | Instructores | `instructor` (con `foto`), `instructor_instrumento` (N:M, con `nivel_dominio`) |
-| Reglas | `requisito_curso`, `descuento` (vigencia, usos y % o monto fijo) |
+| Reglas | `requisito_curso`, `descuento` (vigencia, usos y % o monto fijo; CRUD en `/admin/descuentos`) |
 | Grupos | `grupo` (`capacidad_maxima`, `estado`), `horario`, `aula` |
-| Matrícula | `estudiante`, `inscripcion` (con `precio_inscripcion` congelado al matricular) |
+| Matrícula | `estudiante`, `inscripcion` (con `precio_inscripcion` congelado al matricular —ya con el descuento, si se aplicó código— e `id_descuento`) |
 | Seguimiento | `evaluacion` (escala 0–10), `asistencia` (`presente` = `S`/`N`), `practica_estudiante` |
-| Cobro | `pago` (con `referencia_pago`, `comprobante_url` y `creado_por`) |
+| Cobro | `pago` (con `referencia_pago`, `comprobante_url`, `creado_por` y verificación: `verificado_por`, `fecha_verificacion`, `motivo_verificacion`) |
 | Perfil del alumno | `estudiante_foto`, `estudiante_preferencias`, `estudiante_instrumento_historial` |
 | Reservas | `cabina`, `reserva_cabina`, `reserva_clase_extra` (también toca `grupo` e `instructor`) |
 | Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`) |
 
 > **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. Todos los usuarios de prueba usan la contraseña `solfacademy123` (por ejemplo `admin@solfacademy.com` o `laura.gomez@ejemplo.com`).
 >
-> **Nota de pagos**: el estado de pago *no* se guarda duplicado en `inscripcion`; se calcula con `SUM(pago.monto_pagado) WHERE estado='Pagado'` (fuente única de verdad). La vista `v_inscripciones_detalle` ya lo hace por ti.
+> **Nota de pagos**: el estado de pago *no* se guarda duplicado en `inscripcion`; se calcula con `SUM(pago.monto_pagado) WHERE estado='Pagado'` (fuente única de verdad). La vista `v_inscripciones_detalle` ya lo hace por ti. El estudiante envía su comprobante desde `/estudiante/pagos` y el movimiento nace en `Pendiente` (no descuenta); al verificarlo desde `/admin/pagos` pasa a `Pagado`, y si se rechaza queda en `Fallido` con motivo para que pueda enviar otro.
+>
+> **Nota de descuentos**: los cupones viven en `descuento` y solo el administrador los crea. Se aplican **al solicitar la matrícula**: el precio congelado ya sale con el descuento y `inscripcion.id_descuento` guarda el cupón usado, por lo que pagos y saldos no cambian de fórmula.
 >
 > **Nota sobre `evaluacion`**: la tabla guarda **una fila por inscripción**, no una por grupo. Para referirse a "la misma evaluación" de todos los alumnos de un grupo se usa el par `(tipo, fecha_evaluacion)`. El instructor crea la evaluación para su grupo completo desde el portal (fila por cada matrícula activa, con `calificacion = NULL`) y después registra las notas.
 
@@ -152,6 +154,12 @@ campos de revisión de `inscripcion` y la tabla de historial
 ni borra registros. La edad de alumnos existentes queda vacía hasta que se
 configure, sin inventar fechas históricas.
 
+Para Pagos y Descuentos añade a `pago` los campos de verificación
+(`verificado_por`, `fecha_verificacion`, `motivo_verificacion`) y a
+`inscripcion` el cupón aplicado (`id_descuento`). Igual que en los casos
+anteriores: mismo comando, sin borrar ni modificar registros; los pagos
+existentes quedan como estaban y solo los nuevos pasan por verificación.
+
 ### Evitar errores comunes
 
 - **"Unknown database solfacademy"** → aún no importaste `database/solfacademy.sql`.
@@ -198,7 +206,9 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET | `/estudiante/asistencias` | Historial de asistencia |
 | GET | `/estudiante/calificaciones` | Notas y promedios |
 | GET | `/estudiante/calificaciones/boletin` | Boletín en PDF |
-| GET | `/estudiante/pagos` | Pagos y saldo pendiente |
+| GET | `/estudiante/pagos` | Pagos y saldo pendiente, con formulario para enviar comprobante |
+| POST | `/estudiante/pagos/{id}/comprobante` | Sube comprobante + monto → movimiento `Pendiente` en verificación |
+| GET | `/estudiante/pagos/comprobante/{archivo}` | Descarga del propio comprobante (sesión obligatoria) |
 | GET / POST | `/estudiante/perfil`, `/perfil/foto`, `/perfil/preferencias`, `/perfil/password` | Datos, foto, preferencias y contraseña |
 | GET | `/estudiante/reservas` | Reservas de cabina y clases extras |
 | GET / POST | `/estudiante/reservas/cabinas` | Reservar cabina de práctica |
@@ -260,6 +270,13 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET | `/admin/matriculas/{id}` | Revisar requisitos, cupo e historial |
 | POST | `/admin/matriculas/{id}/aprobar` | Aprobar una solicitud pendiente con confirmación |
 | POST | `/admin/matriculas/{id}/rechazar` | Rechazar y liberar cupo con motivo |
+| GET | `/admin/pagos` | Cola de comprobantes con filtros e indicadores |
+| GET | `/admin/pagos/{id}` | Ver comprobante, monto y saldo; aprobar o rechazar |
+| POST | `/admin/pagos/{id}/aprobar` | Acredita el pago (`Pagado`) y actualiza el saldo |
+| POST | `/admin/pagos/{id}/rechazar` | Rechaza con motivo (`Fallido`); el alumno puede reenviar |
+| GET | `/admin/pagos/comprobante/{archivo}` | Sirve el comprobante (solo panel autenticado) |
+| GET / POST | `/admin/descuentos`, `/admin/descuentos/nuevo`, `/admin/descuentos/{id}` | Listar, crear y editar códigos de descuento |
+| POST | `/admin/descuentos/{id}/estado` | Activar/desactivar (nunca se borra un cupón) |
 
 La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
 cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
@@ -316,6 +333,48 @@ confirmar la edad manualmente; vuelve a validar estudiante, grupo, duplicados,
 horarios, edad y capacidad. El rechazo exige motivo. Aprobar no significa que
 la matrícula esté pagada. Cada decisión queda en la auditoría con responsable,
 fecha y motivo; los registros existentes pueden no tener historial anterior.
+
+#### Pagos: verificación de comprobantes
+
+`/admin/pagos` es la cola de verificación: ordena primero los comprobantes
+pendientes y ofrece búsqueda por estudiante, curso, referencia o `#pago`,
+filtro por estado e indicadores (por verificar, monto en espera, verificados
+hoy y total acreditado).
+
+El estudiante envía su comprobante desde `/estudiante/pagos`: monto, método,
+referencia opcional y archivo (JPG, PNG, WEBP o PDF hasta 5MB). El movimiento
+nace en `Pendiente` con su `comprobante_url` y **no descuenta saldo**; mientras
+haya uno en verificación no se acepta otro para esa matrícula. El archivo se
+guarda en `var/uploads/comprobantes` (fuera de `public`) y solo se sirve desde
+rutas con sesión —`/estudiante/pagos/comprobante/…` y
+`/admin/pagos/comprobante/…`— validando que el nombre pertenezca a un pago.
+
+El detalle admin muestra el comprobante embebido, el importe declarado, el
+precio congelado, lo pagado y el saldo. Aprobar exige que el archivo exista en
+disco y acredita el movimiento (`Pagado`) con `verificado_por` y
+`fecha_verificacion`; si el total quedara por encima del precio de la
+matrícula se aprueba igualmente con un aviso, la misma semántica de
+`sp_actualizar_pago`. Rechazar exige motivo, deja `Fallido` con
+`motivo_verificacion` (visible para el estudiante) y habilita un nuevo envío.
+Ninguna acción edita montos ni borra pagos: el saldo sigue saliendo de
+`SUM(pago) WHERE estado='Pagado'`.
+
+#### Descuentos
+
+`/admin/descuentos` crea los cupones: código único (el formulario sugiere uno
+sin usar), porcentaje **o** monto fijo, alcance global o de un curso,
+vigencia, usos —con opción «sin límite»— y estado. Solo se desactivan y nunca
+se borran, porque `inscripcion.id_descuento` conserva la referencia. El
+listado indica si está vigente hoy, los usos realizados/disponibles y el
+estado, con búsqueda y filtro de activos/inactivos.
+
+El estudiante escribe el código en la solicitud de matrícula y pulsa
+**Aplicar** para ver el precio final antes de enviar. Al confirmar, la
+matrícula congela `precio_inscripcion` con el descuento, guarda el cupón y
+incrementa `usos_realizados` en la misma transacción. Si el código no vale
+(no existe, vencido, desactivado, sin usos o propio de otro curso) la
+matrícula **se crea igual** y el mensaje indica que quedó sin descuento: un
+cupón erróneo nunca pierde la solicitud.
 
 #### Grupos
 
@@ -416,7 +475,9 @@ src/Application/Middleware/ → RequireRole, AuthMiddleware, sesión y vistas
 src/Application/Estudiante/→ lógica del portal del estudiante
 src/Application/Instructor/→ InstructorService (grupos, notas, asistencia, fichas)
 src/Application/Perfil/    → almacenamiento y validación de fotos
-src/Application/Admin/     → dashboard y gestión académica
+src/Application/Pagos/     → ComprobanteStorage (subida y lectura de archivos)
+src/Application/Descuentos/→ DescuentosService (códigos y su aplicación al matricular)
+src/Application/Admin/     → dashboard, verificación de pagos y gestión académica
 src/Application/Academico/ → requisitos y ciclo de matrículas
 src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
@@ -433,6 +494,7 @@ public/css/portal.css      → design system del portal (tema oscuro)
 public/css/admin-academica.css → componentes de gestión sin alterar otros portales
 public/js/admin-academica.js → selector categoría/instrumento y confirmaciones
 public/comprobantes/       → PDF de comprobante de pago (generados)
+var/uploads/comprobantes/  → comprobantes subidos por los alumnos (no versionado)
 ```
 
 La homepage usa categorías e instructores reales. Solo el bloque de testimonios

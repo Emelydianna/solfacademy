@@ -65,6 +65,8 @@ return function (App $app) {
         $group->get('/calificaciones', [CalificacionesController::class, 'index']);
         $group->get('/calificaciones/boletin', [CalificacionesController::class, 'descargarBoletin']);
         $group->get('/pagos', [PagosController::class, 'index']);
+        $group->post('/pagos/{id:[1-9][0-9]*}/comprobante', [PagosController::class, 'subirComprobante']);
+        $group->get('/pagos/comprobante/{archivo}', [PagosController::class, 'verComprobante']);
         $group->get('/perfil', [PerfilController::class, 'index']);
         $group->post('/perfil', [PerfilController::class, 'actualizar']);
         $group->post('/perfil/foto', [PerfilController::class, 'subirFoto']);
@@ -163,6 +165,17 @@ return function (App $app) {
         $group->get('/matriculas/{id:[1-9][0-9]*}', [\App\Controllers\Admin\MatriculasController::class, 'detalle']);
         $group->post('/matriculas/{id:[1-9][0-9]*}/aprobar', [\App\Controllers\Admin\MatriculasController::class, 'aprobar']);
         $group->post('/matriculas/{id:[1-9][0-9]*}/rechazar', [\App\Controllers\Admin\MatriculasController::class, 'rechazar']);
+        $group->get('/pagos', [\App\Controllers\Admin\PagosController::class, 'index']);
+        $group->get('/pagos/comprobante/{archivo}', [\App\Controllers\Admin\PagosController::class, 'comprobante']);
+        $group->get('/pagos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\PagosController::class, 'detalle']);
+        $group->post('/pagos/{id:[1-9][0-9]*}/aprobar', [\App\Controllers\Admin\PagosController::class, 'aprobar']);
+        $group->post('/pagos/{id:[1-9][0-9]*}/rechazar', [\App\Controllers\Admin\PagosController::class, 'rechazar']);
+        $group->get('/descuentos', [\App\Controllers\Admin\DescuentosController::class, 'index']);
+        $group->get('/descuentos/nuevo', [\App\Controllers\Admin\DescuentosController::class, 'nuevo']);
+        $group->post('/descuentos', [\App\Controllers\Admin\DescuentosController::class, 'guardarNuevo']);
+        $group->get('/descuentos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\DescuentosController::class, 'formulario']);
+        $group->post('/descuentos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\DescuentosController::class, 'guardar']);
+        $group->post('/descuentos/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\DescuentosController::class, 'estado']);
         $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
         $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
         $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);

@@ -29,6 +29,17 @@ final class MigracionGestion
                 'revisado_por' => 'INT UNSIGNED NULL',
                 'fecha_revision' => 'DATETIME NULL',
                 'motivo_revision' => 'VARCHAR(255) NULL',
+                // Cupón aplicado al matricular; precio_inscripcion guarda
+                // siempre el precio final ya con el descuento aplicado.
+                'id_descuento' => 'INT UNSIGNED NULL',
+            ],
+            // Verificación de comprobantes: quién aprobó/rechazó y cuándo.
+            // creado_por sigue siendo quien creó la fila (en el flujo del
+            // portal, el propio estudiante).
+            'pago' => [
+                'verificado_por' => 'INT UNSIGNED NULL',
+                'fecha_verificacion' => 'DATETIME NULL',
+                'motivo_verificacion' => 'VARCHAR(255) NULL',
             ],
         ];
         foreach ($definiciones as $tabla => $campos) {

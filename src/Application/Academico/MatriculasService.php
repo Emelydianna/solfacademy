@@ -6,6 +6,8 @@ namespace App\Application\Academico;
 
 use App\Application\Admin\GruposService;
 use App\Application\Admin\ListadoAdmin;
+use App\Application\Descuentos\DescuentosService;
+use App\Application\Formato\Dinero;
 use DateTimeImmutable;
 use DomainException;
 use PDO;
@@ -85,7 +87,15 @@ final class MatriculasService
             'lugares' => max(0, (int) $grupo['capacidad_maxima'] - (int) $grupo['ocupados'])];
     }
 
-    public function solicitar(int $idGrupo, int $idEstudiante, int $idUsuario, bool $confirmarRequisitos): array
+    /**
+     * Solicitud de matrícula desde el portal. Congela el precio —con el
+     * código de descuento, si es válido— y registra el cupón usado.
+     *
+     * @param string $codigoDescuento Código introducido por el estudiante (opcional).
+     *                                Un código inválido no bloquea: solo se avisa.
+     * @return array{ok: bool, id?: int, mensaje: string}
+     */
+    public function solicitar(int $idGrupo, int $idEstudiante, int $idUsuario, bool $confirmarRequisitos, string $codigoDescuento = ''): array
     {
         try {
             $this->pdo->beginTransaction();
@@ -121,13 +131,41 @@ final class MatriculasService
             if ($requisito && !$confirmarRequisitos) {
                 throw new DomainException('Debes confirmar que revisaste los requisitos del curso.');
             }
-            $this->pdo->prepare('INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado, precio_inscripcion, observaciones)
-                VALUES (:estudiante, :grupo, CURDATE(), \'Pendiente\', :precio, \'Solicitud creada por el estudiante\')')
-                ->execute(['estudiante' => $idEstudiante, 'grupo' => $idGrupo, 'precio' => $grupo['precio']]);
+
+            // Código de descuento (opcional): se congela el precio final y
+            // se guarda el cupón en inscripcion.id_descuento. Un código no
+            // válido no bloquea la matrícula, solo se avisa en el mensaje.
+            $precio = round((float) $grupo['precio'], 2);
+            $descuento = null;
+            $avisoDescuento = '';
+            $codigo = strtoupper(trim($codigoDescuento));
+            if ($codigo !== '') {
+                $evaluado = (new DescuentosService($this->pdo))->evaluar($codigo, (int) $grupo['id_curso'], $precio, true);
+                if ($evaluado['ok']) {
+                    $precio = (float) $evaluado['precio_final'];
+                    $descuento = $evaluado;
+                } else {
+                    $avisoDescuento = ' ' . $evaluado['mensaje'] . ' La matrícula quedó registrada sin descuento.';
+                }
+            }
+
+            $this->pdo->prepare('INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado, precio_inscripcion, observaciones, id_descuento)
+                VALUES (:estudiante, :grupo, CURDATE(), \'Pendiente\', :precio, \'Solicitud creada por el estudiante\', :descuento)')
+                ->execute(['estudiante' => $idEstudiante, 'grupo' => $idGrupo, 'precio' => $precio,
+                    'descuento' => $descuento['id_descuento'] ?? null]);
             $id = (int) $this->pdo->lastInsertId();
+            if ($descuento !== null) {
+                (new DescuentosService($this->pdo))->consumir((int) $descuento['id_descuento']);
+            }
             $this->auditar($id, null, 'Pendiente', 'Solicitud creada desde el portal del estudiante', $idUsuario);
             $this->pdo->commit();
-            return ['ok' => true, 'id' => $id, 'mensaje' => 'Solicitud enviada. Administración revisará los requisitos antes de activarla.'];
+
+            $mensaje = 'Solicitud enviada. Administración revisará los requisitos antes de activarla.';
+            if ($descuento !== null) {
+                $mensaje .= ' Descuento ' . $descuento['codigo'] . ' aplicado (' . $descuento['detalle']
+                    . '): precio final ' . Dinero::monto((float) $descuento['precio_final']) . '.';
+            }
+            return ['ok' => true, 'id' => $id, 'mensaje' => $mensaje . $avisoDescuento];
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -137,6 +175,17 @@ final class MatriculasService
             }
             throw $e;
         }
+    }
+
+    /**
+     * Previsualiza un código de descuento para el formulario de matrícula.
+     * Solo consulta: no consume usos ni escribe en la base de datos.
+     *
+     * @return array{ok: bool, mensaje: string, id_descuento?: int, codigo?: string, precio_final?: float, ahorro?: float, detalle?: string}
+     */
+    public function previsualizarDescuento(int $idCurso, float $precioBase, string $codigo): array
+    {
+        return (new DescuentosService($this->pdo))->evaluar($codigo, $idCurso, $precioBase);
     }
 
     public function cancelarPropia(int $idInscripcion, int $idEstudiante, int $idUsuario): array
@@ -205,10 +254,12 @@ final class MatriculasService
         $stmt = $this->pdo->prepare('SELECT m.*, CONCAT(e.nombre, \' \', e.apellido) AS estudiante, e.email, e.fecha_nacimiento,
             g.id_curso, g.id_grupo, g.capacidad_maxima, c.nombre AS curso, c.nivel, c.activo AS curso_activo, c.disponible,
             CONCAT(i.nombre, \' \', i.apellido) AS instructor, a.nombre AS aula,
+            d.codigo AS descuento_codigo, d.porcentaje AS descuento_porcentaje, d.monto_fijo AS descuento_monto_fijo,
             r.nivel_minimo, r.edad_minima, r.edad_maxima, r.conocimientos_previos, r.necesita_instrumento, r.puede_alquilar, r.descripcion_general
             FROM inscripcion m JOIN estudiante e ON e.id_estudiante = m.id_estudiante
             JOIN grupo g ON g.id_grupo = m.id_grupo JOIN curso c ON c.id_curso = g.id_curso
             JOIN instructor i ON i.id_instructor = g.id_instructor JOIN aula a ON a.id_aula = g.id_aula
+            LEFT JOIN descuento d ON d.id_descuento = m.id_descuento
             LEFT JOIN requisito_curso r ON r.id_curso = c.id_curso WHERE m.id_inscripcion = :id');
         $stmt->execute(['id' => $id]);
         $m = $stmt->fetch();

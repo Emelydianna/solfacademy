@@ -22,10 +22,40 @@ $edad = $est['fecha_nacimiento'] ? (new DateTimeImmutable($est['fecha_nacimiento
             <h2 class="portal-card-title">Requisitos y confirmación</h2>
             <p>Edad registrada: <strong><?= $edad !== null ? (int) $edad . ' años' : 'Sin fecha de nacimiento registrada' ?></strong></p>
             <?php if ($r): ?><ul class="small text-secondary"><li><?= $e($r['nivel_minimo'] ?: 'Nivel mínimo: revisión manual') ?></li><li><?= $e($r['conocimientos_previos'] ?: 'Conocimientos previos: revisión manual') ?></li><li>Instrumento: <?= $r['necesita_instrumento'] ? ($r['puede_alquilar'] ? 'propio o alquiler' : 'propio') : 'no requerido' ?></li><li>Rango de edad: <?= (int) $r['edad_minima'] ?>–<?= (int) $r['edad_maxima'] ?> años</li></ul><?php else: ?><p class="small text-secondary">Este curso no tiene requisitos configurados; la revisión seguirá siendo administrativa.</p><?php endif; ?>
-            <p>Precio congelado al solicitar: <strong><?= Dinero::monto((float) $g['precio']) ?></strong>. Solicitar matrícula no registra ningún pago.</p>
+            <?php
+            $codigo = $codigo ?? '';
+            $descuento = $descuento ?? null;
+            $aplicado = is_array($descuento) && !empty($descuento['ok']);
+            $precioFinal = $aplicado ? (float) $descuento['precio_final'] : (float) $g['precio'];
+            ?>
+            <p>Precio congelado al solicitar:
+                <?php if ($aplicado): ?>
+                    <s class="text-secondary"><?= Dinero::monto((float) $g['precio']) ?></s>
+                    <strong><?= Dinero::monto($precioFinal) ?></strong>
+                <?php else: ?>
+                    <strong><?= Dinero::monto((float) $g['precio']) ?></strong>
+                <?php endif; ?>
+                . Solicitar matrícula no registra ningún pago.</p>
+            <?php if ($aplicado): ?>
+                <div role="status" class="portal-alert portal-alert--exito p-3 mb-3">
+                    Código <strong><?= $e($descuento['codigo']) ?></strong> aplicado: <?= $e($descuento['detalle']) ?>.
+                    Ahorras <?= Dinero::monto((float) $descuento['ahorro']) ?>.
+                </div>
+            <?php elseif (is_array($descuento)): ?>
+                <div role="alert" class="portal-alert portal-alert--peligro p-3 mb-3"><?= $e($descuento['mensaje']) ?></div>
+            <?php endif; ?>
             <?php if (!$datos['vigente'] && $datos['lugares'] > 0 && $g['estado'] === 'activo'): ?>
                 <form method="post" action="/estudiante/matricular/<?= (int) $g['id_grupo'] ?>" id="form-academico">
                     <?= Csrf::campo() ?>
+                    <div class="mb-3">
+                        <label for="codigo_descuento" class="form-label small mb-1">Código de descuento (opcional)</label>
+                        <div class="input-group">
+                            <input id="codigo_descuento" name="codigo_descuento" type="text" maxlength="30"
+                                   class="form-control" value="<?= $e($codigo) ?>" placeholder="Ej.: PROMO-AB12CD">
+                            <button type="submit" formmethod="get" class="btn btn-outline-secondary">Aplicar</button>
+                        </div>
+                        <div class="form-text">Pulsa «Aplicar» para ver el precio final antes de enviar la solicitud.</div>
+                    </div>
                     <div class="form-check mb-3"><input id="confirmar_requisitos" name="confirmar_requisitos" value="1" type="checkbox" class="form-check-input" required><label for="confirmar_requisitos" class="form-check-label small">Confirmo que revisé los requisitos, el horario y la información del grupo.</label></div>
                     <button class="btn btn-accent w-100 fw-semibold">ENVIAR SOLICITUD</button>
                 </form>

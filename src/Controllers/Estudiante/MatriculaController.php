@@ -31,10 +31,19 @@ final class MatriculaController
         if (!$datos || !$datos['estudiante']) {
             throw new HttpNotFoundException($request);
         }
+
+        // Previsualización del código de descuento (botón "Aplicar"):
+        // no consume usos ni crea nada.
+        $codigo = GestionAcademicaService::texto($request->getQueryParams(), 'codigo_descuento');
+        $descuento = $codigo !== ''
+            ? $this->service->previsualizarDescuento((int) $datos['grupo']['id_curso'], (float) $datos['grupo']['precio'], $codigo)
+            : null;
+
         $this->view->setLayout('estudiante/layout.php');
         return $this->view->render($response, 'estudiante/matricula/solicitar.php', [
             'tituloPagina' => 'Solicitar Matrícula — Portal del Estudiante', 'paginaPortal' => 'cursos',
             'datos' => $datos, 'errores' => [],
+            'codigo' => $codigo, 'descuento' => $descuento,
         ]);
     }
 
@@ -44,8 +53,9 @@ final class MatriculaController
         $idEstudiante = (int) $usuario['id_referencia'];
         $idGrupo = (int) $args['grupo'];
         $d = (array) $request->getParsedBody();
+        $codigo = GestionAcademicaService::texto($d, 'codigo_descuento');
         try {
-            $r = $this->service->solicitar($idGrupo, $idEstudiante, (int) $usuario['id'], GestionAcademicaService::texto($d, 'confirmar_requisitos') === '1');
+            $r = $this->service->solicitar($idGrupo, $idEstudiante, (int) $usuario['id'], GestionAcademicaService::texto($d, 'confirmar_requisitos') === '1', $codigo);
             $_SESSION['matricula_flash'] = ['tipo' => $r['ok'] ? 'exito' : 'error', 'mensaje' => $r['mensaje']];
             return $response->withStatus(303)->withHeader('Location', '/estudiante/cursos');
         } catch (DomainException $e) {
@@ -57,6 +67,7 @@ final class MatriculaController
             return $this->view->render($response->withStatus(422), 'estudiante/matricula/solicitar.php', [
                 'tituloPagina' => 'Solicitar Matrícula — Portal del Estudiante', 'paginaPortal' => 'cursos',
                 'datos' => $datos, 'errores' => ['general' => $e->getMessage()],
+                'codigo' => $codigo, 'descuento' => null,
             ]);
         }
     }
