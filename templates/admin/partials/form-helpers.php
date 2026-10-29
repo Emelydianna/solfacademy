@@ -16,3 +16,4 @@ $input = static function (string $campo, string $label, string $tipo = 'text', s
 };
 ?>
 <?php if ($errores): ?><div role="alert" class="portal-alert portal-alert--peligro p-3 mb-3"><?= $e($errores['general'] ?? 'Revisa los campos señalados. No se guardaron cambios.') ?></div><?php endif; ?>
+<?php require __DIR__ . '/errores-form.php'; ?>

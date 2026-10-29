@@ -10,6 +10,7 @@ $err = static fn (string $k): string => isset($errores[$k]) ? ' is-invalid' : ''
     <div class="d-flex flex-wrap justify-content-between gap-3 mb-4"><div><h1 class="portal-title mb-1">Requisitos del Curso</h1><p class="portal-subtitle mb-0"><?= $e($curso['nombre']) ?> · <?= $e($curso['categoria']) ?> · <?= $e($curso['nivel']) ?></p></div><a href="/admin/requisitos" class="btn admin-btn-outline">Volver</a></div>
     <section class="portal-card p-3 p-md-4">
         <?php if ($errores): ?><div role="alert" class="portal-alert portal-alert--peligro p-3 mb-3"><?= $e($errores['general'] ?? 'Revisa los campos señalados.') ?></div><?php endif; ?>
+        <?php require __DIR__ . '/../partials/errores-form.php'; ?>
         <form action="/admin/requisitos/<?= (int) $curso['id_curso'] ?>" method="post" id="form-academico">
             <?= Csrf::campo() ?>
             <div class="row g-4">

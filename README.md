@@ -596,13 +596,17 @@ public/css/admin-academica.css → componentes de gestión sin alterar otros por
 public/js/admin-academica.js → selectores de formulario (categoría/instrumento, etc.)
 public/js/notificaciones.js  → avisos y confirmaciones con SweetAlert2 (todo el proyecto)
 templates/partials/flash.php → aviso flash del controlador como toast de SweetAlert2
+templates/admin/partials/errores-form.php → error de validación admin como toast de SweetAlert2
 public/comprobantes/       → PDF de comprobante de pago (generados)
 var/uploads/comprobantes/  → comprobantes subidos por los alumnos (no versionado)
 ```
 
 Los mensajes flash de los controladores (`$_SESSION['..._flash']`) se pintan como
 toasts de SweetAlert2 mediante `templates/partials/flash.php`, con respaldo
-`<noscript>` y escape del mensaje. Las acciones que exigen confirmación usan el
+`<noscript>` y escape del mensaje. Los errores de validación de los formularios
+admin (respuesta 422) también se tostan con `solfAviso('error', …)` vía
+`templates/admin/partials/errores-form.php`, además del div inline que se
+mantiene por accesibilidad. Las acciones que exigen confirmación usan el
 atributo `data-confirm="…"` en el `<form>`, que `public/js/notificaciones.js`
 pregunta antes de enviar (con respaldo a `confirm()` si falta la librería).
 

@@ -29,6 +29,7 @@ $errorDe = static fn (string $campo): string => isset($errores[$campo])
     <?php if (!empty($errores['general'])): ?>
         <div role="alert" class="portal-alert portal-alert--peligro p-3 mb-4"><?= $e($errores['general']) ?></div>
     <?php endif; ?>
+    <?php require __DIR__ . '/../partials/errores-form.php'; ?>
 
     <section class="portal-card p-4">
         <form method="post" action="/admin/usuarios" id="form-usuario">

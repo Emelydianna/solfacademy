@@ -26,6 +26,7 @@ if ($esCurso) {
             <?= $e($errores['general'] ?? 'No se pudo guardar. Revisa los campos señalados.') ?>
         </div>
     <?php endif; ?>
+    <?php require __DIR__ . '/../partials/errores-form.php'; ?>
     <form method="post" action="<?= $e($base . ($idEdicion ? '/' . $idEdicion : '')) ?>" id="form-academico">
         <?= \App\Application\Security\Csrf::campo() ?>
         <div class="mb-3">
