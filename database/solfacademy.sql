@@ -1,19 +1,18 @@
 -- ============================================================
 --  SolfAcademy — Esquema de base de datos + datos de prueba
 --  MySQL / MariaDB (utf8mb4)
---
---  Basado en el diagrama entidad-relación del proyecto:
+-------------------------------------------------------------
 --  CATEGORÍA, INSTRUMENTO, INSTRUCTOR, INSTRUCTOR-INSTRUMENTO,
 --  CURSO, REQUISITO CURSO, DESCUENTO, AULA, GRUPO, HORARIO,
 --  ESTUDIANTE, USUARIO, INSCRIPCIÓN, EVALUACIÓN, ASISTENCIA, PAGO,
 --  PRÁCTICA ESTUDIANTE.
 --
---  Ampliaciones propias de la implementación (fase 2):
+--  Ampliaciones propias de la implementación
 --  CABINA, RESERVA CABINA, RESERVA CLASE EXTRA (reservas del portal
 --  del estudiante) y ESTUDIANTE FOTO, ESTUDIANTE PREFERENCIAS,
 --  ESTUDIANTE INSTRUMENTO HISTORIAL (perfil del estudiante).
 --
---  Notas respecto al diagrama original:
+--  Notas respecto al diseño:
 --   · usuario incluye "password_hash" (autenticación con
 --     password_hash() de PHP) y "id_instructor" para que un
 --     instructor pueda tener cuenta.

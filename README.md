@@ -281,6 +281,8 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | GET / POST | `/admin/usuarios/nuevo`, `/admin/usuarios` | Alta de cuenta (admin, o persona sin cuenta) |
 | GET | `/admin/usuarios/{id}` | Ficha de la cuenta y acciones de seguridad |
 | POST | `/admin/usuarios/{id}/bloqueo` | Bloquear/reactivar (invalida sesiones abiertas) |
+| GET | `/admin/reportes` | Métricas y reportes generales (KPIs, dona y tabla) |
+| GET | `/admin/reportes/exportar` | Descarga del PDF del reporte (generado en servidor) |
 
 La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
 cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
@@ -490,6 +492,33 @@ contraseña solo se guarda con `password_hash()` y una persona sin correo en
 su ficha lo completa al crear la cuenta. La contraseña solo se guarda con
 `password_hash()`, debe tener 8–72 bytes y teclearse dos veces.
 
+#### Reportes
+
+`/admin/reportes` reúne finanzas, admisiones y rendimiento académico con
+**datos reales** de la base de datos (nada de cifras de ejemplo):
+
+| Indicador | Cálculo |
+|---|---|
+| Ingresos Totales | `SUM(pago) WHERE estado='Pagado'` y variación de los últimos 12 meses frente a los 12 anteriores («Sin periodo anterior comparable» si no hay base) |
+| Alumnos Activos | `estudiante` con estado `Activo` |
+| Tasa de Retención | matrículas **no canceladas** ÷ matrículas totales (`1 − abandono`) |
+| Tasa de Aprobación | evaluaciones con nota **≥ 7** ÷ evaluaciones con nota (misma regla que el informe del instructor, escala 0–10) |
+
+La dona **«Distribución de Alumnos por Instrumento»** agrupa a los alumnos
+distintos con matrícula vigente (`Activa`/`Pendiente`) por el instrumento de
+su curso, con Chart.js y leyenda de porcentajes; si hay más de cinco
+instrumentos, el resto se agrupa en «Otros». La tabla **«Programas más
+Populares»** ordena cursos por matrículas vigentes y muestra su **tendencia**:
+variación de matrículas de los últimos 30 días frente a los 30 anteriores
+(verde/rojo, «+1 nueva» cuando no había base y «—» cuando no hay comparación).
+
+**Exportar PDF** descarga `reportes-generales-AAAAmmdd.pdf` generado en el
+servidor con `App\Application\Formato\Pdf` (Helvetica + Latin-1, sin
+dependencias): mismos KPIs, las barras de distribución con los colores de la
+leyenda y la tabla de programas. Las páginas se cortan solas cuando el
+contenido no cabe. La pantalla y el PDF comparten la misma fuente de datos
+(`ReportesService::datos()`), así que nunca muestran cifras distintas.
+
 ## Estructura del proyecto
 
 ```
@@ -510,7 +539,7 @@ src/Application/Pagos/     → ComprobanteStorage (subida y lectura de archivos)
 src/Application/Descuentos/→ DescuentosService (códigos y su aplicación al matricular)
 src/Application/Admin/     → dashboard, verificación de pagos, usuarios y gestión académica
 src/Application/Academico/ → requisitos y ciclo de matrículas
-src/Application/Formato/   → Dinero y Fecha (formatos sin depender del locale)
+src/Application/Formato/   → Dinero, Fecha y Pdf (sin depender del locale ni de librerías)
 src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
 src/Controllers/Estudiante/→ controladores del portal del estudiante

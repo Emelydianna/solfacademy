@@ -70,7 +70,7 @@
                     ['descuentos',   '/admin/descuentos',    'bi-ticket-percent',     'Descuentos',      true],
                     ['pagos',        '/admin/pagos',          'bi-credit-card',        'Pagos',           true],
                     ['usuarios',     '/admin/usuarios',      'bi-person-badge',       'Usuarios',        true],
-                    ['reportes',     '#',                     'bi-file-earmark-bar-graph', 'Reportes',    false],
+                    ['reportes',     '/admin/reportes',      'bi-file-earmark-bar-graph', 'Reportes',    true],
                     ['config',       '#',                     'bi-sliders',            'Configuración',   false],
                 ];
                 $paginaActiva = $paginaAdmin ?? '';

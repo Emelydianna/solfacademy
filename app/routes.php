@@ -36,17 +36,17 @@ return function (App $app) {
     // ==========================================
     $app->get('/', [HomeController::class, 'home']);
 
-    // Catálogo de cursos (pantalla 2 del prototipo)
+    // Catálogo de cursos 
     $app->get('/cursos', [CourseCatalogController::class, 'catalog']);
 
-    // Detalle de curso (pantalla 3 del prototipo)
+    // Detalle de curso 
     $app->get('/cursos/{id}', [CourseDetailController::class, 'detail']);
 
-    // Perfil de instructor (pantalla 4 del prototipo)
+    // Perfil de instructor 
     $app->get('/instructores/{id}', [InstructorProfileController::class, 'profile']);
     $app->get('/instructores/{id:[1-9][0-9]*}/foto', [InstructorProfileController::class, 'foto']);
 
-    // Login y registro (pantalla 5 del prototipo + autenticación real)
+    // Login y registro 
     $app->get('/login', [AuthController::class, 'loginForm']);
     $app->post('/login', [AuthController::class, 'login']);
     $app->get('/registro', [AuthController::class, 'registerForm']);
@@ -54,7 +54,7 @@ return function (App $app) {
     $app->get('/logout', [AuthController::class, 'logout']);
 
     // ==========================================
-    // 2. RUTAS DE LA APLICACIÓN (Fase 2)
+    // 2. RUTAS DE LA APLICACIÓN 
     //    Portal del Estudiante — requieren sesión
     // ==========================================
     $app->group('/estudiante', function (Group $group) {
@@ -140,7 +140,7 @@ return function (App $app) {
     })->add(new RequireRole('instructor'));
 
     // ==========================================
-    // 4. RUTAS ADMINISTRACIÓN (base para la fase de admin)
+    // 4. RUTAS ADMINISTRACIÓN 
     // ==========================================
     $app->group('/admin', function (Group $group) {
         $group->get('/dashboard', [\App\Controllers\Admin\DashboardController::class, 'index']);
@@ -181,6 +181,8 @@ return function (App $app) {
         $group->post('/usuarios', [\App\Controllers\Admin\UsuariosController::class, 'guardar']);
         $group->get('/usuarios/{id:[1-9][0-9]*}', [\App\Controllers\Admin\UsuariosController::class, 'detalle']);
         $group->post('/usuarios/{id:[1-9][0-9]*}/bloqueo', [\App\Controllers\Admin\UsuariosController::class, 'bloqueo']);
+        $group->get('/reportes', [\App\Controllers\Admin\ReportesController::class, 'index']);
+        $group->get('/reportes/exportar', [\App\Controllers\Admin\ReportesController::class, 'exportar']);
         $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
         $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
         $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);

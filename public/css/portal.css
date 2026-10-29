@@ -31,6 +31,13 @@ body.portal-body {
     width: 264px;
     background-color: var(--sidebar-bg);
     border-right: 1px solid #1a2333;
+    /* Columna fija: marca y perfil arriba, "Cerrar Sesión" anclado abajo y
+       el menú en medio como único área con scroll (el menú crece con cada
+       sección nueva sin perder el acceso al resto). */
+    display: flex;
+    flex-direction: column;
+    max-height: 100vh;
+    max-height: 100dvh;
 }
 
 @media (min-width: 992px) {
@@ -38,12 +45,33 @@ body.portal-body {
         position: sticky;
         top: 0;
         height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+    }
+}
+
+@media (max-width: 991.98px) {
+    /* Offcanvas a altura de pantalla (Bootstrap solo ancla bottom): con
+       top + bottom el panel ocupa la ventana y el menú hace scroll dentro
+       en lugar de quedar fuera de pantalla. */
+    .portal-sidebar {
+        top: 0;
+        bottom: 0;
+        max-height: 100dvh;
     }
 }
 
 .portal-sidebar .offcanvas-header,
 .portal-sidebar .offcanvas-body {
     background-color: var(--portal-card);
+}
+
+/* Los bloques fijos del sidebar no se encogen: el menú absorbe el resto. */
+.portal-sidebar .offcanvas-header,
+.portal-brand,
+.portal-profile,
+.portal-logout {
+    flex-shrink: 0;
 }
 
 .portal-brand {
@@ -129,7 +157,31 @@ body.portal-body {
 
 .portal-menu {
     padding: 1rem 0.75rem;
-    flex-grow: 1;
+    /* Único contenedor con scroll: min-height:0 permite que el flex item
+       se encoja y aparezca la barra cuando el menú no cabe. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #344158 transparent;
+}
+
+.portal-menu::-webkit-scrollbar {
+    width: 8px;
+}
+
+.portal-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.portal-menu::-webkit-scrollbar-thumb {
+    background: #344158;
+    border-radius: 4px;
+}
+
+.portal-menu::-webkit-scrollbar-thumb:hover {
+    background: #47536b;
 }
 
 .portal-menu-link {
