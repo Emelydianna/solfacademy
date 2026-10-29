@@ -18,7 +18,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark site-navbar sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <?php $claseIcono = 'brand-icon'; require __DIR__ . '/../partials/marca.php'; ?>
+                <?php $modo = 'web'; require __DIR__ . '/../partials/marca.php'; ?>
                 <span class="brand-text"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -86,7 +86,7 @@
             <div class="row g-4 pb-4">
                 <div class="col-lg-4 col-md-6">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <?php $claseIcono = 'brand-icon'; require __DIR__ . '/../partials/marca.php'; ?>
+                        <?php $modo = 'web'; require __DIR__ . '/../partials/marca.php'; ?>
                         <span class="brand-text"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
                     </div>
                     <p class="footer-text mb-3">Transformamos tu pasión por la música en habilidades reales, con instructores expertos y acompañamiento internacional.</p>

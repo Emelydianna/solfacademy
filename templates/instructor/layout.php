@@ -26,8 +26,8 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#portalSidebar" aria-label="Cerrar menú"></button>
             </div>
 
-            <a class="portal-brand" href="/instructor/dashboard">
-                <?php $claseIcono = 'portal-brand-icon'; require __DIR__ . '/../partials/marca.php'; ?>
+            <a class="portal-brand<?= !empty($config['logo']) ? ' portal-brand--logo' : '' ?>" href="/instructor/dashboard">
+                <?php $modo = 'portal'; require __DIR__ . '/../partials/marca.php'; ?>
                 <span>
                     <span class="portal-brand-name d-block"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
                     <span class="portal-brand-sub"><?= htmlspecialchars((string) $config['lema']) ?></span>

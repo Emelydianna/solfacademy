@@ -63,6 +63,11 @@
 .admin-academica .modal-header, .admin-academica .modal-footer { border-color: var(--portal-border); }
 .admin-academica .admin-editor { scroll-margin-top: 1rem; }
 .admin-academica .admin-student-avatar { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: rgb(255 193 7 / 12%); color: var(--portal-gold); font-weight: 700; overflow: hidden; flex-shrink: 0; }
+/* Vista previa del logo dentro de Configuración: esta página no carga
+   style.css, así que necesita sus propias reglas (si no, el <img> se
+   pintaría a tamaño natural y se saldría de la tarjeta). */
+.admin-academica .admin-logo-preview { display: block; height: 96px; width: auto; max-width: 100%; margin: 0 auto; border-radius: .75rem; object-fit: contain; }
+.admin-academica .admin-logo-preview-icono { display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--portal-gold) 0%, var(--portal-gold-2) 100%); color: var(--portal-bg); font-size: 1.8rem; }
 .admin-academica .admin-student-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .admin-academica .admin-student-avatar-lg { width: 64px; height: 64px; font-size: 1.3rem; }
 .admin-academica .admin-equipment { min-width: 200px; max-width: 320px; }

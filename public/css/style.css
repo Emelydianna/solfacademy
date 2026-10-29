@@ -37,6 +37,19 @@
     letter-spacing: 1px;
 }
 
+/* Logo de la academia (subido desde /admin/configuracion). La web pública
+   no carga portal.css, así que sus reglas viven aquí. Altura fija y ancho
+   automático: proporciones intactas y sin huecos junto al nombre. */
+.brand-logo {
+    display: block;
+    height: 44px;
+    width: auto;
+    max-width: 200px;
+    flex-shrink: 0;
+    border-radius: 0.5rem;
+    object-fit: contain;
+}
+
 .site-navbar .nav-link {
     color: rgba(255, 255, 255, 0.85);
     font-size: 0.92rem;
@@ -832,6 +845,17 @@
     width: 3rem;
     height: 3rem;
     font-size: 1.4rem;
+}
+
+/* Logo de la academia centrado y grande en login/registro. */
+.auth-brand-logo {
+    display: block;
+    height: 96px;
+    width: auto;
+    max-width: 280px;
+    margin: 0 auto 1rem;
+    border-radius: 0.75rem;
+    object-fit: contain;
 }
 
 .auth-title {

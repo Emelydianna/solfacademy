@@ -111,6 +111,25 @@ body.portal-body {
     text-transform: uppercase;
 }
 
+/* Logo de la academia (subido desde /admin/configuracion). Mismo criterio
+   que las fotos de perfil: caja de altura fija, proporciones intactas
+   (object-fit: contain, nunca se estira ni se recorta) y esquinas
+   redondeadas. El ancho se adapta al logo para que no queden huecos. */
+.portal-brand--logo {
+    gap: 0.75rem;
+}
+
+.marca-logo {
+    display: block;
+    height: 64px;
+    width: auto;
+    max-width: 130px;
+    flex-shrink: 0;
+    border-radius: 0.6rem;
+    object-fit: contain;
+    object-position: left center;
+}
+
 /* Perfil del sidebar */
 
 .portal-profile {

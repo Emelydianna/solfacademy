@@ -533,8 +533,14 @@ contenido no cabe. La pantalla y el PDF comparten la misma fuente de datos
 instalación en una sola fila (`configuracion`, id = 1):
 
 - **Identidad**: nombre comercial (marca) y lema.
-- **Logo**: PNG/JPG/WEBP hasta 512KB, validados por **MIME real** (no se
-  aceptan SVG: es HTML ejecutable y la ruta es pública). Se guarda en
+- **Logo**: PNG/JPG/WEBP hasta 2MB, validados por **MIME real** (no se
+  aceptan SVG: es HTML ejecutable y la ruta es pública). Al subirlo se
+  **normaliza**: mínimo 64px y máximo 4000px por lado, se reduce hasta un
+  lienzo de 512px **conservando las proporciones** (nunca se estira ni se
+  recorta) y se guarda siempre como PNG. En las plantillas se muestra con
+  **altura fija** (64px en los sidebars, 44px en la web y 96px centrado
+  en login/registro) con `object-fit: contain` y esquinas redondeadas,
+  igual que las fotos de perfil. Se guarda en
   `var/uploads/configuracion` con un único archivo; hay botón para
   quitarlo. Si no hay logo, se muestra el icono musical de fábrica.
 - **Contacto**: correo, teléfono, dirección y ciudad (sede).

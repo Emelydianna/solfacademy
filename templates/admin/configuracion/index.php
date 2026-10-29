@@ -153,21 +153,15 @@ $redes = ['facebook' => ['bi-facebook', 'Facebook'], 'instagram' => ['bi-instagr
             <section class="portal-card p-4 mb-4">
                 <h2 class="portal-card-title mb-3">Logo</h2>
 
-                <div class="d-flex align-items-center justify-content-center mb-3" style="min-height:96px;">
-                    <span class="portal-brand-icon" style="width:72px;height:72px;font-size:1.8rem;<?= $logo ? 'background:#fff;padding:4px;overflow:hidden;' : '' ?>">
-                        <?php if ($logo): ?>
-                            <img src="<?= $e($logo) ?>" alt="Logo de la academia" style="width:100%;height:100%;object-fit:contain">
-                        <?php else: ?>
-                            <i class="bi bi-music-note-beamed"></i>
-                        <?php endif; ?>
-                    </span>
+                <div class="d-flex align-items-center justify-content-center mb-3" style="min-height:104px;">
+                    <?php $modo = 'preview'; require __DIR__ . '/../../partials/marca.php'; ?>
                 </div>
 
                 <form method="post" action="/admin/configuracion/logo" enctype="multipart/form-data" class="mb-3">
                     <?= Csrf::campo() ?>
                     <label for="logo" class="form-label">Cambiar logo</label>
                     <input id="logo" type="file" name="logo" class="form-control mb-2" accept="image/png,image/jpeg,image/webp">
-                    <div class="form-text mb-2">PNG, JPG o WEBP · máximo 512KB. No se aceptan SVG.</div>
+                    <div class="form-text mb-2">PNG, JPG o WEBP · máximo 2MB. No se aceptan SVG. Se adapta solo: se reduce a 512px conservando sus proporciones y se muestra en un recuadro fijo, sin deformarse.</div>
                     <button class="btn admin-btn-primary w-100">SUBIR LOGO</button>
                 </form>
 
@@ -181,18 +175,14 @@ $redes = ['facebook' => ['bi-facebook', 'Facebook'], 'instagram' => ['bi-instagr
 
             <section class="portal-card p-4">
                 <h2 class="portal-card-title mb-3">Así se verá la marca</h2>
-                <div class="d-flex align-items-center gap-3 p-3" style="background:var(--portal-bg);border:1px solid var(--portal-border);border-radius:.75rem;">
-                    <span class="portal-brand-icon" style="<?= $logo ? 'background:#fff;padding:3px;overflow:hidden;' : '' ?>">
-                        <?php if ($logo): ?>
-                            <img src="<?= $e($logo) ?>" alt="" style="width:100%;height:100%;object-fit:contain">
-                        <?php else: ?>
-                            <i class="bi bi-music-note-beamed"></i>
-                        <?php endif; ?>
-                    </span>
-                    <span>
-                        <span class="portal-brand-name d-block"><?= $e(mb_strtoupper($valor('nombre'))) ?></span>
-                        <span class="portal-brand-sub"><?= $e($valor('lema')) ?></span>
-                    </span>
+                <div class="p-3" style="background:var(--portal-bg);border:1px solid var(--portal-border);border-radius:.75rem;">
+                    <div class="portal-brand<?= $logo ? ' portal-brand--logo' : '' ?>" style="padding:0;border:0;min-height:0;gap:.75rem;">
+                        <?php $modo = 'portal'; require __DIR__ . '/../../partials/marca.php'; ?>
+                        <span>
+                            <span class="portal-brand-name d-block"><?= $e(mb_strtoupper($valor('nombre'))) ?></span>
+                            <span class="portal-brand-sub"><?= $e($valor('lema')) ?></span>
+                        </span>
+                    </div>
                 </div>
                 <p class="small admin-muted mb-0 mt-3">
                     Con esto se ven el sidebar de los tres portales, la navbar de la web, el login y

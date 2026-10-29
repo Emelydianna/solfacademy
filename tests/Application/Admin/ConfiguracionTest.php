@@ -77,9 +77,28 @@ final class ConfiguracionTest extends GestionOperativaTestCase
         return $archivo;
     }
 
-    private function png1x1(): string
+    /** PNG de prueba con el tamaño indicado (mismo fondo que un logo real). */
+    private function png(int $ancho, int $alto): string
     {
-        return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY4YAAAAASUVORK5CYII=') ?: '';
+        $imagen = imagecreatetruecolor($ancho, $alto);
+        imagefill($imagen, 0, 0, imagecolorallocate($imagen, 255, 193, 7));
+        ob_start();
+        imagepng($imagen);
+        imagedestroy($imagen);
+
+        return (string) ob_get_clean();
+    }
+
+    /** JPEG de prueba: debe salir convertido a PNG al subirlo. */
+    private function jpg(int $ancho, int $alto): string
+    {
+        $imagen = imagecreatetruecolor($ancho, $alto);
+        imagefill($imagen, 0, 0, imagecolorallocate($imagen, 255, 193, 7));
+        ob_start();
+        imagejpeg($imagen);
+        imagedestroy($imagen);
+
+        return (string) ob_get_clean();
     }
 
     /** @return array<string, string> */
@@ -148,22 +167,39 @@ final class ConfiguracionTest extends GestionOperativaTestCase
     {
         $this->assertNull(ConfiguracionService::archivoLogo(), 'No debe haber logo al empezar');
 
-        // Rechazos: peso, formato y tipo real de archivo.
+        // Rechazos: peso, formato, tipo real de archivo y dimensiones.
         $grande = str_repeat('A', ConfiguracionService::LOGO_MAX_BYTES + 1);
         $this->assertFalse($this->config->guardarLogo($this->archivo($grande))['ok']);
         $this->assertFalse($this->config->guardarLogo($this->archivo('<svg onload="alert(1)"></svg>', 'logo.svg'))['ok']);
         $this->assertFalse($this->config->guardarLogo($this->archivo('soy texto', 'logo.png'))['ok']);
         $this->assertFalse($this->config->guardarLogo(null)['ok']);
+        $this->assertFalse($this->config->guardarLogo($this->archivo($this->png(1, 1)))['ok'], '1px es demasiado pequeño');
+        $this->assertFalse($this->config->guardarLogo($this->archivo($this->png(4100, 100)))['ok'], '4100px supera el máximo');
         $this->assertNull(ConfiguracionService::archivoLogo());
 
-        // Subida correcta.
-        $r = $this->config->guardarLogo($this->archivo($this->png1x1(), 'mi-logo.png'));
+        // Subida correcta: formato estándar (PNG, proporciones intactas).
+        $r = $this->config->guardarLogo($this->archivo($this->png(160, 64), 'mi-logo.png'));
         $this->assertTrue($r['ok'], $r['mensaje']);
 
         $archivo = ConfiguracionService::archivoLogo();
         $this->assertNotNull($archivo);
         $this->assertStringEndsWith('.png', $archivo);
+        $datos = getimagesize($archivo);
+        $this->assertSame('image/png', $datos['mime']);
+        $this->assertSame([160, 64], [$datos[0], $datos[1]], 'Por debajo del lienzo no se toca');
         $this->assertSame('/marca/logo', ConfiguracionService::logoPublico($this->config->obtener()['logo_url']));
+
+        // Imagen grande: se reduce hasta el lienzo conservando la proporción.
+        $this->assertTrue($this->config->guardarLogo($this->archivo($this->png(1000, 400), 'grande.png'))['ok']);
+        $reducido = getimagesize(ConfiguracionService::archivoLogo());
+        $this->assertSame('image/png', $reducido['mime']);
+        $this->assertSame(ConfiguracionService::LOGO_LIENZO, max($reducido[0], $reducido[1]));
+        $this->assertEqualsWithDelta(1000 / 400, $reducido[0] / $reducido[1], 0.05, 'La proporción se conserva');
+
+        // JPEG de entrada → PNG de salida (formato único de logo).
+        $this->assertTrue($this->config->guardarLogo($this->archivo($this->jpg(300, 120), 'foto.jpg'))['ok']);
+        $this->assertStringEndsWith('.png', (string) ConfiguracionService::archivoLogo());
+        $this->assertSame('image/png', getimagesize((string) ConfiguracionService::archivoLogo())['mime']);
 
         // Quitar: desaparece el archivo y vuelve el icono.
         $this->assertTrue($this->config->quitarLogo()['ok']);
@@ -181,7 +217,12 @@ final class ConfiguracionTest extends GestionOperativaTestCase
 
         $r = $app->handle($this->createRequest('GET', '/admin/configuracion'));
         $this->assertSame(200, $r->getStatusCode());
-        $this->assertStringContainsString('Configuración de la academia', (string) $r->getBody());
+        $pagina = (string) $r->getBody();
+        $this->assertStringContainsString('Configuración de la academia', $pagina);
+        // Esta página no carga style.css: la vista previa debe usar la clase
+        // de admin-academica.css o el <img> se pinta a tamaño natural.
+        $this->assertStringContainsString('admin-logo-preview', $pagina);
+        $this->assertStringNotContainsString('auth-brand-logo', $pagina);
 
         // Guardar con CSRF.
         $r = $app->handle($this->createRequest('POST', '/admin/configuracion')
@@ -197,7 +238,7 @@ final class ConfiguracionTest extends GestionOperativaTestCase
         // Subida del logo por HTTP y lectura pública (la web y el login no llevan sesión).
         $r = $app->handle($this->createRequest('POST', '/admin/configuracion/logo')
             ->withParsedBody(['_csrf' => Csrf::token()])
-            ->withUploadedFiles(['logo' => $this->archivo($this->png1x1(), 'web.png')]));
+            ->withUploadedFiles(['logo' => $this->archivo($this->png(160, 64), 'web.png')]));
         $this->assertSame(303, $r->getStatusCode());
         $logo = $app->handle($this->createRequest('GET', '/marca/logo'));
         $this->assertSame(200, $logo->getStatusCode());

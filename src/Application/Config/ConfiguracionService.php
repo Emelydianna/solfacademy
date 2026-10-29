@@ -24,7 +24,7 @@ final class ConfiguracionService
     public const ID = 1;
 
     /** Límite del logo y formatos admitidos (por MIME real, no por nombre). */
-    public const LOGO_MAX_BYTES = 512 * 1024;
+    public const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 
     public const LOGO_PREFIJO = 'logo_';
 
@@ -37,6 +37,20 @@ final class ConfiguracionService
         'image/jpeg' => 'jpg',
         'image/webp' => 'webp',
     ];
+
+    /**
+     * Formato estándar del logo al subirlo (mismo trato que las fotos de
+     * perfil): nunca se estira ni se recorta, pero el archivo se normaliza
+     * a un lienzo máximo y se guarda siempre como PNG con proporciones
+     * originales, para que se vea igual en todos los sitios.
+     */
+    public const LOGO_LIENZO = 512;
+
+    /** Mínimo útil por lado: por debajo el logo se ve borroso. */
+    public const LOGO_MINIMO = 64;
+
+    /** Máximo por lado aceptado (criterio de prudencia como en las fotos). */
+    public const LOGO_MAXIMO = 4000;
 
     private PDO $pdo;
 
@@ -247,7 +261,7 @@ final class ConfiguracionService
             return ['ok' => false, 'mensaje' => 'El archivo está vacío.'];
         }
         if ($tamanio > self::LOGO_MAX_BYTES) {
-            return ['ok' => false, 'mensaje' => 'El logo no debe superar 512KB.'];
+            return ['ok' => false, 'mensaje' => 'El logo no debe superar 2MB.'];
         }
 
         try {
@@ -271,8 +285,17 @@ final class ConfiguracionService
             }
 
             $anterior = self::archivoLogo();
-            $nombre = self::LOGO_PREFIJO . time() . random_int(10, 99) . '.' . self::LOGO_MIME[$mime];
-            $file->moveTo($directorio . '/' . $nombre);
+            $nombre = self::LOGO_PREFIJO . time() . random_int(10, 99) . '.png';
+            $ruta = $directorio . '/' . $nombre;
+            $file->moveTo($ruta);
+
+            // Formato estándar: comprueba dimensiones, reduce hasta el lienzo
+            // y reescribe como PNG conservando las proporciones originales.
+            $error = self::normalizar($ruta, $mime);
+            if ($error !== null) {
+                @unlink($ruta);
+                return ['ok' => false, 'mensaje' => $error];
+            }
 
             $this->asegurarFila();
             $this->pdo->prepare('UPDATE configuracion SET logo_url = :logo, actualizado_en = NOW()
@@ -312,5 +335,64 @@ final class ConfiguracionService
         $this->pdo->prepare('INSERT IGNORE INTO configuracion (id_configuracion, nombre, lema)
             VALUES (:id, :nombre, :lema)')
             ->execute(['id' => self::ID, 'nombre' => $defecto['nombre'], 'lema' => $defecto['lema']]);
+    }
+
+    /**
+     * Normaliza el logo recién subido y lo reescribe como PNG:
+     *
+     *  - valida las dimensiones (mínimo y máximo por lado);
+     *  - si supera el lienzo, reduce **conservando las proporciones**
+     *    (sin estirar ni recortar, igual que las fotos de perfil);
+     *  - siempre PNG de salida, con alfa conservado.
+     *
+     * @return string|null mensaje de error, o null si todo fue bien
+     */
+    private static function normalizar(string $ruta, string $mime): ?string
+    {
+        $info = @getimagesize($ruta);
+        if ($info === false) {
+            return 'El archivo no es una imagen válida.';
+        }
+        [$ancho, $alto] = [$info[0], $info[1]];
+
+        if ($ancho < self::LOGO_MINIMO || $alto < self::LOGO_MINIMO) {
+            return 'La imagen es demasiado pequeña: mínimo ' . self::LOGO_MINIMO . 'px por lado.';
+        }
+        if ($ancho > self::LOGO_MAXIMO || $alto > self::LOGO_MAXIMO) {
+            return 'La imagen es demasiado grande: máximo ' . self::LOGO_MAXIMO . 'px por lado.';
+        }
+
+        $origen = match ($mime) {
+            'image/png'  => @imagecreatefrompng($ruta),
+            'image/jpeg' => @imagecreatefromjpeg($ruta),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($ruta) : false,
+            default      => false,
+        };
+        if ($origen === false) {
+            return 'No se pudo leer la imagen. Prueba con otro archivo.';
+        }
+
+        // Reduce hasta el lienzo conservando proporciones (nunca agranda).
+        $escala = min(1, self::LOGO_LIENZO / max($ancho, $alto));
+        $nuevoAncho = max(1, (int) round($ancho * $escala));
+        $nuevoAlto = max(1, (int) round($alto * $escala));
+
+        $destino = imagecreatetruecolor($nuevoAncho, $nuevoAlto);
+        imagealphablending($destino, false);
+        imagesavealpha($destino, true);
+        imagefilledrectangle($destino, 0, 0, $nuevoAncho, $nuevoAlto, imagecolorallocatealpha($destino, 0, 0, 0, 127));
+        imagealphablending($destino, true);
+
+        imagecopyresampled($destino, $origen, 0, 0, 0, 0, $nuevoAncho, $nuevoAlto, $ancho, $alto);
+        $guardado = imagepng($destino, $ruta, 6);
+
+        imagedestroy($destino);
+        imagedestroy($origen);
+
+        if (!$guardado) {
+            return 'No se pudo guardar el logo normalizado.';
+        }
+
+        return null;
     }
 }
