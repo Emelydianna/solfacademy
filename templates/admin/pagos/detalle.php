@@ -28,11 +28,7 @@ $src = !empty($pago['comprobante_enlace']) ? (string) $pago['comprobante_enlace'
         </div>
     </div>
 
-    <?php if ($flash): ?>
-        <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> p-3 mb-4">
-            <?= $e($flash['mensaje']) ?>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
 
     <?php if ($pendiente && !$conComprobante): ?>
         <div class="portal-alert portal-alert--peligro p-3 mb-4">Este movimiento no tiene comprobante asociado: no puede verificarse hasta que el estudiante envíe uno.</div>
@@ -208,6 +204,5 @@ $src = !empty($pago['comprobante_enlace']) ? (string) $pago['comprobante_enlace'
         <?php endif; ?>
     </section>
 
-    <?php require __DIR__ . '/../partials/confirmacion.php'; ?>
 </div>
 <script src="/js/admin-academica.js" defer></script>

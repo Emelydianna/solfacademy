@@ -134,14 +134,22 @@ final class InstructorService
 
     public function estudiantesGrupo(int $idInstructor, int $idGrupo): array
     {
+        // Asistencia y promedio salen de las vistas v_asistencia_estudiante
+        // y v_calificaciones_estudiante (una fila por inscripción).
         $sql = "SELECT e.id_estudiante, e.nombre, e.apellido, e.email, e.telefono,
                        i.fecha AS inscripcion_fecha,
-                       (SELECT COALESCE(ROUND(SUM(a.presente='S')/NULLIF(COUNT(*),0)*100,0),0) FROM asistencia a WHERE a.id_inscripcion = i.id_inscripcion) AS asistencia_pct,
-                       (SELECT COALESCE(ROUND(AVG(ev.calificacion),1),0) FROM evaluacion ev WHERE ev.id_inscripcion = i.id_inscripcion AND ev.calificacion IS NOT NULL) AS promedio,
+                       COALESCE(va.total_clases, 0) AS clases_registradas,
+                       COALESCE(va.presentes, 0) AS clases_presentes,
+                       COALESCE(ROUND(va.porcentaje_asistencia), 0) AS asistencia_pct,
+                       COALESCE(ROUND(vc.promedio, 1), 0) AS promedio,
                        (SELECT f.ruta FROM estudiante_foto f WHERE f.id_estudiante = e.id_estudiante ORDER BY f.id_foto DESC LIMIT 1) AS foto
                 FROM inscripcion i
                 JOIN estudiante e ON e.id_estudiante = i.id_estudiante
                 JOIN grupo g ON g.id_grupo = i.id_grupo
+                LEFT JOIN v_asistencia_estudiante va ON va.id_inscripcion = i.id_inscripcion
+                LEFT JOIN (SELECT id_inscripcion, MAX(promedio) AS promedio
+                           FROM v_calificaciones_estudiante GROUP BY id_inscripcion) vc
+                       ON vc.id_inscripcion = i.id_inscripcion
                 WHERE g.id_instructor = :ins AND g.id_grupo = :g AND i.estado = 'Activa'
                 ORDER BY e.apellido, e.nombre";
         $stmt = $this->pdo->prepare($sql);
@@ -200,17 +208,19 @@ final class InstructorService
                         i.precio_inscripcion, i.observaciones,
                         g.id_grupo, c.nombre AS curso, c.nivel, a.nombre AS aula,
                         g.fecha_inicio, g.fecha_fin,
-                        (SELECT COALESCE(ROUND(SUM(x.presente = 'S') / NULLIF(COUNT(*), 0) * 100, 0), 0)
-                         FROM asistencia x WHERE x.id_inscripcion = i.id_inscripcion) AS asistencia_pct,
-                        (SELECT COUNT(*) FROM asistencia x WHERE x.id_inscripcion = i.id_inscripcion) AS asistencias_total,
-                        (SELECT COALESCE(ROUND(AVG(ev.calificacion), 1), 0)
-                         FROM evaluacion ev WHERE ev.id_inscripcion = i.id_inscripcion AND ev.calificacion IS NOT NULL) AS promedio,
+                        COALESCE(va.total_clases, 0) AS asistencias_total,
+                        COALESCE(ROUND(va.porcentaje_asistencia), 0) AS asistencia_pct,
+                        COALESCE(ROUND(vc.promedio, 1), 0) AS promedio,
                         (SELECT COUNT(*) FROM evaluacion ev WHERE ev.id_inscripcion = i.id_inscripcion AND ev.calificacion IS NULL) AS sin_nota,
                         (SELECT COUNT(*) FROM evaluacion ev WHERE ev.id_inscripcion = i.id_inscripcion) AS evaluaciones_total
                  FROM inscripcion i
                  JOIN grupo g ON g.id_grupo = i.id_grupo
                  JOIN curso c ON c.id_curso = g.id_curso
                  LEFT JOIN aula a ON a.id_aula = g.id_aula
+                 LEFT JOIN v_asistencia_estudiante va ON va.id_inscripcion = i.id_inscripcion
+                 LEFT JOIN (SELECT id_inscripcion, MAX(promedio) AS promedio
+                            FROM v_calificaciones_estudiante GROUP BY id_inscripcion) vc
+                        ON vc.id_inscripcion = i.id_inscripcion
                  WHERE i.id_estudiante = :e AND g.id_instructor = :i
                  ORDER BY (i.estado = 'Activa') DESC, i.fecha DESC";
         $stmt = $this->pdo->prepare($sqlM);
@@ -664,16 +674,24 @@ final class InstructorService
     {
         $grupos = $this->misGrupos($idInstructor);
 
+        // Una sola consulta para todos los grupos (la vista ya agrupa por
+        // inscripción; aquí se sumariza por grupo).
+        $stmt = $this->pdo->prepare("SELECT i.id_grupo,
+                       ROUND(SUM(va.presentes) / NULLIF(SUM(va.total_clases), 0) * 100, 1) AS pct
+                FROM v_asistencia_estudiante va
+                JOIN inscripcion i ON i.id_inscripcion = va.id_inscripcion
+                WHERE i.estado = 'Activa'
+                GROUP BY i.id_grupo");
+        $stmt->execute();
+        $pctPorGrupo = [];
+        foreach ($stmt->fetchAll() as $fila) {
+            $pctPorGrupo[(int) $fila['id_grupo']] = (float) $fila['pct'];
+        }
         $asistenciaPorGrupo = [];
         foreach ($grupos as $g) {
-            $stmt = $this->pdo->prepare("SELECT COALESCE(ROUND(SUM(a.presente='S')/NULLIF(COUNT(*),0)*100,1),0) AS pct
-                                         FROM asistencia a
-                                         JOIN inscripcion i ON i.id_inscripcion = a.id_inscripcion
-                                         WHERE i.id_grupo = :g AND i.estado = 'Activa'");
-            $stmt->execute(['g' => $g['id_grupo']]);
             $asistenciaPorGrupo[] = [
                 'grupo' => $g['curso'],
-                'pct' => (float) $stmt->fetchColumn(),
+                'pct' => $pctPorGrupo[(int) $g['id_grupo']] ?? 0.0,
             ];
         }
 
@@ -688,17 +706,25 @@ final class InstructorService
         $stmt->execute(['id' => $idInstructor]);
         $dist = $stmt->fetch() ?: ['excelente'=>0,'aprobado'=>0,'reprobado'=>0];
 
+        // Alumnos y promedio de calificaciones (escala 0-10) por grupo,
+        // desde v_calificaciones_estudiante (una fila por evaluación). La
+        // asistencia reutiliza el % ya sumarizado por grupo arriba.
+        $stmt = $this->pdo->prepare("SELECT i.id_grupo,
+                       COUNT(DISTINCT i.id_estudiante) AS alumnos,
+                       COALESCE(ROUND(AVG(vc.calificacion) * 10, 1), 0) AS promedio_calif
+                FROM inscripcion i
+                LEFT JOIN v_calificaciones_estudiante vc ON vc.id_inscripcion = i.id_inscripcion
+                WHERE i.estado = 'Activa'
+                GROUP BY i.id_grupo");
+        $stmt->execute();
+        $rendimientoPorGrupo = [];
+        foreach ($stmt->fetchAll() as $fila) {
+            $rendimientoPorGrupo[(int) $fila['id_grupo']] = $fila;
+        }
+
         $resumen = [];
         foreach ($grupos as $g) {
-            $stmt = $this->pdo->prepare("SELECT COUNT(DISTINCT i.id_estudiante) AS alumnos,
-                                               COALESCE(ROUND(AVG(ev.calificacion)*10,1),0) AS promedio_calif,
-                                               COALESCE(ROUND(SUM(a.presente='S')/NULLIF(COUNT(DISTINCT a.id_asistencia),0)*100,1),0) AS promedio_asistencia
-                                        FROM inscripcion i
-                                        LEFT JOIN evaluacion ev ON ev.id_inscripcion = i.id_inscripcion AND ev.calificacion IS NOT NULL
-                                        LEFT JOIN asistencia a ON a.id_inscripcion = i.id_inscripcion
-                                        WHERE i.id_grupo = :g AND i.estado = 'Activa'");
-            $stmt->execute(['g' => $g['id_grupo']]);
-            $r = $stmt->fetch() ?: ['alumnos'=>0,'promedio_calif'=>0,'promedio_asistencia'=>0];
+            $r = $rendimientoPorGrupo[(int) $g['id_grupo']] ?? ['alumnos' => 0, 'promedio_calif' => 0];
             $promCalif10 = (float) $r['promedio_calif'];
             if ($promCalif10 >= 90) {
                 $estado = 'Excelente';
@@ -716,7 +742,7 @@ final class InstructorService
             $resumen[] = [
                 'grupo' => $g['curso'],
                 'alumnos' => (int) $r['alumnos'],
-                'asistencia' => round((float) $r['promedio_asistencia'], 1),
+                'asistencia' => $pctPorGrupo[(int) $g['id_grupo']] ?? 0.0,
                 'promedio' => round($promCalif10 / 10, 1),
                 'estado' => $estado,
                 'badge' => $badge,

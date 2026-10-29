@@ -11,6 +11,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Estilos del portal (design system dark) -->
     <link href="/css/portal.css" rel="stylesheet">
+    <!-- SweetAlert2 + helper de avisos y confirmaciones -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/js/notificaciones.js"></script>
     <!-- Chart.js en el <head>: los gráficos se declaran en línea en el
          contenido y necesitan la librería cargada antes que el script -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

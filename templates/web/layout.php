@@ -11,6 +11,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Estilos propios -->
     <link href="/css/style.css" rel="stylesheet">
+    <!-- SweetAlert2 + helper de avisos y confirmaciones -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/js/notificaciones.js"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
 

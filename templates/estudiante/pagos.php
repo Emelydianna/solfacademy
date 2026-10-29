@@ -60,11 +60,7 @@ $vacio = count($saldos) === 0 && count($historial) === 0;
     <?php endif; ?>
 </div>
 
-<?php if (!empty($flash)): ?>
-    <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> mb-4">
-        <?= htmlspecialchars($flash['mensaje']) ?>
-    </div>
-<?php endif; ?>
+<?php require __DIR__ . '/../partials/flash.php'; ?>
 
 <?php if ($vacio): ?>
     <div class="portal-card p-4 text-center">

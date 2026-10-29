@@ -98,33 +98,6 @@ document.addEventListener('DOMContentLoaded', function () {
         renumerarEspecialidades();
     }
 
-    const modal = document.getElementById('confirmacion-academica');
-    if (!modal) return;
-    let formularioPendiente = null;
-    document.querySelectorAll('form[data-confirm]').forEach(function (formulario) {
-        formulario.addEventListener('submit', function (evento) {
-            if (formulario.dataset.confirmado === '1') {
-                delete formulario.dataset.confirmado;
-                return;
-            }
-            // Respaldo si el CDN de Bootstrap no está disponible.
-            if (!window.bootstrap) {
-                if (!window.confirm(formulario.dataset.confirm)) evento.preventDefault();
-                return;
-            }
-            evento.preventDefault();
-            formularioPendiente = formulario;
-            document.getElementById('confirmacion-mensaje').textContent = formulario.dataset.confirm;
-            bootstrap.Modal.getOrCreateInstance(modal).show();
-        });
-    });
-    document.getElementById('confirmacion-aceptar').addEventListener('click', function () {
-        if (!formularioPendiente) return;
-        const formulario = formularioPendiente;
-        formularioPendiente = null;
-        formulario.dataset.confirmado = '1';
-        formulario.requestSubmit();
-        bootstrap.Modal.getInstance(modal).hide();
-    });
-    modal.addEventListener('hidden.bs.modal', function () { formularioPendiente = null; });
+    // Las confirmaciones de formularios con data-confirm las gestiona
+    // notificaciones.js (SweetAlert2), cargado en el <head> de los layouts.
 });

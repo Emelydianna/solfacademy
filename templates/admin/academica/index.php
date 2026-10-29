@@ -37,9 +37,7 @@ $claveId = ['cursos' => 'id_curso', 'categorias' => 'id_categoria', 'instrumento
         </nav>
     <?php endif; ?>
 
-    <?php if ($flash): ?>
-        <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> mb-4"><?= $e($flash['mensaje']) ?></div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
 
     <form method="get" action="<?= $e($base) ?>" class="portal-card p-3 mb-4" role="search">
         <div class="row g-2 align-items-end">
@@ -161,14 +159,6 @@ $claveId = ['cursos' => 'id_curso', 'categorias' => 'id_categoria', 'instrumento
         <div class="col-12 col-xl-4">
             <?php require __DIR__ . '/formulario.php'; ?>
         </div>
-    </div>
-
-    <div class="modal fade" id="confirmacion-academica" tabindex="-1" aria-labelledby="confirmacion-titulo" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-            <div class="modal-header"><h2 id="confirmacion-titulo" class="modal-title fs-5">Confirmar acción</h2><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
-            <div class="modal-body" id="confirmacion-mensaje"></div>
-            <div class="modal-footer"><button type="button" class="btn admin-btn-outline" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn admin-btn-primary" id="confirmacion-aceptar">Confirmar</button></div>
-        </div></div>
     </div>
 </div>
 <script src="/js/admin-academica.js" defer></script>

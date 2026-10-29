@@ -137,6 +137,5 @@ $motivo = (string) ($usuario['motivo_bloqueo'] ?? '');
         </div>
     </div>
 
-    <?php require __DIR__ . '/../partials/confirmacion.php'; ?>
 </div>
 <script src="/js/admin-academica.js" defer></script>

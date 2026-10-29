@@ -4,7 +4,7 @@ $base = '/admin/requisitos';
 ?>
 <div class="admin-academica">
     <div class="mb-4"><h1 class="portal-title mb-1">Gestión de Requisitos</h1><p class="portal-subtitle mb-0">Configura las condiciones de admisión de cada programa de estudio.</p></div>
-    <?php if (!empty($flash)): ?><div role="status" class="portal-alert portal-alert--exito p-3 mb-4"><?= $e($flash['mensaje']) ?></div><?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
     <form method="get" action="/admin/requisitos" class="portal-card p-3 mb-4" role="search">
         <div class="row g-2 align-items-end">
             <div class="col-12 col-md"><label for="q-requisitos" class="form-label">Buscar cursos</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="q-requisitos" type="search" name="q" maxlength="150" class="form-control" placeholder="Curso, categoría o instrumento…" value="<?= $e($listado['filtros']['q']) ?>"></div></div>

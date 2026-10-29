@@ -108,8 +108,6 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 
 | Vista | Qué muestra |
 |---|---|
-| `v_grupos_completos` | Cupo de cada grupo (las inscripciones canceladas no ocupan lugar) |
-| `v_horarios_grupos` | Horario semanal de todos los grupos, ordenado Lunes→Domingo |
 | `v_inscripciones_detalle` | Matrículas con total pagado y saldo pendiente calculados |
 | `v_asistencia_estudiante` | % de asistencia por matrícula |
 | `v_calificaciones_estudiante` | Notas con promedio por matrícula (escala 0–10) |
@@ -119,8 +117,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 | Procedimiento | Qué hace |
 |---|---|
 | `sp_verificar_disponibilidad_grupo(id_grupo, OUT lugares)` | Lugares libres de un grupo |
-| `sp_registrar_inscripcion(estudiante, grupo, OUT ok, OUT msg)` | Matrícula segura: valida cupo, grupo activo y doble inscripción; congela el precio |
-| `sp_actualizar_pago(inscripción, monto, método, concepto, referencia, creado_por, OUT ok, OUT msg)` | Registra un pago validando el monto |
+| `sp_registrar_inscripcion(estudiante, grupo, precio_ofertado, descuento, observaciones, usuario, OUT id, OUT ok, OUT msg)` | Solicitud de matrícula atómica: valida cupo, unicidad por curso y estudiante activo; revalida y consume el cupón, congela el precio y audita |
 
 El script es re-importable: borra y recrea las tablas cada vez que se ejecuta.
 
@@ -367,11 +364,10 @@ El detalle admin muestra el comprobante embebido, el importe declarado, el
 precio congelado, lo pagado y el saldo. Aprobar exige que el archivo exista en
 disco y acredita el movimiento (`Pagado`) con `verificado_por` y
 `fecha_verificacion`; si el total quedara por encima del precio de la
-matrícula se aprueba igualmente con un aviso, la misma semántica de
-`sp_actualizar_pago`. Rechazar exige motivo, deja `Fallido` con
-`motivo_verificacion` (visible para el estudiante) y habilita un nuevo envío.
-Ninguna acción edita montos ni borra pagos: el saldo sigue saliendo de
-`SUM(pago) WHERE estado='Pagado'`.
+matrícula se aprueba igualmente con un aviso. Rechazar exige motivo, deja
+`Fallido` con `motivo_verificacion` (visible para el estudiante) y habilita un
+nuevo envío. Ninguna acción edita montos ni borra pagos: el saldo sigue
+saliendo de `SUM(pago) WHERE estado='Pagado'`.
 
 #### Descuentos
 
@@ -597,10 +593,18 @@ templates/admin/           → vistas del panel de administración
 public/css/style.css       → estilos globales
 public/css/portal.css      → design system del portal (tema oscuro)
 public/css/admin-academica.css → componentes de gestión sin alterar otros portales
-public/js/admin-academica.js → selector categoría/instrumento y confirmaciones
+public/js/admin-academica.js → selectores de formulario (categoría/instrumento, etc.)
+public/js/notificaciones.js  → avisos y confirmaciones con SweetAlert2 (todo el proyecto)
+templates/partials/flash.php → aviso flash del controlador como toast de SweetAlert2
 public/comprobantes/       → PDF de comprobante de pago (generados)
 var/uploads/comprobantes/  → comprobantes subidos por los alumnos (no versionado)
 ```
+
+Los mensajes flash de los controladores (`$_SESSION['..._flash']`) se pintan como
+toasts de SweetAlert2 mediante `templates/partials/flash.php`, con respaldo
+`<noscript>` y escape del mensaje. Las acciones que exigen confirmación usan el
+atributo `data-confirm="…"` en el `<form>`, que `public/js/notificaciones.js`
+pregunta antes de enviar (con respaldo a `confirm()` si falta la librería).
 
 La homepage usa categorías e instructores reales. Solo el bloque de testimonios
 conserva los ejemplos de `src/Data/SampleData.php`. Los perfiles de instructores

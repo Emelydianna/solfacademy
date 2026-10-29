@@ -9,7 +9,7 @@ $base = '/admin/grupos';
         <div><h1 class="portal-title mb-1">Gestión de Grupos</h1><p class="portal-subtitle mb-0">Asignación de instructores, aulas, horarios y cupos por curso.</p></div>
         <a href="/admin/grupos<?= $listado['filtros']['curso'] ? '?curso=' . (int) $listado['filtros']['curso'] : '' ?>#formulario-grupo" class="btn admin-btn-primary align-self-start"><i class="bi bi-plus-lg me-2"></i>CREAR GRUPO</a>
     </div>
-    <?php if ($flash): ?><div role="status" class="portal-alert portal-alert--exito p-3 mb-4"><?= $e($flash['mensaje']) ?></div><?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
     <form method="get" class="portal-card p-3 mb-4" action="/admin/grupos" role="search">
         <div class="row g-2 align-items-end">
             <div class="col-12 col-lg-4"><label class="form-label" for="q-grupos">Buscar</label><input id="q-grupos" name="q" type="search" class="form-control" maxlength="150" placeholder="Curso, instructor, aula o #grupo…" value="<?= $e($listado['filtros']['q']) ?>"></div>

@@ -34,11 +34,7 @@ $redes = ['facebook' => ['bi-facebook', 'Facebook'], 'instagram' => ['bi-instagr
         <?php endif; ?>
     </div>
 
-    <?php if (!empty($flash)): ?>
-        <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> p-3 mb-4">
-            <?= $e($flash['mensaje']) ?>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
     <?php if (!empty($errores['general'])): ?>
         <div role="alert" class="portal-alert portal-alert--peligro p-3 mb-4"><?= $e($errores['general']) ?></div>
     <?php endif; ?>
@@ -192,6 +188,5 @@ $redes = ['facebook' => ['bi-facebook', 'Facebook'], 'instagram' => ['bi-instagr
         </div>
     </div>
 
-    <?php require __DIR__ . '/../partials/confirmacion.php'; ?>
 </div>
 <script src="/js/admin-academica.js" defer></script>

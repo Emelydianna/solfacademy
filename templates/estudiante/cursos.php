@@ -34,9 +34,7 @@ $diasCortos = [
     <?php endif; ?>
 </div>
 
-<?php if (!empty($flash)): ?>
-    <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> mb-4"><?= htmlspecialchars($flash['mensaje']) ?></div>
-<?php endif; ?>
+<?php require __DIR__ . '/../partials/flash.php'; ?>
 
 <?php if (count($cursos) === 0): ?>
     <div class="portal-card p-4 text-center">
@@ -177,11 +175,6 @@ $diasCortos = [
             if (mensaje) elMensaje.textContent = mensaje;
         });
     });
-
-    document.addEventListener('submit', function (evento) {
-        var formulario = evento.target.closest('form[data-confirm]');
-        if (formulario && !window.confirm(formulario.getAttribute('data-confirm'))) {
-            evento.preventDefault();
-        }
-    });
+    // Las confirmaciones de formularios con data-confirm las gestiona
+    // notificaciones.js (SweetAlert2).
 </script>

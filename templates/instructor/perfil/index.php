@@ -22,12 +22,7 @@ $fotoUrl = $perfil['foto'] ?? ($fotoPerfilSidebar ?? '');
     </button>
 </div>
 
-<?php if (is_array($flash) && ($flash['mensaje'] ?? '') !== ''): ?>
-    <div class="portal-alert portal-alert--<?= ($flash['tipo'] ?? 'exito') === 'error' ? 'peligro' : 'exito' ?> d-flex align-items-center gap-2 mb-4" role="alert">
-        <i class="bi bi-<?= ($flash['tipo'] ?? 'exito') === 'error' ? 'exclamation-circle' : 'check-circle' ?>-fill"></i>
-        <span><?= htmlspecialchars($flash['mensaje']) ?></span>
-    </div>
-<?php endif; ?>
+<?php require __DIR__ . '/../../partials/flash.php'; ?>
 
 <div class="row g-4">
     <!-- Columna Izquierda -->

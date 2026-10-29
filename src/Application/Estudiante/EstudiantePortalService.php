@@ -114,16 +114,16 @@ final class EstudiantePortalService
         }
 
         // Asistencia por inscripción -> porcentaje de avance de la tarjeta
+        // (la vista v_asistencia_estudiante ya agrupa por inscripción).
         $idsInscripcion = array_map(static fn (array $fila): int => (int) $fila['id_inscripcion'], $inscripciones);
         $placeholdersIns = implode(',', array_fill(0, count($idsInscripcion), '?'));
 
         $stmtA = $this->pdo->prepare(
             "SELECT id_inscripcion,
-                    COUNT(*) AS clases_registradas,
-                    COALESCE(SUM(presente = 'S'), 0) AS clases_presentes
-             FROM asistencia
-             WHERE id_inscripcion IN ($placeholdersIns)
-             GROUP BY id_inscripcion"
+                    total_clases AS clases_registradas,
+                    presentes AS clases_presentes
+             FROM v_asistencia_estudiante
+             WHERE id_inscripcion IN ($placeholdersIns)"
         );
         $stmtA->execute($idsInscripcion);
 

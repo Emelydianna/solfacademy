@@ -21,8 +21,9 @@
 --   · El estado de pago NO se guarda duplicado en inscripcion:
 --     se deriva de la suma de la tabla pago (fuente única de
 --     verdad). Solo se congela "precio_inscripcion" al matricular.
---   · Se añaden vistas y procedimientos almacenados que usan (o
---     usarán) el portal y el panel administrativo.
+--   · Vistas y procedimientos almacenados usados por el portal y el
+--     panel administrativo (cupo, asistencia, calificaciones y
+--     matrícula atómica).
 --
 --  Importar desde la raíz del proyecto:
 --      mysql -u valet solfacademy < database/solfacademy.sql
@@ -532,48 +533,9 @@ DELIMITER ;
 -- ============================================================
 
 -- Se eliminan primero para que el script sea re-importable
-DROP VIEW IF EXISTS v_grupos_completos;
-DROP VIEW IF EXISTS v_horarios_grupos;
 DROP VIEW IF EXISTS v_inscripciones_detalle;
 DROP VIEW IF EXISTS v_asistencia_estudiante;
 DROP VIEW IF EXISTS v_calificaciones_estudiante;
-
--- Ocupación de cada grupo (las inscripciones canceladas no
--- ocupan cupo; por eso el LEFT JOIN filtra por estado).
-CREATE VIEW v_grupos_completos AS
-SELECT g.id_grupo,
-       c.nombre AS curso,
-       CONCAT(i.nombre, ' ', i.apellido) AS instructor,
-       a.nombre AS aula,
-       g.capacidad_maxima,
-       COUNT(ins.id_inscripcion) AS inscritos,
-       g.capacidad_maxima - COUNT(ins.id_inscripcion) AS lugares_disponibles,
-       g.fecha_inicio,
-       g.fecha_fin,
-       g.estado
-FROM grupo g
-JOIN curso c ON c.id_curso = g.id_curso
-JOIN instructor i ON i.id_instructor = g.id_instructor
-JOIN aula a ON a.id_aula = g.id_aula
-LEFT JOIN inscripcion ins ON ins.id_grupo = g.id_grupo
-                         AND ins.estado IN ('Activa', 'Pendiente')
-GROUP BY g.id_grupo, g.capacidad_maxima, c.nombre, i.nombre, i.apellido,
-         a.nombre, g.fecha_inicio, g.fecha_fin, g.estado;
-
--- Horario semanal de todos los grupos, ordenado Lunes..Domingo
-CREATE VIEW v_horarios_grupos AS
-SELECT g.id_grupo,
-       c.nombre AS curso,
-       h.dia_semana,
-       h.hora_inicio,
-       h.hora_fin,
-       a.nombre AS aula
-FROM grupo g
-JOIN curso c ON c.id_curso = g.id_curso
-JOIN horario h ON h.id_grupo = g.id_grupo
-JOIN aula a ON a.id_aula = g.id_aula
-ORDER BY FIELD(h.dia_semana, 'Lunes', 'Martes', 'Miércoles', 'Jueves',
-               'Viernes', 'Sábado', 'Domingo'), h.hora_inicio;
 
 -- Detalle de matrículas con saldo calculado desde la tabla pago
 CREATE VIEW v_inscripciones_detalle AS
@@ -641,7 +603,6 @@ DELIMITER $$
 -- Se eliminan primero para que el script sea re-importable
 DROP PROCEDURE IF EXISTS sp_verificar_disponibilidad_grupo$$
 DROP PROCEDURE IF EXISTS sp_registrar_inscripcion$$
-DROP PROCEDURE IF EXISTS sp_actualizar_pago$$
 
 -- Lugares libres de un grupo (NULL si el grupo no existe)
 CREATE PROCEDURE sp_verificar_disponibilidad_grupo (
@@ -658,150 +619,159 @@ BEGIN
     GROUP  BY g.id_grupo, g.capacidad_maxima;
 END$$
 
--- Matrícula segura: valida grupo activo, cupo libre y que el
--- estudiante no esté ya inscrito; congela el precio del curso.
+-- Matrícula (solicitud) atómica: valida en transacción que el grupo
+-- admita inscripciones, que haya cupo y que el estudiante no tenga
+-- otra matrícula vigente en el MISMO curso; congela el precio final
+-- (ya con el descuento, si el cupón sigue válido), consume un uso del
+-- cupón y registra la auditoría. Los mensajes coinciden con los del
+-- portal para no cambiar la experiencia de usuario.
 CREATE PROCEDURE sp_registrar_inscripcion (
-    IN  p_id_estudiante INT,
-    IN  p_id_grupo      INT,
-    OUT p_success       BOOLEAN,
-    OUT p_message       VARCHAR(255)
+    IN  p_id_estudiante   INT UNSIGNED,
+    IN  p_id_grupo        INT UNSIGNED,
+    IN  p_precio_ofertado DECIMAL(8,2),   -- precio calculado en PHP con el cupón
+    IN  p_id_descuento    INT UNSIGNED,   -- NULL si no hubo código válido
+    IN  p_observaciones   VARCHAR(255),
+    IN  p_id_usuario      INT UNSIGNED,   -- quién audita la solicitud
+    OUT p_id_inscripcion  INT UNSIGNED,
+    OUT p_success         BOOLEAN,
+    OUT p_message         VARCHAR(255)
 )
 BEGIN
-    DECLARE v_lugares   INT DEFAULT NULL;
-    DECLARE v_precio    DECIMAL(8,2) DEFAULT NULL;
-    DECLARE v_estado    VARCHAR(20)  DEFAULT NULL;
-    DECLARE v_duplicada INT DEFAULT 0;
+    DECLARE v_id_curso      INT UNSIGNED DEFAULT NULL;
+    DECLARE v_lugares       INT DEFAULT NULL;
+    DECLARE v_precio_base   DECIMAL(8,2) DEFAULT NULL;
+    DECLARE v_estado_grupo  VARCHAR(20)  DEFAULT NULL;
+    DECLARE v_activo        TINYINT DEFAULT 0;
+    DECLARE v_disponible    TINYINT DEFAULT 0;
+    DECLARE v_estado_est    VARCHAR(20)  DEFAULT NULL;
+    DECLARE v_duplicada     VARCHAR(20)  DEFAULT NULL;
+    DECLARE v_precio_final  DECIMAL(8,2) DEFAULT NULL;
+
+    -- El cupón se revalida bajo bloqueo dentro de la transacción; si en
+    -- la carrera se agotara, la matrícula continúa sin descuento (igual
+    -- que un código inválido: no bloquea, solo se avisa).
+    DECLARE v_d_activo      TINYINT DEFAULT NULL;
+    DECLARE v_d_inicio      DATE DEFAULT NULL;
+    DECLARE v_d_fin         DATE DEFAULT NULL;
+    DECLARE v_d_usos_disp   INT DEFAULT NULL;
+    DECLARE v_d_usos_real   INT DEFAULT 0;
+    DECLARE v_d_curso       INT UNSIGNED DEFAULT NULL;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
+        SET p_id_inscripcion = NULL;
         SET p_success = FALSE;
         SET p_message = 'Error inesperado al registrar la inscripción';
     END;
 
+    SET p_id_inscripcion = NULL;
+
     START TRANSACTION;
 
-    -- FOR UPDATE bloquea el grupo y sus inscripciones para que dos
-    -- matrículas simultáneas no tomen el mismo último cupo.
-    SELECT g.capacidad_maxima - COUNT(ins.id_inscripcion),
-           MIN(c.precio),
-           MIN(g.estado)
-    INTO   v_lugares, v_precio, v_estado
-    FROM   grupo g
-    JOIN   curso c ON c.id_curso = g.id_curso
-    LEFT JOIN inscripcion ins ON ins.id_grupo = g.id_grupo
-                             AND ins.estado IN ('Activa', 'Pendiente')
-    WHERE  g.id_grupo = p_id_grupo
-    GROUP  BY g.id_grupo, g.capacidad_maxima
-    FOR UPDATE;
-
-    IF v_precio IS NULL THEN
+    -- Mismo orden de bloqueos que PHP (curso, estudiante, grupo) para
+    -- no cruzar transacciones con una edición simultánea del grupo.
+    SELECT id_curso INTO v_id_curso FROM grupo WHERE id_grupo = p_id_grupo;
+    IF v_id_curso IS NULL THEN
         SET p_success = FALSE;
-        SET p_message = 'El grupo indicado no existe';
+        SET p_message = 'El grupo o estudiante ya no existe.';
         ROLLBACK;
-
-    ELSEIF v_estado <> 'activo' THEN
-        SET p_success = FALSE;
-        SET p_message = CONCAT('El grupo no admite inscripciones (estado: ', v_estado, ')');
-        ROLLBACK;
-
     ELSE
-        SELECT COUNT(*)
-        INTO   v_duplicada
-        FROM   inscripcion
-        WHERE  id_estudiante = p_id_estudiante
-          AND  id_grupo = p_id_grupo
-          AND  estado IN ('Activa', 'Pendiente');
+        SELECT activo, disponible, precio
+        INTO   v_activo, v_disponible, v_precio_base
+        FROM   curso WHERE id_curso = v_id_curso FOR UPDATE;
 
-        IF v_duplicada > 0 THEN
+        SELECT estado INTO v_estado_est
+        FROM   estudiante WHERE id_estudiante = p_id_estudiante FOR UPDATE;
+
+        -- FOR UPDATE bloquea el grupo y sus inscripciones para que dos
+        -- matrículas simultáneas no tomen el mismo último cupo.
+        SELECT g.capacidad_maxima - COUNT(ins.id_inscripcion),
+               MIN(g.estado)
+        INTO   v_lugares, v_estado_grupo
+        FROM   grupo g
+        LEFT JOIN inscripcion ins ON ins.id_grupo = g.id_grupo
+                                 AND ins.estado IN ('Activa', 'Pendiente')
+        WHERE  g.id_grupo = p_id_grupo
+        GROUP  BY g.id_grupo, g.capacidad_maxima
+        FOR UPDATE;
+
+        IF v_estado_est IS NULL OR v_estado_est <> 'Activo' THEN
             SET p_success = FALSE;
-            SET p_message = 'El estudiante ya está inscrito en este grupo';
+            SET p_message = 'El estudiante está suspendido.';
+            ROLLBACK;
+
+        ELSEIF v_estado_grupo <> 'activo' OR v_activo = 0 OR v_disponible = 0 THEN
+            SET p_success = FALSE;
+            SET p_message = 'El grupo ya no admite nuevas matrículas.';
             ROLLBACK;
 
         ELSEIF v_lugares <= 0 THEN
             SET p_success = FALSE;
-            SET p_message = 'No hay lugares disponibles en el grupo';
+            SET p_message = 'Este grupo ya no tiene lugares disponibles.';
             ROLLBACK;
 
         ELSE
-            INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado, precio_inscripcion)
-            VALUES (p_id_estudiante, p_id_grupo, CURDATE(), 'Activa', v_precio);
+            -- Una matrícula vigente por CURSO, no por grupo (el estudiante
+            -- no puede cursar dos grupos del mismo curso a la vez).
+            SELECT m.estado
+            INTO   v_duplicada
+            FROM   inscripcion m
+            JOIN   grupo g ON g.id_grupo = m.id_grupo
+            WHERE  m.id_estudiante = p_id_estudiante
+              AND  g.id_curso = v_id_curso
+              AND  m.estado IN ('Activa', 'Pendiente')
+            LIMIT 1;
 
-            SET p_success = TRUE;
-            SET p_message = 'Inscripción registrada';
-            COMMIT;
-        END IF;
-    END IF;
-END$$
+            IF v_duplicada IS NOT NULL THEN
+                SET p_success = FALSE;
+                SET p_message = IF(v_duplicada = 'Pendiente',
+                    'Ya tienes una solicitud pendiente para este curso.',
+                    'Ya estás matriculado en este curso.');
+                ROLLBACK;
 
--- Registra un pago y valida el monto. El saldo de la inscripción
--- nunca se guarda: se consulta con SUM(pagos).
-CREATE PROCEDURE sp_actualizar_pago (
-    IN  p_id_inscripcion INT,
-    IN  p_monto          DECIMAL(8,2),
-    IN  p_metodo         VARCHAR(40),
-    IN  p_concepto       VARCHAR(60),
-    IN  p_referencia     VARCHAR(100),
-    IN  p_creado_por     INT UNSIGNED,
-    OUT p_success        BOOLEAN,
-    OUT p_message        VARCHAR(255)
-)
-BEGIN
-    DECLARE v_id_insc INT DEFAULT NULL;
-    DECLARE v_precio  DECIMAL(8,2) DEFAULT NULL;
-    DECLARE v_total   DECIMAL(10,2) DEFAULT 0;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        SET p_success = FALSE;
-        SET p_message = 'Error inesperado al registrar el pago';
-    END;
-
-    IF p_monto IS NULL OR p_monto <= 0 THEN
-        SET p_success = FALSE;
-        SET p_message = 'El monto debe ser mayor a cero';
-
-    ELSE
-        START TRANSACTION;
-
-        SELECT id_inscripcion, precio_inscripcion
-        INTO   v_id_insc, v_precio
-        FROM   inscripcion
-        WHERE  id_inscripcion = p_id_inscripcion
-        FOR UPDATE;
-
-        IF v_id_insc IS NULL THEN
-            SET p_success = FALSE;
-            SET p_message = 'La inscripción indicada no existe';
-            ROLLBACK;
-
-        ELSE
-            INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto,
-                              metodo, estado, referencia_pago, creado_por)
-            VALUES (p_id_inscripcion, CURDATE(), p_monto,
-                    COALESCE(p_concepto, 'Mensualidad'), p_metodo, 'Pagado',
-                    p_referencia, p_creado_por);
-
-            SELECT COALESCE(SUM(monto_pagado), 0)
-            INTO   v_total
-            FROM   pago
-            WHERE  id_inscripcion = p_id_inscripcion
-              AND  estado = 'Pagado';
-
-            SET p_success = TRUE;
-
-            IF v_precio IS NOT NULL AND v_total > v_precio THEN
-                SET p_message = CONCAT('Pago registrado. Atención: el total pagado (',
-                                       ROUND(v_total, 2),
-                                       ') supera el precio de la inscripción (', v_precio, ')');
-            ELSEIF v_precio IS NOT NULL AND v_total >= v_precio THEN
-                SET p_message = 'Pago registrado. Inscripción saldada';
             ELSE
-                SET p_message = 'Pago registrado';
-            END IF;
+                SET v_precio_final = p_precio_ofertado;
 
-            COMMIT;
+                IF p_id_descuento IS NOT NULL THEN
+                    SELECT activo, fecha_inicio, fecha_fin,
+                           usos_disponibles, usos_realizados, id_curso
+                    INTO   v_d_activo, v_d_inicio, v_d_fin,
+                           v_d_usos_disp, v_d_usos_real, v_d_curso
+                    FROM   descuento
+                    WHERE  id_descuento = p_id_descuento
+                    FOR UPDATE;
+
+                    IF v_d_activo IS NULL OR v_d_activo <> 1
+                       OR CURDATE() < v_d_inicio OR CURDATE() > v_d_fin
+                       OR (v_d_usos_disp <> -1 AND v_d_usos_real >= v_d_usos_disp)
+                       OR (v_d_curso IS NOT NULL AND v_d_curso <> v_id_curso) THEN
+                        -- El cupón dejó de ser válido: sin descuento, sin bloquear.
+                        SET p_id_descuento = NULL;
+                        SET v_precio_final = v_precio_base;
+                    ELSE
+                        UPDATE descuento
+                        SET    usos_realizados = usos_realizados + 1
+                        WHERE  id_descuento = p_id_descuento;
+                    END IF;
+                END IF;
+
+                INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado,
+                                         precio_inscripcion, observaciones, id_descuento)
+                VALUES (p_id_estudiante, p_id_grupo, CURDATE(), 'Pendiente',
+                        v_precio_final, p_observaciones, p_id_descuento);
+
+                SET p_id_inscripcion = LAST_INSERT_ID();
+
+                INSERT INTO inscripcion_auditoria (id_inscripcion, estado_anterior,
+                                                   estado_nuevo, motivo, id_usuario)
+                VALUES (p_id_inscripcion, NULL, 'Pendiente',
+                        'Solicitud creada desde el portal del estudiante', p_id_usuario);
+
+                SET p_success = TRUE;
+                SET p_message = 'Solicitud enviada. Administración revisará los requisitos antes de activarla.';
+                COMMIT;
+            END IF;
         END IF;
     END IF;
 END$$

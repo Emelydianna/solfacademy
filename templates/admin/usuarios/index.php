@@ -28,11 +28,7 @@ $etiquetaRol = ['admin' => 'Admin', 'instructor' => 'Instructor', 'estudiante' =
         </div>
     </div>
 
-    <?php if (!empty($flash)): ?>
-        <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> p-3 mb-4">
-            <?= $e($flash['mensaje']) ?>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
 
     <!-- Píldoras de filtro por rol -->
     <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Filtrar por rol">
@@ -160,6 +156,5 @@ $etiquetaRol = ['admin' => 'Admin', 'instructor' => 'Instructor', 'estudiante' =
         <?php require __DIR__ . '/../partials/paginacion.php'; ?>
     </section>
 
-    <?php require __DIR__ . '/../partials/confirmacion.php'; ?>
 </div>
 <script src="/js/admin-academica.js" defer></script>

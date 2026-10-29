@@ -12,6 +12,10 @@
     <!-- Estilos del portal (design system dark) -->
     <link href="/css/portal.css" rel="stylesheet">
     <link href="/css/admin-academica.css" rel="stylesheet">
+    <!-- SweetAlert2 + helper: en el <head> para que los scripts en línea
+         (avisos flash, confirmaciones) los encuentren cargados -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/js/notificaciones.js"></script>
     <!-- Chart.js: en el <head> para que los scripts en línea del contenido lo encuentren -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>

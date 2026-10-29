@@ -88,8 +88,11 @@ final class MatriculasService
     }
 
     /**
-     * Solicitud de matrícula desde el portal. Congela el precio —con el
-     * código de descuento, si es válido— y registra el cupón usado.
+     * Solicitud de matrícula desde el portal. Las validaciones de cara al
+     * usuario (edad, requisitos, conflicto de horario) se hacen aquí, y el
+     * procedimiento sp_registrar_inscripcion garantiza de forma atómica el
+     * cupo, la unicidad de matrícula vigente por curso, el consumo del
+     * cupón y la auditoría en su propia transacción.
      *
      * @param string $codigoDescuento Código introducido por el estudiante (opcional).
      *                                Un código inválido no bloquea: solo se avisa.
@@ -98,9 +101,8 @@ final class MatriculasService
     public function solicitar(int $idGrupo, int $idEstudiante, int $idUsuario, bool $confirmarRequisitos, string $codigoDescuento = ''): array
     {
         try {
-            $this->pdo->beginTransaction();
-            $datos = $this->bloquearSolicitud($idGrupo, $idEstudiante);
-            if (!$datos) {
+            $datos = $this->datosSolicitud($idGrupo, $idEstudiante);
+            if (!$datos || !$datos['estudiante']) {
                 throw new DomainException('El grupo o estudiante ya no existe.');
             }
             ['grupo' => $grupo, 'estudiante' => $estudiante, 'requisito' => $requisito] = $datos;
@@ -113,7 +115,7 @@ final class MatriculasService
             if ((int) $grupo['ocupados'] >= (int) $grupo['capacidad_maxima']) {
                 throw new DomainException('Este grupo ya no tiene lugares disponibles.');
             }
-            $vigente = $this->matriculaVigente($idEstudiante, (int) $grupo['id_curso']);
+            $vigente = $datos['vigente'];
             if ($vigente) {
                 throw new DomainException($vigente['estado'] === 'Pendiente'
                     ? 'Ya tienes una solicitud pendiente para este curso.'
@@ -135,12 +137,14 @@ final class MatriculasService
             // Código de descuento (opcional): se congela el precio final y
             // se guarda el cupón en inscripcion.id_descuento. Un código no
             // válido no bloquea la matrícula, solo se avisa en el mensaje.
+            // El procedimiento revalida el cupón con bloqueo antes de
+            // consumirlo: si en la carrera se agotara, matricula sin él.
             $precio = round((float) $grupo['precio'], 2);
             $descuento = null;
             $avisoDescuento = '';
             $codigo = strtoupper(trim($codigoDescuento));
             if ($codigo !== '') {
-                $evaluado = (new DescuentosService($this->pdo))->evaluar($codigo, (int) $grupo['id_curso'], $precio, true);
+                $evaluado = (new DescuentosService($this->pdo))->evaluar($codigo, (int) $grupo['id_curso'], $precio);
                 if ($evaluado['ok']) {
                     $precio = (float) $evaluado['precio_final'];
                     $descuento = $evaluado;
@@ -149,32 +153,75 @@ final class MatriculasService
                 }
             }
 
-            $this->pdo->prepare('INSERT INTO inscripcion (id_estudiante, id_grupo, fecha, estado, precio_inscripcion, observaciones, id_descuento)
-                VALUES (:estudiante, :grupo, CURDATE(), \'Pendiente\', :precio, \'Solicitud creada por el estudiante\', :descuento)')
-                ->execute(['estudiante' => $idEstudiante, 'grupo' => $idGrupo, 'precio' => $precio,
-                    'descuento' => $descuento['id_descuento'] ?? null]);
-            $id = (int) $this->pdo->lastInsertId();
-            if ($descuento !== null) {
-                (new DescuentosService($this->pdo))->consumir((int) $descuento['id_descuento']);
+            $r = $this->registrarSolicitud($idEstudiante, $idGrupo, $precio, $descuento['id_descuento'] ?? null, $idUsuario);
+            if (!$r['ok']) {
+                throw new DomainException($r['mensaje']);
             }
-            $this->auditar($id, null, 'Pendiente', 'Solicitud creada desde el portal del estudiante', $idUsuario);
-            $this->pdo->commit();
+
+            // El precio y el cupón realmente guardados los decide el
+            // procedimiento dentro de su transacción: se leen para el mensaje.
+            $stmt = $this->pdo->prepare('SELECT precio_inscripcion, id_descuento FROM inscripcion WHERE id_inscripcion = :id');
+            $stmt->execute(['id' => $r['id']]);
+            $guardado = $stmt->fetch();
 
             $mensaje = 'Solicitud enviada. Administración revisará los requisitos antes de activarla.';
-            if ($descuento !== null) {
+            if ($descuento !== null && $guardado && $guardado['id_descuento'] !== null) {
                 $mensaje .= ' Descuento ' . $descuento['codigo'] . ' aplicado (' . $descuento['detalle']
-                    . '): precio final ' . Dinero::monto((float) $descuento['precio_final']) . '.';
+                    . '): precio final ' . Dinero::monto((float) $guardado['precio_inscripcion']) . '.';
+            } elseif ($descuento !== null) {
+                $avisoDescuento = ' El código ' . $descuento['codigo']
+                    . ' ya no estaba disponible al confirmar; la matrícula quedó registrada sin descuento.';
             }
-            return ['ok' => true, 'id' => $id, 'mensaje' => $mensaje . $avisoDescuento];
+            return ['ok' => true, 'id' => $r['id'], 'mensaje' => $mensaje . $avisoDescuento];
         } catch (\Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
             if ($e instanceof PDOException && (string) $e->getCode() === '40001') {
                 return ['ok' => false, 'mensaje' => 'Hubo una matrícula simultánea. Recarga e inténtalo de nuevo.'];
             }
             throw $e;
         }
+    }
+
+    /**
+     * Ejecuta sp_registrar_inscripcion (dueño de la transacción) y traduce
+     * sus parámetros de salida. El precio y el cupón van ya calculados por
+     * PHP; el procedimiento los revalida con bloqueo antes de escribir.
+     *
+     * @return array{ok: bool, id: int|null, mensaje: string}
+     */
+    private function registrarSolicitud(int $idEstudiante, int $idGrupo, float $precio, ?int $idDescuento, int $idUsuario): array
+    {
+        $stmt = $this->pdo->prepare(
+            'CALL sp_registrar_inscripcion(:estudiante, :grupo, :precio, :descuento, :observaciones, :usuario, @id_inscripcion, @success, @message)'
+        );
+        $stmt->execute([
+            'estudiante'    => $idEstudiante,
+            'grupo'         => $idGrupo,
+            'precio'        => $precio,
+            'descuento'     => $idDescuento,
+            'observaciones' => 'Solicitud creada por el estudiante',
+            'usuario'       => $idUsuario,
+        ]);
+        $stmt->closeCursor();
+        $salida = $this->pdo->query('SELECT @id_inscripcion AS id, @success AS success, @message AS message')->fetch();
+        return [
+            'ok'      => (bool) ($salida['success'] ?? false),
+            'id'      => $salida['id'] !== null ? (int) $salida['id'] : null,
+            'mensaje' => (string) ($salida['message'] ?? 'Error inesperado al registrar la inscripción'),
+        ];
+    }
+
+    /**
+     * Lugares libres de un grupo vía sp_verificar_disponibilidad_grupo
+     * (negativo si el grupo supera su capacidad). 0 si el grupo ya no
+     * existe.
+     */
+    private function lugaresDisponibles(int $idGrupo): int
+    {
+        $stmt = $this->pdo->prepare('CALL sp_verificar_disponibilidad_grupo(:grupo, @lugares)');
+        $stmt->execute(['grupo' => $idGrupo]);
+        $stmt->closeCursor();
+        $fila = $this->pdo->query('SELECT @lugares AS lugares')->fetch();
+        return $fila['lugares'] === null ? 0 : (int) $fila['lugares'];
     }
 
     /**
@@ -268,7 +315,8 @@ final class MatriculasService
         }
         $m['grupo_estado'] = $this->pdo->query("SELECT estado FROM grupo WHERE id_grupo = " . (int) $m['id_grupo'])->fetchColumn();
         $m['horarios'] = (new GruposService($this->pdo))->horarios((int) $m['id_grupo']);
-        $m['ocupados'] = (int) $this->pdo->query("SELECT COUNT(*) FROM inscripcion WHERE id_grupo = " . (int) $m['id_grupo'] . " AND estado IN ('Activa','Pendiente')")->fetchColumn();
+        // Lugares libres vía procedimiento almacenado; ocupados = capacidad - libres.
+        $m['ocupados'] = (int) $m['capacidad_maxima'] - $this->lugaresDisponibles((int) $m['id_grupo']);
         $m['conflicto_horario'] = $this->hayConflictoHorario((int) $m['id_estudiante'], (int) $m['id_grupo'], $id);
         $m['edad'] = $m['fecha_nacimiento'] ? (new DateTimeImmutable($m['fecha_nacimiento']))->diff(new DateTimeImmutable('today'))->y : null;
         $m['auditoria'] = $this->auditoria($id);
@@ -304,9 +352,7 @@ final class MatriculasService
             if (!$grupo || $grupo['estado'] !== 'activo' || !$grupo['activo'] || !$grupo['disponible']) {
                 throw new DomainException('El curso o grupo ya no admite matrículas activas.');
             }
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM inscripcion WHERE id_grupo = :id AND estado IN ('Activa','Pendiente')");
-            $stmt->execute(['id' => $m['id_grupo']]);
-            if ((int) $stmt->fetchColumn() > (int) $grupo['capacidad_maxima']) {
+            if ($this->lugaresDisponibles((int) $m['id_grupo']) < 0) {
                 throw new DomainException('El grupo supera su capacidad. Revisa sus matrículas vigentes antes de aprobar.');
             }
             $vigente = $this->matriculaVigente((int) $m['id_estudiante'], (int) $grupo['id_curso']);
@@ -368,43 +414,6 @@ final class MatriculasService
             }
             throw $e;
         }
-    }
-
-    private function bloquearSolicitud(int $idGrupo, int $idEstudiante): ?array
-    {
-        // El orden de bloqueos debe coincidir con GruposService: curso,
-        // después estudiante y finalmente grupo. Así no se cruzan transacciones
-        // de matrícula con una edición simultánea del grupo.
-        $stmt = $this->pdo->prepare('SELECT id_curso FROM grupo WHERE id_grupo = :id');
-        $stmt->execute(['id' => $idGrupo]);
-        $idCurso = (int) $stmt->fetchColumn();
-        if ($idCurso < 1) {
-            return null;
-        }
-        $stmt = $this->pdo->prepare('SELECT id_curso FROM curso WHERE id_curso = :id FOR UPDATE');
-        $stmt->execute(['id' => $idCurso]);
-        if (!$stmt->fetchColumn()) {
-            return null;
-        }
-        $stmt = $this->pdo->prepare('SELECT id_estudiante, estado, fecha_nacimiento FROM estudiante WHERE id_estudiante = :id FOR UPDATE');
-        $stmt->execute(['id' => $idEstudiante]);
-        $estudiante = $stmt->fetch();
-        if (!$estudiante) {
-            return null;
-        }
-        $stmt = $this->pdo->prepare("SELECT g.*, c.nombre AS curso, c.nivel, c.precio, c.disponible, c.activo,
-            CONCAT(i.nombre, ' ', i.apellido) AS instructor, a.nombre AS aula,
-            (SELECT COUNT(*) FROM inscripcion m WHERE m.id_grupo = g.id_grupo AND m.estado IN ('Activa','Pendiente')) AS ocupados
-            FROM grupo g JOIN curso c ON c.id_curso = g.id_curso JOIN instructor i ON i.id_instructor = g.id_instructor
-            JOIN aula a ON a.id_aula = g.id_aula WHERE g.id_grupo = :id FOR UPDATE");
-        $stmt->execute(['id' => $idGrupo]);
-        $grupo = $stmt->fetch();
-        if (!$grupo || (int) $grupo['id_curso'] !== $idCurso) {
-            throw new DomainException('El grupo cambió mientras se preparaba la solicitud.');
-        }
-        $stmt = $this->pdo->prepare('SELECT * FROM requisito_curso WHERE id_curso = :id');
-        $stmt->execute(['id' => $idCurso]);
-        return ['grupo' => $grupo, 'estudiante' => $estudiante, 'requisito' => $stmt->fetch() ?: null];
     }
 
     private function hayConflictoHorario(int $idEstudiante, int $idGrupo, int $idExcluir = 0): bool

@@ -13,7 +13,7 @@ $capacidadValida = (int) $matricula['ocupados'] <= (int) $matricula['capacidad_m
 ?>
 <div class="admin-academica">
     <div class="d-flex flex-wrap justify-content-between gap-3 mb-4"><div><h1 class="portal-title mb-1">Matrícula #<?= $id ?></h1><p class="portal-subtitle mb-0"><?= $e($matricula['estudiante']) ?> · <?= $e($matricula['curso']) ?> · Grupo #<?= (int) $matricula['id_grupo'] ?> · <span class="admin-badge <?= $badge[$matricula['estado']] ?>"><?= $e($matricula['estado']) ?></span></p></div><div class="d-flex gap-2 align-self-start"><a href="/admin/matriculas" class="btn admin-btn-outline">Volver</a><a href="/admin/estudiantes/<?= (int) $matricula['id_estudiante'] ?>" class="btn admin-btn-outline">Ficha estudiante</a></div></div>
-    <?php if ($flash): ?><div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> p-3 mb-4"><?= $e($flash['mensaje']) ?></div><?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
     <div class="row g-4 mb-4">
         <div class="col-lg-7"><section class="portal-card p-4 h-100">
             <h2 class="portal-card-title">Revisión de requisitos</h2>
@@ -66,6 +66,5 @@ $capacidadValida = (int) $matricula['ocupados'] <= (int) $matricula['capacidad_m
         </section></div>
     </div>
     <section class="portal-card p-4"><h2 class="portal-card-title">Historial de decisiones</h2><?php if (!$matricula['auditoria']): ?><p class="admin-muted mb-0">Sin historial registrado.</p><?php else: ?><div class="table-responsive"><table class="table admin-table align-middle mb-0"><thead><tr><th>FECHA</th><th>ESTADO</th><th>RESPONSABLE</th><th>MOTIVO</th></tr></thead><tbody><?php foreach ($matricula['auditoria'] as $a): ?><tr><td><?= $e($a['fecha']) ?></td><td><?= $e(($a['estado_anterior'] ? $a['estado_anterior'] . ' → ' : '') . $a['estado_nuevo']) ?></td><td><?= $e($a['responsable']) ?></td><td><?= $e($a['motivo']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></section>
-    <?php require __DIR__ . '/../partials/confirmacion.php'; ?>
 </div>
 <script src="/js/admin-academica.js" defer></script>

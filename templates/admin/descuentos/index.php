@@ -22,11 +22,7 @@ $valorDescuento = static fn (array $d): string => $d['porcentaje'] !== null
         </a>
     </div>
 
-    <?php if (!empty($flash)): ?>
-        <div role="status" class="portal-alert portal-alert--<?= $flash['tipo'] === 'error' ? 'peligro' : 'exito' ?> p-3 mb-4">
-            <?= $e($flash['mensaje']) ?>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../partials/flash.php'; ?>
 
     <form method="get" action="/admin/descuentos" class="portal-card p-3 mb-4" role="search">
         <div class="row g-2 align-items-end">
@@ -123,6 +119,5 @@ $valorDescuento = static fn (array $d): string => $d['porcentaje'] !== null
         <?php require __DIR__ . '/../partials/paginacion.php'; ?>
     </section>
 
-    <?php require __DIR__ . '/../partials/confirmacion.php'; ?>
 </div>
 <script src="/js/admin-academica.js" defer></script>
