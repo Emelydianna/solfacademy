@@ -67,6 +67,32 @@ final class MigracionGestion
             CONSTRAINT fk_auditoria_inscripcion FOREIGN KEY (id_inscripcion)
                 REFERENCES inscripcion (id_inscripcion)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+        // Identidad de la academia: una sola fila (id = 1) con valores por
+        // defecto. Si ya existe no se toca: lo que haya configurado la
+        // academia se conserva.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS configuracion (
+            id_configuracion TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            nombre VARCHAR(80) NOT NULL,
+            lema VARCHAR(120) NOT NULL,
+            logo_url VARCHAR(255) NULL,
+            email_contacto VARCHAR(150) NULL,
+            telefono VARCHAR(30) NULL,
+            direccion VARCHAR(180) NULL,
+            ciudad VARCHAR(120) NULL,
+            facebook VARCHAR(150) NULL,
+            instagram VARCHAR(150) NULL,
+            youtube VARCHAR(150) NULL,
+            pie_pagina VARCHAR(180) NULL,
+            nota_pdf VARCHAR(180) NULL,
+            actualizado_en DATETIME NULL,
+            PRIMARY KEY (id_configuracion)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+        $pdo->exec("INSERT IGNORE INTO configuracion
+            (id_configuracion, nombre, lema, email_contacto, telefono, direccion, ciudad, pie_pagina)
+            VALUES (1, 'SolfAcademy', 'Academia de Música', 'info@solfacademy.com', '+34 912 345 678',
+                    'Calle de la Música 123, Madrid', 'Madrid, España',
+                    '© 2026 SolfAcademy · Todos los derechos reservados.')");
     }
 
     public static function aplicar(PDO $pdo): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Admin;
 
+use App\Application\Config\ConfiguracionService;
 use App\Application\Formato\Dinero;
 use App\Application\Formato\Fecha;
 use App\Application\Formato\Pdf;
@@ -39,10 +40,13 @@ final class ReportesService
     ];
 
     private PDO $pdo;
+    private ConfiguracionService $configuracion;
 
-    public function __construct(PDO $pdo)
+    /** El servicio de configuración es opcional para no romper las pruebas. */
+    public function __construct(PDO $pdo, ?ConfiguracionService $configuracion = null)
     {
         $this->pdo = $pdo;
+        $this->configuracion = $configuracion ?? new ConfiguracionService($pdo);
     }
 
     /**
@@ -328,7 +332,15 @@ final class ReportesService
     /** Dibuja el reporte completo (una o varias páginas) en el PDF dado. */
     public function dibujarPdf(Pdf $pdf, array $datos): void
     {
-        $pdf->texto(20, 'SOLFACADEMY', Pdf::DORADO);
+        // Marca de la academia (configurada en /admin/configuracion).
+        $config = $this->configuracion->obtener();
+        $nombre = (string) $config['nombre'];
+        $nota = trim((string) ($config['nota_pdf'] ?? ''));
+        if ($nota === '') {
+            $nota = $nombre . ' · ' . (string) $config['lema'];
+        }
+
+        $pdf->texto(20, mb_strtoupper($nombre), Pdf::DORADO);
         $pdf->texto(13, 'METRICAS Y REPORTES GENERALES');
         $pdf->texto(10, (string) $datos['fecha'] . '   ·   Documento generado automáticamente', Pdf::TENUE);
         $pdf->separador(2, Pdf::DORADO);
@@ -384,7 +396,7 @@ final class ReportesService
         }
 
         $pdf->espacio(14);
-        $pdf->texto(9, 'Generado el ' . date('d/m/Y H:i') . ' · SolfAcademy · Escuela de musica', Pdf::TENUE);
+        $pdf->texto(9, 'Generado el ' . date('d/m/Y H:i') . ' · ' . $nota, Pdf::TENUE);
     }
 
     // =========================================================

@@ -80,7 +80,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 
 ### Esquema
 
-`database/solfacademy.sql` crea las 23 tablas (las 17 del diagrama entidad-relación, más `practica_estudiante` y las tablas propias de la implementación) con sus claves foráneas, vistas, procedimientos almacenados y datos de prueba alineados con la web (categorías, instrumentos, instructores, 9 cursos, grupos, horarios, aulas, estudiantes e inscripciones de ejemplo):
+`database/solfacademy.sql` crea las 24 tablas (las 17 del diagrama entidad-relación, más `practica_estudiante` y las tablas propias de la implementación) con sus claves foráneas, vistas, procedimientos almacenados y datos de prueba alineados con la web (categorías, instrumentos, instructores, 9 cursos, grupos, horarios, aulas, estudiantes e inscripciones de ejemplo):
 
 | Área | Tablas |
 |---|---|
@@ -94,6 +94,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 | Perfil del alumno | `estudiante_foto`, `estudiante_preferencias`, `estudiante_instrumento_historial` |
 | Reservas | `cabina`, `reserva_cabina`, `reserva_clase_extra` (también toca `grupo` e `instructor`) |
 | Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`; listado, alta y bloqueo en `/admin/usuarios`) |
+| Configuración | `configuracion` (una sola fila: marca, lema, logo, contacto, redes, pie de página y nota de los PDF) |
 
 > **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. Todos los usuarios de prueba usan la contraseña `solfacademy123` (por ejemplo `admin@solfacademy.com` o `laura.gomez@ejemplo.com`).
 >
@@ -160,6 +161,10 @@ Para Pagos y Descuentos añade a `pago` los campos de verificación
 anteriores: mismo comando, sin borrar ni modificar registros; los pagos
 existentes quedan como estaban y solo los nuevos pasan por verificación.
 
+Para Configuración crea la tabla `configuracion` con su fila de valores
+por defecto (los mismos que tenía la web antes del módulo). Si ya existe
+la fila no se toca: lo que haya configurado la academia se conserva.
+
 ### Evitar errores comunes
 
 - **"Unknown database solfacademy"** → aún no importaste `database/solfacademy.sql`.
@@ -177,6 +182,7 @@ existentes quedan como estaban y solo los nuevos pasan por verificación.
 | GET | `/cursos/{id}` | Detalle de curso |
 | GET | `/instructores/{id}` | Perfil de instructor |
 | GET | `/instructores/{id}/foto` | Foto pública solo de un instructor activo |
+| GET | `/marca/logo` | Logo de la academia configurado (público; 404 si no hay) |
 | GET / POST | `/login`, `/registro` | Autenticación y alta de estudiantes |
 | GET | `/logout` | Cierra la sesión |
 
@@ -283,6 +289,8 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | POST | `/admin/usuarios/{id}/bloqueo` | Bloquear/reactivar (invalida sesiones abiertas) |
 | GET | `/admin/reportes` | Métricas y reportes generales (KPIs, dona y tabla) |
 | GET | `/admin/reportes/exportar` | Descarga del PDF del reporte (generado en servidor) |
+| GET / POST | `/admin/configuracion` | Datos de la academia (marca, contacto, redes, pie y nota de PDF) |
+| POST | `/admin/configuracion/logo`, `/admin/configuracion/logo/quitar` | Subir o quitar el logo de la academia |
 
 La edición se abre con `?editar={id}`. Los listados admiten `q` y `pagina`;
 cursos también `nivel` y `estado`, e instrumentos `estado` (disponibilidad).
@@ -519,6 +527,35 @@ leyenda y la tabla de programas. Las páginas se cortan solas cuando el
 contenido no cabe. La pantalla y el PDF comparten la misma fuente de datos
 (`ReportesService::datos()`), así que nunca muestran cifras distintas.
 
+#### Configuración de la academia
+
+`/admin/configuracion` reúne **los datos de la academia** que opera esta
+instalación en una sola fila (`configuracion`, id = 1):
+
+- **Identidad**: nombre comercial (marca) y lema.
+- **Logo**: PNG/JPG/WEBP hasta 512KB, validados por **MIME real** (no se
+  aceptan SVG: es HTML ejecutable y la ruta es pública). Se guarda en
+  `var/uploads/configuracion` con un único archivo; hay botón para
+  quitarlo. Si no hay logo, se muestra el icono musical de fábrica.
+- **Contacto**: correo, teléfono, dirección y ciudad (sede).
+- **Redes**: Facebook, Instagram y YouTube con su URL completa; si están
+  vacías, el icono no aparece en el pie (antes apuntaban a `#`).
+- **Pie de página y PDF**: texto de copyright de la web y nota al pie del
+  boletín, los comprobantes de pago y los reportes.
+
+`ViewDataMiddleware` inyecta `$config` en **todas** las plantillas, así que
+un solo guardado cambia la web pública, el login y registro, los tres
+sidebars con sus pies `© {año} {nombre} {lema}` y los títulos de pestaña
+(el sufijo histórico "— SolfAcademy" se sustituye por el nombre
+configurado sin tocar los controladores). Los tres generadores de PDF
+(boletín, `scripts/generar-comprobantes.php` y reportes) leen la misma
+fila.
+
+El logo se sirve en **`GET /marca/logo`** (público, porque el login y la
+home no tienen sesión): solo devuelve el archivo con el prefijo permitido
+o 404 si no existe. Si la tabla aún no está migrada o la base de datos no
+responde, se usan los valores de fábrica y **ninguna página se rompe**.
+
 ## Estructura del proyecto
 
 ```
@@ -540,6 +577,7 @@ src/Application/Descuentos/→ DescuentosService (códigos y su aplicación al m
 src/Application/Admin/     → dashboard, verificación de pagos, usuarios y gestión académica
 src/Application/Academico/ → requisitos y ciclo de matrículas
 src/Application/Formato/   → Dinero, Fecha y Pdf (sin depender del locale ni de librerías)
+src/Application/Config/    → ConfiguracionService (marca, contacto y logo de la academia)
 src/Application/Catalogo/  → categorías y catálogo público desde PDO
 src/Controllers/Web/       → controladores del sitio web
 src/Controllers/Estudiante/→ controladores del portal del estudiante

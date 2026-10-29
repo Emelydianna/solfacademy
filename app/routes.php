@@ -100,6 +100,27 @@ return function (App $app) {
     });
 
 
+    // Logo de la academia (subido desde /admin/configuracion). Es pública
+    // porque el login y la home no tienen sesión: solo se sirve el archivo
+    // con el prefijo permitido, nunca una ruta arbitraria.
+    $app->get('/marca/logo', function (\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response) {
+        $ruta = \App\Application\Config\ConfiguracionService::archivoLogo();
+        if ($ruta === null || !is_file($ruta)) {
+            return $response->withStatus(404);
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = $finfo !== false ? (finfo_file($finfo, $ruta) ?: 'image/png') : 'image/png';
+        if ($finfo !== false) {
+            finfo_close($finfo);
+        }
+
+        return $response
+            ->withHeader('Content-Type', (string) $mime)
+            ->withHeader('Cache-Control', 'public, max-age=3600')
+            ->withBody(new \Slim\Psr7\Stream(fopen($ruta, 'rb')));
+    });
+
     // Servir foto de perfil desde var/uploads (no rastreable en git)
     $app->get('/perfil/foto/{archivo}', function (\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response, array $args) {
         $archivo = basename($args['archivo'] ?? '');
@@ -183,6 +204,10 @@ return function (App $app) {
         $group->post('/usuarios/{id:[1-9][0-9]*}/bloqueo', [\App\Controllers\Admin\UsuariosController::class, 'bloqueo']);
         $group->get('/reportes', [\App\Controllers\Admin\ReportesController::class, 'index']);
         $group->get('/reportes/exportar', [\App\Controllers\Admin\ReportesController::class, 'exportar']);
+        $group->get('/configuracion', [\App\Controllers\Admin\ConfiguracionController::class, 'index']);
+        $group->post('/configuracion', [\App\Controllers\Admin\ConfiguracionController::class, 'guardar']);
+        $group->post('/configuracion/logo', [\App\Controllers\Admin\ConfiguracionController::class, 'logo']);
+        $group->post('/configuracion/logo/quitar', [\App\Controllers\Admin\ConfiguracionController::class, 'quitarLogo']);
         $group->get('/grupos', [\App\Controllers\Admin\GruposController::class, 'index']);
         $group->post('/grupos', [\App\Controllers\Admin\GruposController::class, 'guardar']);
         $group->get('/grupos/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GruposController::class, 'ver']);

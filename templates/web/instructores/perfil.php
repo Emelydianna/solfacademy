@@ -4,7 +4,7 @@
         <div class="col-lg-4"><div class="card content-card instructor-profile-card"><div class="card-body p-4 text-center">
             <?php $claseAvatar = 'instructor-photo-lg'; require __DIR__ . '/avatar.php'; ?>
             <h1 class="profile-name"><?= $e($instructor['nombre'] . ' ' . $instructor['apellido']) ?></h1>
-            <p class="instructor-role">Instructor de SolfAcademy</p>
+            <p class="instructor-role">Instructor de <?= $e($config['nombre'] ?? 'SolfAcademy') ?></p>
             <p class="content-text small">Sin valoraciones</p>
             <?php if ($instructor['email']): ?><a href="mailto:<?= $e($instructor['email']) ?>" class="btn btn-accent w-100 fw-semibold">CONTACTAR</a><?php else: ?><p class="content-text mb-0">Contacto a través de administración.</p><?php endif; ?>
         </div></div></div>

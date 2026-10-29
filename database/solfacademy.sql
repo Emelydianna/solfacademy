@@ -40,6 +40,7 @@ CREATE DATABASE IF NOT EXISTS solfacademy
 USE solfacademy;
 
 -- Borra las tablas si ya existieren (re-importable) -----------
+DROP TABLE IF EXISTS configuracion;
 DROP TABLE IF EXISTS inscripcion_auditoria;
 DROP TABLE IF EXISTS pago;
 DROP TABLE IF EXISTS asistencia;
@@ -467,6 +468,37 @@ CREATE TABLE reserva_clase_extra (
         REFERENCES instructor (id_instructor),
     CHECK (hora_fin > hora_inicio)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+--  CONFIGURACIÓN DE LA ACADEMIA
+--  Una sola fila (id_configuracion = 1) con la identidad y el
+--  contacto de la academia que opera esta instalación. La edita
+--  el administrador desde /admin/configuracion.
+-- ============================================================
+
+CREATE TABLE configuracion (
+    id_configuracion  TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    nombre            VARCHAR(80)  NOT NULL,              -- marca (antes "SolfAcademy")
+    lema              VARCHAR(120) NOT NULL,              -- subtítulo de marca
+    logo_url          VARCHAR(255) NULL,                  -- archivo en var/uploads/configuracion
+    email_contacto    VARCHAR(150) NULL,
+    telefono          VARCHAR(30)  NULL,
+    direccion         VARCHAR(180) NULL,
+    ciudad            VARCHAR(120) NULL,
+    facebook          VARCHAR(150) NULL,
+    instagram         VARCHAR(150) NULL,
+    youtube           VARCHAR(150) NULL,
+    pie_pagina        VARCHAR(180) NULL,                  -- texto © de la web pública
+    nota_pdf          VARCHAR(180) NULL,                  -- pie de boletín/comprobantes/reportes
+    actualizado_en    DATETIME NULL,
+    PRIMARY KEY (id_configuracion)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Semilla con los valores actuales: nada cambia visualmente hasta que
+-- la administración edite la configuración.
+INSERT INTO configuracion (id_configuracion, nombre, lema, email_contacto, telefono, direccion, ciudad, pie_pagina) VALUES
+    (1, 'SolfAcademy', 'Academia de Música', 'info@solfacademy.com', '+34 912 345 678',
+     'Calle de la Música 123, Madrid', 'Madrid, España', '© 2026 SolfAcademy · Todos los derechos reservados.');
 
 SET FOREIGN_KEY_CHECKS = 1;
 

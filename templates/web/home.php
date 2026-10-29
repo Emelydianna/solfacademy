@@ -6,7 +6,7 @@
         <div class="row align-items-center gy-4">
             <div class="col-lg-6">
                 <span class="section-eyebrow">FORMACIÓN LAS 24 HORAS</span>
-                <h1 class="hero-title">Aprende de los Mejores Músicos en SolfAcademy</h1>
+                <h1 class="hero-title">Aprende de los Mejores Músicos en <?= htmlspecialchars((string) ($config['nombre'] ?? 'SolfAcademy')) ?></h1>
                 <p class="hero-text">Desde principiante hasta entusiasta. Ofrecemos clases personalizadas con instructores expertos, horarios flexibles y una comunidad vibrante. ¡Comienza tu viaje musical hoy!</p>
                 <div class="d-flex flex-wrap gap-3 mt-4">
                     <a href="#" class="btn btn-accent px-4 fw-semibold">REGISTRARME AHORA</a>

@@ -1,9 +1,10 @@
+<?php $config = $config ?? \App\Application\Config\ConfiguracionService::porDefecto(); ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($tituloPagina ?? 'SolfAcademy') ?></title>
+    <title><?= htmlspecialchars(\App\Application\Config\ConfiguracionService::titulo($tituloPagina ?? '', $config)) ?></title>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -17,8 +18,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark site-navbar sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <span class="brand-icon"><i class="bi bi-music-note-beamed"></i></span>
-                <span class="brand-text">SOLFACADEMY</span>
+                <?php $claseIcono = 'brand-icon'; require __DIR__ . '/../partials/marca.php'; ?>
+                <span class="brand-text"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
                     aria-controls="mainNav" aria-expanded="false" aria-label="Alternar navegación">
@@ -85,15 +86,28 @@
             <div class="row g-4 pb-4">
                 <div class="col-lg-4 col-md-6">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="brand-icon"><i class="bi bi-music-note-beamed"></i></span>
-                        <span class="brand-text">SOLFACADEMY</span>
+                        <?php $claseIcono = 'brand-icon'; require __DIR__ . '/../partials/marca.php'; ?>
+                        <span class="brand-text"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
                     </div>
                     <p class="footer-text mb-3">Transformamos tu pasión por la música en habilidades reales, con instructores expertos y acompañamiento internacional.</p>
-                    <div class="d-flex gap-2">
-                        <a href="#" class="social-icon" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
-                        <a href="#" class="social-icon" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="social-icon" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
-                    </div>
+                    <?php
+                    $redesVisibles = array_filter([
+                        'facebook'  => $config['facebook'] ?? null,
+                        'instagram' => $config['instagram'] ?? null,
+                        'youtube'   => $config['youtube'] ?? null,
+                    ], static fn ($url): bool => is_string($url) && $url !== '');
+                    $iconos = ['facebook' => 'bi-facebook', 'instagram' => 'bi-instagram', 'youtube' => 'bi-youtube'];
+                    ?>
+                    <?php if ($redesVisibles): ?>
+                        <div class="d-flex gap-2">
+                            <?php foreach ($redesVisibles as $red => $url): ?>
+                                <a href="<?= htmlspecialchars($url) ?>" target="_blank" rel="noopener"
+                                   class="social-icon" aria-label="<?= htmlspecialchars(ucfirst($red)) ?>">
+                                    <i class="bi <?= $iconos[$red] ?>"></i>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="col-lg-2 col-md-6">
                     <h6 class="footer-heading">Explora</h6>
@@ -104,24 +118,39 @@
                         <li><a href="#">Blog</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <h6 class="footer-heading">Contacto</h6>
-                    <ul class="list-unstyled footer-text">
-                        <li class="mb-2"><i class="bi bi-geo-alt me-2"></i>Calle de la Música 123, Madrid</li>
-                        <li class="mb-2"><i class="bi bi-telephone me-2"></i>+34 912 345 678</li>
-                        <li class="mb-2"><i class="bi bi-envelope me-2"></i>info@solfacademy.com</li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h6 class="footer-heading">Nuestra Sede</h6>
-                    <div class="map-placeholder">
-                        <i class="bi bi-geo-alt-fill"></i>
-                        <span>Madrid, España</span>
+                <?php
+                $contacto = array_filter([
+                    'direccion' => ['bi-geo-alt', $config['direccion'] ?? null],
+                    'telefono'  => ['bi-telephone', $config['telefono'] ?? null],
+                    'correo'    => ['bi-envelope', $config['email_contacto'] ?? null],
+                ], static fn ($dato): bool => is_string($dato[1]) && $dato[1] !== '');
+                ?>
+                <?php if ($contacto): ?>
+                    <div class="col-lg-3 col-md-6">
+                        <h6 class="footer-heading">Contacto</h6>
+                        <ul class="list-unstyled footer-text">
+                            <?php foreach ($contacto as $dato): ?>
+                                <li class="mb-2"><i class="bi <?= $dato[0] ?> me-2"></i><?= htmlspecialchars($dato[1]) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
                     </div>
-                </div>
+                <?php endif; ?>
+                <?php if (!empty($config['ciudad'])): ?>
+                    <div class="col-lg-3 col-md-6">
+                        <h6 class="footer-heading">Nuestra Sede</h6>
+                        <div class="map-placeholder">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span><?= htmlspecialchars((string) $config['ciudad']) ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="footer-bottom py-3 d-flex flex-column flex-md-row justify-content-between gap-2">
-                <span>© 2026 SolfAcademy · Todos los derechos reservados.</span>
+                <span><?= htmlspecialchars(
+                    !empty($config['pie_pagina'])
+                        ? (string) $config['pie_pagina']
+                        : '© ' . date('Y') . ' ' . $config['nombre'] . ' · Todos los derechos reservados.'
+                ) ?></span>
                 <div class="d-flex gap-3">
                     <a href="#">Términos y Condiciones</a>
                     <a href="#">Política de Privacidad</a>

@@ -5,9 +5,9 @@
     <div class="container">
         <div class="auth-card">
             <div class="text-center mb-4">
-                <span class="brand-icon auth-brand mx-auto mb-3"><i class="bi bi-music-note-beamed"></i></span>
+                <?php $claseIcono = 'brand-icon auth-brand mx-auto mb-3'; require __DIR__ . '/../../partials/marca.php'; ?>
                 <h1 class="auth-title">Crear Cuenta</h1>
-                <p class="auth-subtitle">Únete a la comunidad de SolfAcademy</p>
+                <p class="auth-subtitle">Únete a la comunidad de <?= htmlspecialchars((string) ($config['nombre'] ?? 'SolfAcademy')) ?></p>
             </div>
 
             <!-- Registro real: crea ESTUDIANTE + USUARIO y abre sesión (fase 2) -->

@@ -33,6 +33,20 @@ $pagos = $pdo->query(
      ORDER BY p.id_pago"
 )->fetchAll(PDO::FETCH_ASSOC);
 
+// Marca de la academia configurada (si la tabla no existe, valores de fábrica)
+$config = ['nombre' => 'SolfAcademy', 'lema' => 'Academia de Música', 'nota_pdf' => null];
+try {
+    $fila = $pdo->query('SELECT nombre, lema, nota_pdf FROM configuracion WHERE id_configuracion = 1')->fetch(PDO::FETCH_ASSOC);
+    if (is_array($fila)) {
+        $config = $fila + $config;
+    }
+} catch (Throwable $e) {
+    // Instalación sin migrar: se generan con la marca de fábrica.
+}
+$notaPdf = trim((string) ($config['nota_pdf'] ?? '')) !== ''
+    ? (string) $config['nota_pdf']
+    : $config['nombre'] . ' · ' . $config['lema'];
+
 $destino = __DIR__ . '/../public/comprobantes';
 if (!is_dir($destino) && !mkdir($destino, 0775, true)) {
     fwrite(STDERR, "No se pudo crear $destino\n");
@@ -92,7 +106,7 @@ foreach ($pagos as $p) {
     $ruta = $destino . '/' . basename((string) $p['comprobante_url']);
 
     $lineas = [
-        [20, 'SolfAcademy'],
+        [20, (string) $config['nombre']],
         [12, 'COMPROBANTE DE PAGO'],
         [10, str_repeat('-', 68)],
         [12, 'Alumno/a:  ' . $p['estudiante']],
@@ -104,7 +118,7 @@ foreach ($pagos as $p) {
         [12, 'Referencia: ' . ($p['referencia_pago'] ?? '(sin referencia)')],
         [10, str_repeat('-', 68)],
         [11, 'Pago #' . $p['id_pago'] . ' — documento generado automáticamente'],
-        [11, 'SolfAcademy · Escuela de música'],
+        [11, (string) $notaPdf],
     ];
 
     if (file_put_contents($ruta, buildPdf($lineas)) === false) {

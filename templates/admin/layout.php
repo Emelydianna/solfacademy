@@ -1,9 +1,10 @@
+<?php $config = $config ?? \App\Application\Config\ConfiguracionService::porDefecto(); ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($tituloPagina ?? 'Panel de Administración — SolfAcademy') ?></title>
+    <title><?= htmlspecialchars(\App\Application\Config\ConfiguracionService::titulo($tituloPagina ?? 'Panel de Administración', $config)) ?></title>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -32,15 +33,15 @@
         <!-- Sidebar -->
         <aside class="portal-sidebar offcanvas-lg offcanvas-start flex-shrink-0" tabindex="-1" id="portalSidebar">
             <div class="offcanvas-header d-lg-none">
-                <span class="portal-brand-name">SOLFACADEMY</span>
+                <span class="portal-brand-name"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#portalSidebar" aria-label="Cerrar menú"></button>
             </div>
 
             <a class="portal-brand" href="/admin/dashboard">
-                <span class="portal-brand-icon"><i class="bi bi-music-note-beamed"></i></span>
+                <?php $claseIcono = 'portal-brand-icon'; require __DIR__ . '/../partials/marca.php'; ?>
                 <span>
-                    <span class="portal-brand-name d-block">SOLFACADEMY</span>
-                    <span class="portal-brand-sub">Academia de Música</span>
+                    <span class="portal-brand-name d-block"><?= htmlspecialchars(mb_strtoupper((string) $config['nombre'])) ?></span>
+                    <span class="portal-brand-sub"><?= htmlspecialchars((string) $config['lema']) ?></span>
                 </span>
             </a>
 
@@ -71,7 +72,7 @@
                     ['pagos',        '/admin/pagos',          'bi-credit-card',        'Pagos',           true],
                     ['usuarios',     '/admin/usuarios',      'bi-person-badge',       'Usuarios',        true],
                     ['reportes',     '/admin/reportes',      'bi-file-earmark-bar-graph', 'Reportes',    true],
-                    ['config',       '#',                     'bi-sliders',            'Configuración',   false],
+                    ['config',       '/admin/configuracion', 'bi-sliders',            'Configuración',   true],
                 ];
                 $paginaActiva = $paginaAdmin ?? '';
                 ?>
@@ -118,7 +119,7 @@
 
             <!-- Footer -->
             <footer class="portal-footer">
-                <span>© 2026 SolfAcademy Academia de Música. Panel de Administración.</span>
+                <span>© <?= date('Y') ?> <?= htmlspecialchars((string) $config['nombre']) ?> <?= htmlspecialchars((string) $config['lema']) ?>. Panel de Administración.</span>
                 <div class="d-flex gap-3">
                     <a href="#">Soporte Técnico</a>
                     <a href="#">Reglamento Interno</a>

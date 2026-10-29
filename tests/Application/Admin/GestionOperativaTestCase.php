@@ -29,7 +29,7 @@ abstract class GestionOperativaTestCase extends TestCase
         $db = require __DIR__ . '/../../../config/db.php';
         $this->pdo = new PDO("mysql:host={$db['host']};dbname={$db['dbname']};charset={$db['charset']}", $db['user'], $db['pass'],
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
-        foreach (['categoria', 'instrumento', 'instructor', 'instructor_instrumento', 'curso', 'requisito_curso', 'descuento', 'aula', 'grupo', 'horario', 'estudiante', 'usuario', 'inscripcion', 'inscripcion_auditoria', 'pago', 'evaluacion', 'asistencia', 'estudiante_foto', 'reserva_clase_extra', 'cabina', 'reserva_cabina'] as $tabla) {
+        foreach (['categoria', 'instrumento', 'instructor', 'instructor_instrumento', 'curso', 'requisito_curso', 'descuento', 'configuracion', 'aula', 'grupo', 'horario', 'estudiante', 'usuario', 'inscripcion', 'inscripcion_auditoria', 'pago', 'evaluacion', 'asistencia', 'estudiante_foto', 'reserva_clase_extra', 'cabina', 'reserva_cabina'] as $tabla) {
             $this->pdo->exec("CREATE TEMPORARY TABLE operativa_molde LIKE $tabla");
             $this->pdo->exec("CREATE TEMPORARY TABLE $tabla LIKE operativa_molde");
             $this->pdo->exec('DROP TEMPORARY TABLE operativa_molde');

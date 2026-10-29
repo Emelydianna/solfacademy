@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Middleware;
 
+use App\Application\Config\ConfiguracionService;
 use PDO;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -13,13 +14,16 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Slim\Views\PhpRenderer;
 
 /**
- * Expone a todas las plantillas dos atributos:
+ * Expone a todas las plantillas tres atributos:
  *
  *  - `usuarioSesion`: usuario de la sesión (lo usa el layout para la navbar).
  *  - `fotoPerfil`: ruta pública de la foto del usuario de sesión, o null.
  *    Se resuelve aquí una sola vez por petición para que el layout la muestre
  *    en el sidebar y en el topbar de cualquier pantalla del portal, sin que
  *    cada controlador tenga que pasarla.
+ *  - `config`: datos de la academia (marca, lema, contacto, redes, pie y
+ *    nota de PDF) con `logo` ya traducido a su ruta pública. Si la tabla
+ *    aún no existe, se usan los valores de fábrica: ninguna página se rompe.
  */
 class ViewDataMiddleware implements Middleware
 {
@@ -45,8 +49,30 @@ class ViewDataMiddleware implements Middleware
 
         $this->view->addAttribute('usuarioSesion', $usuario);
         $this->view->addAttribute('fotoPerfil', $this->fotoDelUsuario($usuario));
+        $this->view->addAttribute('config', $this->configuracion());
 
         return $handler->handle($request);
+    }
+
+    /**
+     * Configuración de la academia para esta petición. Cualquier fallo
+     * (tabla sin migrar, base de datos caída) deja los valores de fábrica.
+     *
+     * @return array<string, mixed>
+     */
+    private function configuracion(): array
+    {
+        try {
+            $config = (new ConfiguracionService($this->container->get(PDO::class)))->obtener();
+        } catch (\Throwable $e) {
+            $config = ConfiguracionService::porDefecto();
+        }
+
+        $config['logo'] = ConfiguracionService::logoPublico(
+            isset($config['logo_url']) ? (string) $config['logo_url'] : null
+        );
+
+        return $config;
     }
 
     /**

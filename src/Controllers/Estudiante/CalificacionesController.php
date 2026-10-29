@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Estudiante;
 
+use App\Application\Config\ConfiguracionService;
 use App\Application\Estudiante\EstudiantePortalService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,11 +17,13 @@ class CalificacionesController
 {
     private PhpRenderer $view;
     private EstudiantePortalService $portal;
+    private ConfiguracionService $configuracion;
 
-    public function __construct(PhpRenderer $view, EstudiantePortalService $portal)
+    public function __construct(PhpRenderer $view, EstudiantePortalService $portal, ConfiguracionService $configuracion)
     {
         $this->view = $view;
         $this->portal = $portal;
+        $this->configuracion = $configuracion;
     }
 
     public function index(Request $request, Response $response): Response
@@ -52,8 +55,16 @@ class CalificacionesController
         $nombreEstudiante = trim(($perfil['nombre'] ?? '') . ' ' . ($perfil['apellido'] ?? ''));
         $emailEstudiante = $perfil['email'] ?? '';
 
+        // Marca de la academia (configurada en /admin/configuracion).
+        $config = $this->configuracion->obtener();
+        $nombreAcademia = (string) $config['nombre'];
+        $notaPdf = trim((string) ($config['nota_pdf'] ?? ''));
+        if ($notaPdf === '') {
+            $notaPdf = $nombreAcademia . ' · ' . (string) $config['lema'];
+        }
+
         $lineas = [];
-        $lineas[] = [20, 'SOLFACADEMY'];
+        $lineas[] = [20, mb_strtoupper($nombreAcademia)];
         $lineas[] = [14, 'BOLETIN DE CALIFICACIONES'];
         $lineas[] = [10, str_repeat('-', 70)];
         $lineas[] = [12, 'Estudiante: ' . $nombreEstudiante];
@@ -150,7 +161,8 @@ class CalificacionesController
 
         $lineas[] = [0, ''];
         $lineas[] = [10, str_repeat('-', 70)];
-        $lineas[] = [10, 'Emitido por SolfAcademy - Portal del Estudiante'];
+        $lineas[] = [10, 'Emitido por ' . $nombreAcademia . ' - Portal del Estudiante'];
+        $lineas[] = [10, $notaPdf];
 
         $pdf = $this->buildBoletinPdf($lineas);
         $filename = $scope === 'curso' && $idCurso ? 'boletin-curso-' . $idCurso . '-' . date('Ymd') . '.pdf' : 'boletin-general-' . date('Ymd') . '.pdf';
