@@ -63,7 +63,7 @@
                 <div class="mb-4">
                     <label for="password2" class="form-label">Confirmar contraseña</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock-check"></i></span>
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control" id="password2" name="password2"
                                placeholder="Repite tu contraseña" minlength="8" required>
                         <button class="input-group-text auth-toggle" type="button" data-password-target="password2"

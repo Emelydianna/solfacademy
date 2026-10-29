@@ -49,7 +49,7 @@ $capacidadValida = (int) $matricula['ocupados'] <= (int) $matricula['capacidad_m
             <p><?= $e($matricula['instructor']) ?> · <?= $e($matricula['aula']) ?></p><p class="mb-1"><?= $e(ucfirst((string) $matricula['grupo_estado'])) ?> · Ocupación actual: <?= (int) $matricula['ocupados'] ?> de <?= (int) $matricula['capacidad_maxima'] ?></p>
             <p>Precio congelado: <strong><?= $matricula['precio_inscripcion'] !== null ? '$ ' . number_format((float) $matricula['precio_inscripcion'], 2) : 'Sin precio' ?></strong>
                 <?php if (!empty($matricula['descuento_codigo'])): ?>
-                    <i class="bi bi-ticket-percent" title="Descuento aplicado al matricular"></i>
+                    <i class="bi bi-ticket" title="Descuento aplicado al matricular"></i>
                     <small class="admin-muted d-block">Con descuento <strong><?= $e($matricula['descuento_codigo']) ?></strong>
                         (<?= $matricula['descuento_porcentaje'] !== null
                             ? $e((float) $matricula['descuento_porcentaje']) . '%'

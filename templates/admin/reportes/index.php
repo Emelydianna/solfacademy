@@ -46,7 +46,7 @@ $iconoTendencia = ['sube' => 'bi-arrow-up-right', 'baja' => 'bi-arrow-down-right
                     </div>
                     <div class="portal-kpi-value"><?= $e($kpi['valor']) ?></div>
                     <div class="small mt-1" style="color:<?= !empty($kpi['verde']) ? '#34d399' : '#94a3b8' ?>;">
-                        <i class="bi <?= !empty($kpi['verde']) ? 'bi-arrow-trend-up' : 'bi-dash-lg' ?> me-1"></i><?= $e($kpi['sub']) ?>
+                        <i class="bi <?= !empty($kpi['verde']) ? 'bi-graph-up-arrow' : 'bi-dash-lg' ?> me-1"></i><?= $e($kpi['sub']) ?>
                     </div>
                 </div>
             </div>

@@ -68,7 +68,7 @@
                     ['grupos',       '/admin/grupos',         'bi-diagram-3',          'Grupos',          true],
                     ['requisitos',   '/admin/requisitos',    'bi-clipboard-check',    'Requisitos',      true],
                     ['matriculas',   '/admin/matriculas',    'bi-journal-check',      'Matrículas',      true],
-                    ['descuentos',   '/admin/descuentos',    'bi-ticket-percent',     'Descuentos',      true],
+                    ['descuentos',   '/admin/descuentos',    'bi-ticket',             'Descuentos',      true],
                     ['pagos',        '/admin/pagos',          'bi-credit-card',        'Pagos',           true],
                     ['usuarios',     '/admin/usuarios',      'bi-person-badge',       'Usuarios',        true],
                     ['reportes',     '/admin/reportes',      'bi-file-earmark-bar-graph', 'Reportes',    true],

@@ -84,7 +84,7 @@ $colorBadge = [
                 </div>
                 <div class="portal-kpi-value"><?= htmlspecialchars($k['valor']) ?></div>
                 <div class="small mt-1" style="color:<?= !empty($k['verde']) ? '#34d399' : '#94a3b8' ?>;">
-                    <i class="bi <?= !empty($k['verde']) ? 'bi-arrow-trend-up' : 'bi-dash-lg' ?> me-1"></i><?= htmlspecialchars($k['sub']) ?>
+                    <i class="bi <?= !empty($k['verde']) ? 'bi-graph-up-arrow' : 'bi-dash-lg' ?> me-1"></i><?= htmlspecialchars($k['sub']) ?>
                 </div>
             </div>
         </div>

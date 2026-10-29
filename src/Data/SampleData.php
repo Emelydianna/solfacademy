@@ -19,13 +19,13 @@ final class SampleData
     public static function categorias(): array
     {
         return [
-            ['id_categoria' => 1, 'nombre' => 'Guitarra', 'descripcion' => 'Ritmo, arpegio y acordes', 'icono' => 'bi-guitar'],
+            ['id_categoria' => 1, 'nombre' => 'Guitarra', 'descripcion' => 'Ritmo, arpegio y acordes', 'icono' => 'bi-music-note-beamed'],
             ['id_categoria' => 2, 'nombre' => 'Piano', 'descripcion' => 'Técnica y arpegio legato', 'icono' => 'bi-music-note-beamed'],
             ['id_categoria' => 3, 'nombre' => 'Canto', 'descripcion' => 'Técnica vocal y respiración', 'icono' => 'bi-mic'],
-            ['id_categoria' => 4, 'nombre' => 'Batería', 'descripcion' => 'Ritmo y coordinación de extremidades', 'icono' => 'bi-drum'],
+            ['id_categoria' => 4, 'nombre' => 'Batería', 'descripcion' => 'Ritmo y coordinación de extremidades', 'icono' => 'bi-record-circle'],
             ['id_categoria' => 5, 'nombre' => 'Violín', 'descripcion' => 'Expresión, postura y afinación', 'icono' => 'bi-music-note'],
             ['id_categoria' => 6, 'nombre' => 'Clases Particulares', 'descripcion' => 'A tu ritmo, uno a uno', 'icono' => 'bi-person-workspace'],
-            ['id_categoria' => 7, 'nombre' => 'Teoría Musical', 'descripcion' => 'Configuración, armonía y composición', 'icono' => 'bi-journal-music'],
+            ['id_categoria' => 7, 'nombre' => 'Teoría Musical', 'descripcion' => 'Configuración, armonía y composición', 'icono' => 'bi-journal-text'],
         ];
     }
 
@@ -183,7 +183,7 @@ final class SampleData
                 'horario' => 'Mañana',
                 'instructor' => 'Mateo Silva',
                 'descripcion' => 'Acordes básicos, ritmo y tus primeras canciones paso a paso.',
-                'icono' => 'bi-guitar',
+                'icono' => 'bi-music-note-beamed',
             ],
             [
                 'id_curso' => 3,
@@ -231,7 +231,7 @@ final class SampleData
                 'horario' => 'Tarde',
                 'instructor' => 'Diego Torres',
                 'descripcion' => 'Técnica de baquetas, trabajo con metrónomo y primeros ritmos.',
-                'icono' => 'bi-drum',
+                'icono' => 'bi-record-circle',
             ],
             [
                 'id_curso' => 8,
@@ -255,7 +255,7 @@ final class SampleData
                 'horario' => 'Tarde',
                 'instructor' => 'Mateo Silva',
                 'descripcion' => 'Arpegios, punteos y ritmos de rock y pop aplicados a canciones reales.',
-                'icono' => 'bi-guitar',
+                'icono' => 'bi-music-note-beamed',
             ],
             [
                 'id_curso' => 7,
@@ -267,7 +267,7 @@ final class SampleData
                 'horario' => 'Noche',
                 'instructor' => 'Diego Torres',
                 'descripcion' => 'Grooves complejos, fills y desarrollo de solos con banda.',
-                'icono' => 'bi-drum',
+                'icono' => 'bi-record-circle',
             ],
             [
                 'id_curso' => 9,
