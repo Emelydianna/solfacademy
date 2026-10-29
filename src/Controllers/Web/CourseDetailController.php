@@ -6,6 +6,7 @@ namespace App\Controllers\Web;
 
 use App\Application\Catalogo\CatalogoService;
 use App\Application\Academico\MatriculasService;
+use App\Application\Imagen\ImagenCursoStorage;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\PhpRenderer;
@@ -20,12 +21,14 @@ class CourseDetailController
     private PhpRenderer $view;
     private CatalogoService $service;
     private MatriculasService $matriculas;
+    private ImagenCursoStorage $fotos;
 
-    public function __construct(PhpRenderer $view, CatalogoService $service, MatriculasService $matriculas)
+    public function __construct(PhpRenderer $view, CatalogoService $service, MatriculasService $matriculas, ImagenCursoStorage $fotos)
     {
         $this->view = $view;
         $this->service = $service;
         $this->matriculas = $matriculas;
+        $this->fotos = $fotos;
     }
 
     public function detail(Request $request, Response $response, array $args): Response
@@ -53,5 +56,31 @@ class CourseDetailController
             'paginaActiva' => 'cursos',
             'curso' => $curso,
         ]);
+    }
+
+    /**
+     * Imagen de referencia del curso (GET /cursos/{id}/imagen).
+     *
+     * Sirve el fichero de var/uploads/cursos. Devuelve 404 si el curso no
+     * tiene imagen, si el archivo ya no existe o si no es una imagen.
+     */
+    public function imagen(Request $request, Response $response, array $args): Response
+    {
+        $ruta = $this->fotos->ruta($this->service->imagenCurso((int) $args['id']));
+        if ($ruta === null) {
+            return $response->withStatus(404)->withHeader('Cache-Control', 'no-store');
+        }
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($ruta);
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            return $response->withStatus(404)->withHeader('Cache-Control', 'no-store');
+        }
+        $archivo = @fopen($ruta, 'rb');
+        if ($archivo === false) {
+            return $response->withStatus(404);
+        }
+        return $response->withHeader('Content-Type', (string) $mime)
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Cache-Control', 'public, max-age=3600')
+            ->withBody(new \Slim\Psr7\Stream($archivo));
     }
 }

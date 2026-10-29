@@ -129,6 +129,9 @@ CREATE TABLE curso (
     disponible        TINYINT(1) NOT NULL DEFAULT 1,
     activo            TINYINT(1) NOT NULL DEFAULT 1,
     max_grupos        INT UNSIGNED NOT NULL DEFAULT 2,
+    -- Imagen de referencia del curso (fichero en var/uploads/cursos).
+    -- NULL => la tarjeta muestra el icono de respaldo.
+    imagen            VARCHAR(255) NULL,
     PRIMARY KEY (id_curso),
     CONSTRAINT fk_curso_instrumento FOREIGN KEY (id_instrumento)
         REFERENCES instrumento (id_instrumento)

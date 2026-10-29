@@ -105,9 +105,12 @@
                             <?php foreach ($cursos as $curso): ?>
                                 <div class="col">
                                     <div class="card catalog-card h-100">
-                                        <!-- TODO: sustituir por la imagen real del curso cuando haya assets -->
                                         <div class="catalog-card-image">
-                                            <i class="bi <?= htmlspecialchars((string) $curso['icono']) ?>"></i>
+                                            <?php if (!empty($curso['imagen'])): ?>
+                                                <img src="/cursos/<?= (int) $curso['id_curso'] ?>/imagen" alt="Imagen de referencia de <?= htmlspecialchars((string) $curso['nombre']) ?>" loading="lazy" class="catalog-card-img">
+                                            <?php else: ?>
+                                                <i class="bi <?= htmlspecialchars((string) $curso['icono']) ?>"></i>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start gap-2 mb-2">

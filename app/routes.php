@@ -42,6 +42,9 @@ return function (App $app) {
     // Detalle de curso 
     $app->get('/cursos/{id}', [CourseDetailController::class, 'detail']);
 
+    // Imagen de referencia del curso (fichero en var/uploads/cursos)
+    $app->get('/cursos/{id:[1-9][0-9]*}/imagen', [CourseDetailController::class, 'imagen']);
+
     // Perfil de instructor 
     $app->get('/instructores/{id}', [InstructorProfileController::class, 'profile']);
     $app->get('/instructores/{id:[1-9][0-9]*}/foto', [InstructorProfileController::class, 'foto']);
@@ -224,5 +227,6 @@ return function (App $app) {
         $group->post('/{seccion:categorias|instrumentos|cursos}/{id:[1-9][0-9]*}', [\App\Controllers\Admin\GestionAcademicaController::class, 'guardar']);
         $group->post('/{seccion:categorias|instrumentos}/{id:[1-9][0-9]*}/eliminar', [\App\Controllers\Admin\GestionAcademicaController::class, 'eliminar']);
         $group->post('/cursos/{id:[1-9][0-9]*}/estado', [\App\Controllers\Admin\GestionAcademicaController::class, 'estado']);
+        $group->post('/cursos/{id:[1-9][0-9]*}/imagen/quitar', [\App\Controllers\Admin\GestionAcademicaController::class, 'quitarImagen']);
     })->add(new RequireRole('admin'));
 };

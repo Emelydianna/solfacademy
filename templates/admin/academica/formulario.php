@@ -27,7 +27,17 @@ if ($esCurso) {
         </div>
     <?php endif; ?>
     <?php require __DIR__ . '/../partials/errores-form.php'; ?>
-    <form method="post" action="<?= $e($base . ($idEdicion ? '/' . $idEdicion : '')) ?>" id="form-academico">
+    <?php if ($esCurso && $idEdicion && $valor('imagen')): ?>
+        <div class="mb-3">
+            <span class="form-label d-block">Imagen actual</span>
+            <img src="/cursos/<?= (int) $idEdicion ?>/imagen" alt="Imagen de referencia del curso" class="rounded border d-block mb-2" style="width:100%;max-height:140px;object-fit:cover;">
+            <form method="post" action="/admin/cursos/<?= (int) $idEdicion ?>/imagen/quitar" data-confirm="¿Quitar la imagen del curso? La tarjeta del catálogo volverá a mostrar el icono.">
+                <?= \App\Application\Security\Csrf::campo() ?>
+                <button type="submit" class="btn admin-btn-outline btn-sm">QUITAR IMAGEN</button>
+            </form>
+        </div>
+    <?php endif; ?>
+    <form method="post" action="<?= $e($base . ($idEdicion ? '/' . $idEdicion : '')) ?>" enctype="multipart/form-data" id="form-academico">
         <?= \App\Application\Security\Csrf::campo() ?>
         <div class="mb-3">
             <label for="nombre" class="form-label">Nombre <?= $esCurso ? 'del curso' : ($esInstrumento ? 'del instrumento' : 'de la categoría') ?> <span aria-hidden="true">*</span></label>
@@ -105,6 +115,12 @@ if ($esCurso) {
             </fieldset>
         <?php endif; ?>
         <?php if ($esCurso): ?>
+            <div class="mb-3">
+                <label for="imagen" class="form-label">Imagen de referencia</label>
+                <input id="imagen" name="imagen" type="file" accept="image/png,image/jpeg,image/webp" class="form-control<?= $invalido('imagen') ?>"<?= $atributosError('imagen') ?>>
+                <?php $error('imagen'); ?>
+                <p class="small admin-muted mt-1">PNG, JPG o WEBP de hasta 2MB y mínimo 200px por lado. Si editas el curso y no adjuntas una nueva imagen, se conserva la actual.</p>
+            </div>
             <fieldset class="mb-3">
                 <legend class="form-label">Estado del curso *</legend>
                 <?php foreach (['1' => 'Activo', '0' => 'Inactivo'] as $v => $etiqueta): ?>

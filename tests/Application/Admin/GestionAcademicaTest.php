@@ -7,6 +7,7 @@ namespace Tests\Application\Admin;
 use App\Application\Admin\GestionAcademicaService;
 use App\Application\Catalogo\CatalogoService;
 use PDO;
+use Psr\Http\Message\UploadedFileInterface;
 use Slim\Views\PhpRenderer;
 use App\Application\Security\Csrf;
 use Tests\TestCase;
@@ -22,11 +23,15 @@ final class GestionAcademicaTest extends TestCase
     private GestionAcademicaService $service;
     private array $temporales = [];
     private array $sesionAnterior = [];
+    private array $postAnterior = [];
+    /** @var list<string> Ficheros creados por las pruebas de imagen. */
+    private array $archivosCreados = [];
     private const TABLAS = ['categoria', 'instrumento', 'instructor', 'instructor_instrumento', 'curso', 'aula', 'grupo', 'horario', 'inscripcion', 'requisito_curso'];
 
     protected function setUp(): void
     {
         $this->sesionAnterior = $_SESSION;
+        $this->postAnterior = $_POST;
         if (getenv('SOLFACADEMY_TEST_DB') !== '1') {
             $this->markTestSkipped('Activa SOLFACADEMY_TEST_DB=1 para probar con tablas MySQL temporales.');
         }
@@ -57,6 +62,15 @@ final class GestionAcademicaTest extends TestCase
         }
         $this->pdo = null;
         $_SESSION = $this->sesionAnterior;
+        $_POST = $this->postAnterior;
+
+        // Solo los ficheros que creó esta prueba: jamás se toca otro.
+        foreach ($this->archivosCreados as $archivo) {
+            if (is_file($archivo)) {
+                @unlink($archivo);
+            }
+        }
+        $this->archivosCreados = [];
     }
 
     private function curso(array $cambios = []): array
@@ -73,6 +87,47 @@ final class GestionAcademicaTest extends TestCase
         $resultado = $this->service->guardar('cursos', $this->curso($cambios));
         $this->assertSame([], $resultado['errores']);
         return $resultado['id'];
+    }
+
+    /** Archivo subido cuyo moveTo escribe de verdad (patrón de ConfiguracionTest). */
+    private function archivo(string $contenido, string $nombre = 'curso.png'): UploadedFileInterface
+    {
+        $archivo = $this->createMock(UploadedFileInterface::class);
+        $archivo->method('getError')->willReturn(UPLOAD_ERR_OK);
+        $archivo->method('getSize')->willReturn(strlen($contenido));
+        $archivo->method('getClientFilename')->willReturn($nombre);
+        $archivo->method('getStream')->willReturn((new \Slim\Psr7\Factory\StreamFactory())->createStream($contenido));
+        $archivo->method('moveTo')->willReturnCallback(function (string $ruta) use ($contenido): void {
+            if (!is_dir(dirname($ruta))) {
+                @mkdir(dirname($ruta), 0755, true);
+            }
+            file_put_contents($ruta, $contenido);
+            $this->archivosCreados[] = $ruta;
+        });
+
+        return $archivo;
+    }
+
+    /** PNG de prueba con el tamaño indicado (la normalización exige un mínimo). */
+    private function png(int $ancho, int $alto): string
+    {
+        $imagen = imagecreatetruecolor($ancho, $alto);
+        imagefill($imagen, 0, 0, imagecolorallocate($imagen, 38, 49, 79));
+        ob_start();
+        imagepng($imagen);
+        imagedestroy($imagen);
+
+        return (string) ob_get_clean();
+    }
+
+    /** Ruta absoluta de la imagen guardada de un curso (null si no tiene). */
+    private function rutaImagen(int $id): ?string
+    {
+        $archivo = $this->service->buscar('cursos', $id)['imagen'] ?? null;
+        if ($archivo === null || $archivo === '') {
+            return null;
+        }
+        return dirname(__DIR__, 3) . '/var/uploads/cursos/' . basename((string) $archivo);
     }
 
     private function grupos(int $id): void
@@ -299,5 +354,102 @@ final class GestionAcademicaTest extends TestCase
         $app = $this->appAdmin();
         $this->expectException(\Slim\Exception\HttpNotFoundException::class);
         $app->handle($this->createRequest('GET', '/admin/cursos')->withQueryParams(['editar' => '9999']));
+    }
+
+    /**
+     * Subida de imagen con una petición multipart fiel al navegador: los
+     * campos van en $_POST (la middleware multipart los vuelca al body) y
+     * el archivo en FILES. Cubre también que el público la sirva y que
+     * "quitar imagen" limpie columna y disco.
+     */
+    public function testImagenDeReferenciaSeSubeSeSirveYSeQuita(): void
+    {
+        $id = $this->crearCurso();
+        $app = $this->appAdmin();
+
+        $_POST = ['_csrf' => Csrf::token()] + $this->curso();
+        $peticion = $this->createRequest('POST', '/admin/cursos/' . $id, ['Content-Type' => 'multipart/form-data; boundary=----prueba'])
+            ->withUploadedFiles(['imagen' => $this->archivo($this->png(800, 450))]);
+        $this->assertSame(303, $app->handle($peticion)->getStatusCode());
+
+        $imagen = (string) ($this->service->buscar('cursos', $id)['imagen'] ?? '');
+        $ruta = dirname(__DIR__, 3) . '/var/uploads/cursos/' . $imagen;
+        if ($imagen !== '') {
+            $this->archivosCreados[] = $ruta;
+        }
+        $this->assertNotEmpty($imagen, 'La subida debe registrar la columna curso.imagen.');
+        $this->assertFileExists($ruta);
+
+        // El público la sirve con el MIME correcto.
+        $img = $app->handle($this->createRequest('GET', '/cursos/' . $id . '/imagen'));
+        $this->assertSame(200, $img->getStatusCode());
+        $this->assertSame('image/png', $img->getHeaderLine('Content-Type'));
+
+        // La tarjeta del catálogo y la cabecera del detalle la muestran.
+        $catalogo = (string) $app->handle($this->createRequest('GET', '/cursos'))->getBody();
+        $this->assertStringContainsString('catalog-card-img', $catalogo);
+        $this->assertStringContainsString('/cursos/' . $id . '/imagen', $catalogo);
+        $detalle = (string) $app->handle($this->createRequest('GET', '/cursos/' . $id))->getBody();
+        $this->assertStringContainsString('course-detail-img', $detalle);
+
+        // Quitar: columna a NULL, fichero fuera del disco y 404 público.
+        $quitar = $app->handle($this->createRequest('POST', '/admin/cursos/' . $id . '/imagen/quitar')
+            ->withParsedBody(['_csrf' => Csrf::token()]));
+        $this->assertSame(303, $quitar->getStatusCode());
+        $this->assertNull($this->service->buscar('cursos', $id)['imagen']);
+        $this->assertFileDoesNotExist($ruta);
+        $this->assertSame(404, $app->handle($this->createRequest('GET', '/cursos/' . $id . '/imagen'))->getStatusCode());
+
+        // Sin imagen, la tarjeta vuelve al icono de respaldo.
+        $sinImagen = (string) $app->handle($this->createRequest('GET', '/cursos'))->getBody();
+        $this->assertStringNotContainsString('/cursos/' . $id . '/imagen', $sinImagen);
+        $this->assertStringContainsString('bi-music-note-beamed', $sinImagen);
+    }
+
+    public function testEditarSinArchivoConservaLaImagenYConArchivoLaReemplaza(): void
+    {
+        $id = $this->crearCurso();
+
+        $r = $this->service->guardar('cursos', $this->curso(['nombre' => 'Con imagen']), $id, $this->archivo($this->png(800, 450)));
+        $this->assertSame([], $r['errores']);
+        $primera = (string) $this->service->buscar('cursos', $id)['imagen'];
+        $rutaPrimera = dirname(__DIR__, 3) . '/var/uploads/cursos/' . $primera;
+        $this->archivosCreados[] = $rutaPrimera;
+        $this->assertNotEmpty($primera);
+        $this->assertFileExists($rutaPrimera);
+
+        // Editar sin archivo nuevo: la imagen se conserva.
+        $r2 = $this->service->guardar('cursos', $this->curso(['nombre' => 'Sin imagen nueva']), $id, null);
+        $this->assertSame([], $r2['errores']);
+        $this->assertSame($primera, $this->service->buscar('cursos', $id)['imagen'], 'Editar sin archivo no debe pisar la imagen.');
+
+        // Editar con archivo nuevo: se sustituye y se retira el anterior.
+        $r3 = $this->service->guardar('cursos', $this->curso(['nombre' => 'Con imagen nueva']), $id, $this->archivo($this->png(800, 450)));
+        $this->assertSame([], $r3['errores']);
+        $segunda = (string) $this->service->buscar('cursos', $id)['imagen'];
+        $rutaSegunda = dirname(__DIR__, 3) . '/var/uploads/cursos/' . $segunda;
+        $this->archivosCreados[] = $rutaSegunda;
+        $this->assertNotSame($primera, $segunda, 'La imagen nueva debe ser distinta de la anterior.');
+        $this->assertFileExists($rutaSegunda);
+        $this->assertFileDoesNotExist($rutaPrimera, 'La imagen sustituida debe borrarse del disco.');
+    }
+
+    public function testImagenConFormatoNoValidoDevuelveErrorSinGuardar(): void
+    {
+        $id = $this->crearCurso();
+        $app = $this->appAdmin();
+
+        // SVG: MIME real fuera de la lista (y motivo de seguridad, XSS).
+        $_POST = ['_csrf' => Csrf::token()] + $this->curso();
+        $peticion = $this->createRequest('POST', '/admin/cursos/' . $id, ['Content-Type' => 'multipart/form-data; boundary=----prueba'])
+            ->withUploadedFiles(['imagen' => $this->archivo('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>', 'x.svg')]);
+        $respuesta = $app->handle($peticion);
+        $html = (string) $respuesta->getBody();
+
+        $this->assertSame(422, $respuesta->getStatusCode());
+        $this->assertNull($this->service->buscar('cursos', $id)['imagen'], 'No debe guardarse una imagen rechazada.');
+        $this->assertStringContainsString('Formato no válido', $html);
+        // El error de validación se muestra también como toast de SweetAlert2.
+        $this->assertStringContainsString("solfAviso('error'", $html);
     }
 }

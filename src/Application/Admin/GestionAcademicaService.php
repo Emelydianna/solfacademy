@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Application\Admin;
 
+use App\Application\Imagen\ImagenCursoStorage;
+use DomainException;
 use PDO;
 use PDOException;
+use Psr\Http\Message\UploadedFileInterface;
 
 /** Gestión sobre el esquema existente; nunca borra cursos ni su historial. */
 final class GestionAcademicaService
@@ -19,6 +22,9 @@ final class GestionAcademicaService
     public const POR_PAGINA = 10;
 
     private PDO $pdo;
+
+    /** Se crea perezosamente: solo lo usa el alta/edición de cursos. */
+    private ?ImagenCursoStorage $imagenes = null;
 
     public function __construct(PDO $pdo)
     {
@@ -213,10 +219,10 @@ final class GestionAcademicaService
         return ['valores' => $valores, 'errores' => $errores];
     }
 
-    public function guardar(string $seccion, array $datos, int $id = 0): array
+    public function guardar(string $seccion, array $datos, int $id = 0, ?UploadedFileInterface $imagen = null): array
     {
         if ($seccion !== 'cursos' || $id < 1) {
-            return $this->guardarRegistro($seccion, $datos, $id);
+            return $this->guardarRegistro($seccion, $datos, $id, $imagen);
         }
         // Comparte el bloqueo de curso con GruposService: el máximo de grupos
         // y el instrumento no pueden validarse sobre un conteo ya obsoleto.
@@ -224,7 +230,7 @@ final class GestionAcademicaService
         try {
             $stmt = $this->pdo->prepare('SELECT id_curso FROM curso WHERE id_curso = :id FOR UPDATE');
             $stmt->execute(['id' => $id]);
-            $resultado = $this->guardarRegistro($seccion, $datos, $id);
+            $resultado = $this->guardarRegistro($seccion, $datos, $id, $imagen);
             if ($resultado['errores']) {
                 $this->pdo->rollBack();
             } else {
@@ -239,10 +245,11 @@ final class GestionAcademicaService
         }
     }
 
-    private function guardarRegistro(string $seccion, array $datos, int $id = 0): array
+    private function guardarRegistro(string $seccion, array $datos, int $id = 0, ?UploadedFileInterface $imagen = null): array
     {
         $entidad = $this->entidad($seccion);
-        if ($id > 0 && !$this->buscar($seccion, $id)) {
+        $actual = $id > 0 ? $this->buscar($seccion, $id) : null;
+        if ($id > 0 && $actual === null) {
             return ['valores' => $datos, 'errores' => ['general' => 'El registro ya no existe.'], 'id' => $id];
         }
         $resultado = $this->validar($seccion, $datos, $id);
@@ -253,6 +260,23 @@ final class GestionAcademicaService
         if ($seccion === 'cursos' && $valores['duracion_semanas'] === '') {
             $valores['duracion_semanas'] = null;
         }
+
+        // Imagen de referencia (solo cursos): el fichero se escribe después
+        // de validar los campos y antes del SQL, para que la columna viaje
+        // en la misma escritura. Si no se envía un archivo nuevo, `imagen`
+        // no entra en los campos y el UPDATE la conserva intacta.
+        $archivoNuevo = null;
+        $anterior = $seccion === 'cursos' ? ($actual['imagen'] ?? null) : null;
+        if ($seccion === 'cursos' && $imagen instanceof UploadedFileInterface) {
+            try {
+                $archivoNuevo = ($this->imagenes ??= new ImagenCursoStorage())->guardar($imagen);
+            } catch (DomainException $e) {
+                $resultado['errores']['imagen'] = $e->getMessage();
+                return $resultado + ['id' => $id];
+            }
+            $valores['imagen'] = $archivoNuevo;
+        }
+
         $campos = array_keys($valores);
         if ($id > 0) {
             $asignaciones = implode(', ', array_map(static fn (string $campo): string => "$campo = :$campo", $campos));
@@ -264,13 +288,46 @@ final class GestionAcademicaService
         try {
             $this->pdo->prepare($sql)->execute($valores);
         } catch (PDOException $e) {
+            // El SQL falló: no queda un fichero huérfano.
+            if ($archivoNuevo !== null) {
+                $this->imagenes->borrar($archivoNuevo);
+            }
             if ($e->getCode() !== '23000') {
                 throw $e;
             }
             $resultado['errores']['general'] = 'No se pudo guardar: nombre duplicado o relación que ya no está disponible. Revisa los datos.';
             return $resultado + ['id' => $id];
         }
+        // Sustitución correcta: se retira la imagen anterior del disco.
+        if ($archivoNuevo !== null && $anterior !== null && $anterior !== $archivoNuevo) {
+            $this->imagenes->borrar($anterior);
+        }
         return $resultado + ['id' => $id ?: (int) $this->pdo->lastInsertId()];
+    }
+
+    /**
+     * Quita la imagen de referencia de un curso (fichero + columna) y la
+     * tarjeta vuelve al icono de respaldo.
+     *
+     * @return array{ok: bool, mensaje: string}
+     */
+    public function quitarImagen(int $id): array
+    {
+        $curso = $this->buscar('cursos', $id);
+        if ($curso === null) {
+            return ['ok' => false, 'mensaje' => 'El curso ya no existe.'];
+        }
+        $archivo = (string) ($curso['imagen'] ?? '');
+        if ($archivo === '') {
+            return ['ok' => false, 'mensaje' => 'Este curso no tiene imagen asociada.'];
+        }
+
+        $this->pdo->prepare('UPDATE curso SET imagen = NULL WHERE id_curso = :id')
+            ->execute(['id' => $id]);
+        $this->imagenes ??= new ImagenCursoStorage();
+        $this->imagenes->borrar($archivo);
+
+        return ['ok' => true, 'mensaje' => 'Imagen eliminada: el curso muestra de nuevo el icono.'];
     }
 
     public function eliminar(string $seccion, int $id): array

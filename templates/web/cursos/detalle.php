@@ -8,9 +8,18 @@ $e = static fn ($valor): string => htmlspecialchars((string) ($valor ?? ''), ENT
             <li class="breadcrumb-item"><a href="/cursos">Cursos</a></li>
             <li class="breadcrumb-item active" aria-current="page"><?= $e($curso['instrumento']) ?></li>
         </ol></nav>
-        <span class="nivel-badge nivel-<?= $e(mb_strtolower($curso['nivel'])) ?> mb-3 d-inline-block">NIVEL <?= $e(mb_strtoupper($curso['nivel'])) ?></span>
-        <h1 class="course-detail-title"><?= $e($curso['nombre']) ?></h1>
-        <p class="course-detail-instructor mb-0"><i class="bi bi-person me-2"></i>Instructores: <?= $e($curso['instructor']) ?></p>
+        <div class="row align-items-center g-4">
+            <div class="<?= empty($curso['imagen']) ? 'col-12' : 'col-lg-7' ?>">
+                <span class="nivel-badge nivel-<?= $e(mb_strtolower($curso['nivel'])) ?> mb-3 d-inline-block">NIVEL <?= $e(mb_strtoupper($curso['nivel'])) ?></span>
+                <h1 class="course-detail-title"><?= $e($curso['nombre']) ?></h1>
+                <p class="course-detail-instructor mb-0"><i class="bi bi-person me-2"></i>Instructores: <?= $e($curso['instructor']) ?></p>
+            </div>
+            <?php if (!empty($curso['imagen'])): ?>
+                <div class="col-lg-5">
+                    <img src="/cursos/<?= (int) $curso['id_curso'] ?>/imagen" alt="Imagen de referencia de <?= $e($curso['nombre']) ?>" class="course-detail-img" loading="lazy">
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </section>
 <section class="course-detail-body py-5">

@@ -177,6 +177,7 @@ la fila no se toca: lo que haya configurado la academia se conserva.
 | GET | `/` | Homepage |
 | GET | `/cursos` | Catálogo con filtros (instrumento, nivel, horario), búsqueda y orden |
 | GET | `/cursos/{id}` | Detalle de curso |
+| GET | `/cursos/{id}/imagen` | Imagen de referencia del curso (público; 404 si no tiene) |
 | GET | `/instructores/{id}` | Perfil de instructor |
 | GET | `/instructores/{id}/foto` | Foto pública solo de un instructor activo |
 | GET | `/marca/logo` | Logo de la academia configurado (público; 404 si no hay) |
@@ -249,6 +250,7 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | POST | `/admin/categorias/{id}/eliminar` | Eliminar solo si no hay instrumentos relacionados |
 | POST | `/admin/instrumentos/{id}/eliminar` | Eliminar solo si no hay cursos o instructores relacionados |
 | POST | `/admin/cursos/{id}/estado` | Desactivar/reactivar sin borrar historial |
+| POST | `/admin/cursos/{id}/imagen/quitar` | Quitar la imagen de referencia (vuelve el icono) |
 | GET / POST | `/admin/grupos` | Listar/filtrar y crear grupos con horarios |
 | GET / POST | `/admin/grupos/{id}` | Ver grupo y alumnos / guardar edición |
 | GET | `/admin/estudiantes` | Directorio, búsqueda, filtros y paginación |
@@ -306,6 +308,24 @@ un grupo con lugares. Sin sesión, la ruta de solicitud redirige a
 `/login?next=…` y el login vuelve automáticamente al formulario. Si el curso
 no tiene requisitos configurados, se dice claramente; no se muestran como
 "pendientes" condiciones inexistentes.
+
+#### Imagen de referencia de los cursos
+
+Desde `/admin/cursos` cada curso admite una **imagen de referencia** opcional:
+PNG, JPG o WEBP hasta 2 MB y mínimo 200 px por lado. El MIME real se comprueba
+con `finfo` sobre los primeros bytes (nunca por el nombre; el SVG queda fuera
+por XSS) y la imagen se normaliza con GD a PNG en `var/uploads/cursos`
+(carpeta no versionada). Si al editar no se adjunta un archivo nuevo, se
+conserva el actual; sustituirlo retira el fichero anterior del disco y el
+botón *Quitar imagen* borra fichero y columna.
+
+La tarjeta del catálogo y la cabecera del detalle muestran la imagen con
+relleno `cover`; sin imagen se usa el icono de respaldo. Se sirve en
+**`GET /cursos/{id}/imagen`** (público, 404 si no hay). La subida usa
+`enctype="multipart/form-data"`, y como Slim solo parsea JSON y urlencoded,
+la middleware `MultipartBodyMiddleware` vuelca el `$_POST` de las peticiones
+multipart al body: sin ella, cualquier formulario con `enctype` perdería todos
+sus campos (afecta también a la foto del instructor en `/admin/instructores`).
 
 #### Requisitos
 
@@ -570,9 +590,10 @@ scripts/comprobar-db.php   → verificación de conexión
 scripts/migrar-gestion.php → migración incremental sin reimportar los datos
 scripts/generar-comprobantes.php → genera los PDF de /public/comprobantes
 src/Application/Auth/      → AuthService (login, registro, sesión)
-src/Application/Middleware/ → RequireRole, AuthMiddleware, sesión y vistas
+src/Application/Middleware/ → RequireRole, AuthMiddleware, sesión, vistas y multipart (body desde $_POST)
 src/Application/Estudiante/→ lógica del portal del estudiante
 src/Application/Instructor/→ InstructorService (grupos, notas, asistencia, fichas)
+src/Application/Imagen/    → ImagenCursoStorage e ImagenNormalizador (validación GD de subidas)
 src/Application/Perfil/    → almacenamiento y validación de fotos
 src/Application/Pagos/     → ComprobanteStorage (subida y lectura de archivos)
 src/Application/Descuentos/→ DescuentosService (códigos y su aplicación al matricular)

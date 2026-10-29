@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Application\Admin\GestionAcademicaService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\UploadedFileInterface;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Views\PhpRenderer;
 
@@ -40,7 +41,16 @@ final class GestionAcademicaController
         if ($id && !$this->service->buscar($seccion, $id)) {
             throw new HttpNotFoundException($request);
         }
-        $resultado = $this->service->guardar($seccion, (array) $request->getParsedBody(), $id);
+        $cuerpo = (array) $request->getParsedBody();
+        $imagen = $request->getUploadedFiles()['imagen'] ?? null;
+        if ($imagen !== null && !$imagen instanceof UploadedFileInterface) {
+            return $this->render($request, $response->withStatus(422), $seccion, $id, $cuerpo, ['imagen' => 'Adjunta una única imagen.']);
+        }
+        if ($imagen instanceof UploadedFileInterface && $imagen->getError() === UPLOAD_ERR_NO_FILE) {
+            // Sin archivo nuevo en el input: se conserva la imagen actual.
+            $imagen = null;
+        }
+        $resultado = $this->service->guardar($seccion, $cuerpo, $id, $imagen);
         if ($resultado['errores']) {
             return $this->render($request, $response->withStatus(422), $seccion, $id, $resultado['valores'], $resultado['errores']);
         }
@@ -60,6 +70,15 @@ final class GestionAcademicaController
             (int) $args['id'], GestionAcademicaService::texto((array) $request->getParsedBody(), 'activo')
         );
         return $response->withStatus(303)->withHeader('Location', '/admin/cursos');
+    }
+
+    /** Quita la imagen de referencia de un curso (fichero + columna). */
+    public function quitarImagen(Request $request, Response $response, array $args): Response
+    {
+        $id = (int) $args['id'];
+        $r = $this->service->quitarImagen($id);
+        $_SESSION['academica_flash'] = ['tipo' => $r['ok'] ? 'exito' : 'error', 'mensaje' => $r['mensaje']];
+        return $response->withStatus(303)->withHeader('Location', '/admin/cursos?editar=' . $id);
     }
 
     private function render(Request $request, Response $response, string $seccion, int $id, array $valores, array $errores = []): Response

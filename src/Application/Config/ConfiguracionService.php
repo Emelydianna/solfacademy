@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Config;
 
 use App\Application\Admin\GestionAcademicaService;
+use App\Application\Imagen\ImagenNormalizador;
 use PDO;
 use PDOException;
 use Psr\Http\Message\UploadedFileInterface;
@@ -291,7 +292,13 @@ final class ConfiguracionService
 
             // Formato estándar: comprueba dimensiones, reduce hasta el lienzo
             // y reescribe como PNG conservando las proporciones originales.
-            $error = self::normalizar($ruta, $mime);
+            $error = ImagenNormalizador::normalizar(
+                $ruta,
+                $mime,
+                self::LOGO_LIENZO,
+                self::LOGO_MINIMO,
+                self::LOGO_MAXIMO
+            );
             if ($error !== null) {
                 @unlink($ruta);
                 return ['ok' => false, 'mensaje' => $error];
@@ -335,64 +342,5 @@ final class ConfiguracionService
         $this->pdo->prepare('INSERT IGNORE INTO configuracion (id_configuracion, nombre, lema)
             VALUES (:id, :nombre, :lema)')
             ->execute(['id' => self::ID, 'nombre' => $defecto['nombre'], 'lema' => $defecto['lema']]);
-    }
-
-    /**
-     * Normaliza el logo recién subido y lo reescribe como PNG:
-     *
-     *  - valida las dimensiones (mínimo y máximo por lado);
-     *  - si supera el lienzo, reduce **conservando las proporciones**
-     *    (sin estirar ni recortar, igual que las fotos de perfil);
-     *  - siempre PNG de salida, con alfa conservado.
-     *
-     * @return string|null mensaje de error, o null si todo fue bien
-     */
-    private static function normalizar(string $ruta, string $mime): ?string
-    {
-        $info = @getimagesize($ruta);
-        if ($info === false) {
-            return 'El archivo no es una imagen válida.';
-        }
-        [$ancho, $alto] = [$info[0], $info[1]];
-
-        if ($ancho < self::LOGO_MINIMO || $alto < self::LOGO_MINIMO) {
-            return 'La imagen es demasiado pequeña: mínimo ' . self::LOGO_MINIMO . 'px por lado.';
-        }
-        if ($ancho > self::LOGO_MAXIMO || $alto > self::LOGO_MAXIMO) {
-            return 'La imagen es demasiado grande: máximo ' . self::LOGO_MAXIMO . 'px por lado.';
-        }
-
-        $origen = match ($mime) {
-            'image/png'  => @imagecreatefrompng($ruta),
-            'image/jpeg' => @imagecreatefromjpeg($ruta),
-            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($ruta) : false,
-            default      => false,
-        };
-        if ($origen === false) {
-            return 'No se pudo leer la imagen. Prueba con otro archivo.';
-        }
-
-        // Reduce hasta el lienzo conservando proporciones (nunca agranda).
-        $escala = min(1, self::LOGO_LIENZO / max($ancho, $alto));
-        $nuevoAncho = max(1, (int) round($ancho * $escala));
-        $nuevoAlto = max(1, (int) round($alto * $escala));
-
-        $destino = imagecreatetruecolor($nuevoAncho, $nuevoAlto);
-        imagealphablending($destino, false);
-        imagesavealpha($destino, true);
-        imagefilledrectangle($destino, 0, 0, $nuevoAncho, $nuevoAlto, imagecolorallocatealpha($destino, 0, 0, 0, 127));
-        imagealphablending($destino, true);
-
-        imagecopyresampled($destino, $origen, 0, 0, 0, 0, $nuevoAncho, $nuevoAlto, $ancho, $alto);
-        $guardado = imagepng($destino, $ruta, 6);
-
-        imagedestroy($destino);
-        imagedestroy($origen);
-
-        if (!$guardado) {
-            return 'No se pudo guardar el logo normalizado.';
-        }
-
-        return null;
     }
 }

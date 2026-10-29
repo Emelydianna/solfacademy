@@ -41,6 +41,10 @@ final class MigracionGestion
                 'fecha_verificacion' => 'DATETIME NULL',
                 'motivo_verificacion' => 'VARCHAR(255) NULL',
             ],
+            // Imagen de referencia del curso en var/uploads/cursos.
+            'curso' => [
+                'imagen' => 'VARCHAR(255) NULL',
+            ],
         ];
         foreach ($definiciones as $tabla => $campos) {
             $existentes = $pdo->query("SHOW COLUMNS FROM $tabla")->fetchAll(PDO::FETCH_COLUMN);

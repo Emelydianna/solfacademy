@@ -146,6 +146,15 @@ final class CatalogoService
         return null;
     }
 
+    /** Imagen de referencia del curso (nombre de fichero) o null. */
+    public function imagenCurso(int $id): ?string
+    {
+        $stmt = $this->pdo->prepare('SELECT imagen FROM curso WHERE id_curso = :id');
+        $stmt->execute(['id' => $id]);
+        $archivo = $stmt->fetchColumn();
+        return $archivo === false || $archivo === null || $archivo === '' ? null : (string) $archivo;
+    }
+
     private static function normalizar(string $texto): string
     {
         return strtr(mb_strtolower($texto), ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u']);
