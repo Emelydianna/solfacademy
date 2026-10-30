@@ -1,7 +1,6 @@
 <?php
 $cabinas = $cabinas ?? [];
-$mensaje = $mensaje ?? null;
-$tipoMsg = $tipoMsg ?? null;
+$flash = $flash ?? null;
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
@@ -11,9 +10,7 @@ $tipoMsg = $tipoMsg ?? null;
     <a href="/estudiante/reservas" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Mis Reservas</a>
 </div>
 
-<?php if ($mensaje): ?>
-    <div class="alert alert-<?= htmlspecialchars($tipoMsg === 'success' ? 'success' : 'danger') ?>"><?= htmlspecialchars($mensaje) ?></div>
-<?php endif; ?>
+<?php require __DIR__ . '/../../partials/flash.php'; ?>
 
 <div class="portal-card p-3 p-md-4">
     <form method="post" action="/estudiante/reservas/cabinas">

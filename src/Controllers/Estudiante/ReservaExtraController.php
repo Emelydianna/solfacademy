@@ -25,16 +25,14 @@ class ReservaExtraController
         $usuario = $_SESSION['usuario'] ?? [];
 
         $this->view->setLayout('estudiante/layout.php');
-        $mensaje = $_SESSION['reserva_msg'] ?? null;
-        $tipoMsg = $_SESSION['reserva_msg_tipo'] ?? null;
-        unset($_SESSION['reserva_msg'], $_SESSION['reserva_msg_tipo']);
+        $flash = $_SESSION['reserva_flash'] ?? null;
+        unset($_SESSION['reserva_flash']);
 
         return $this->view->render($response, 'estudiante/reservas/extras.php', [
             'tituloPagina' => 'Solicitar Clase Extra — Portal del Estudiante',
             'paginaPortal' => 'reservas',
             'grupos' => $this->reserva->getGruposActivosParaEstudiante((int) $usuario['id_referencia']),
-            'mensaje' => $mensaje,
-            'tipoMsg' => $tipoMsg,
+            'flash' => $flash,
         ]);
     }
 
@@ -44,8 +42,7 @@ class ReservaExtraController
 
         $body = (array) $request->getParsedBody();
         $res = $this->reserva->reservarClaseExtra((int) $usuario['id_referencia'], $body);
-        $_SESSION['reserva_msg'] = $res['msg'];
-        $_SESSION['reserva_msg_tipo'] = $res['ok'] ? 'success' : 'danger';
+        $_SESSION['reserva_flash'] = ['tipo' => $res['ok'] ? 'exito' : 'error', 'mensaje' => $res['msg']];
 
         if ($res['ok']) {
             return $response->withStatus(302)->withHeader('Location', '/estudiante/reservas');

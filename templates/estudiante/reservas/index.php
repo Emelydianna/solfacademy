@@ -1,7 +1,6 @@
 <?php
 $reservas = $reservas ?? [];
-$mensaje = $mensaje ?? null;
-$tipoMsg = $tipoMsg ?? null;
+$flash = $flash ?? null;
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div>
@@ -14,9 +13,7 @@ $tipoMsg = $tipoMsg ?? null;
     </div>
 </div>
 
-<?php if ($mensaje): ?>
-    <div class="alert alert-<?= htmlspecialchars($tipoMsg === 'success' ? 'success' : 'danger') ?>"><?= htmlspecialchars($mensaje) ?></div>
-<?php endif; ?>
+<?php require __DIR__ . '/../../partials/flash.php'; ?>
 
 <?php if (count($reservas) === 0): ?>
     <div class="portal-card p-4 text-center">
