@@ -4,10 +4,10 @@
  * Mis Cursos (pantalla 2 del prototipo).
  * Datos: $cursos = EstudiantePortalService::misCursos()
  *   Cada fila: id_inscripcion, estado, fecha_inscripcion, precio_inscripcion,
- *   observaciones, id_grupo, fecha_inicio, fecha_fin, estado_grupo,
- *   capacidad_maxima, id_curso, curso, nivel, descripcion, duracion_semanas,
- *   precio, categoria, aula, ubicacion, instructor, instructor_email,
- *   avance_pct, clases_presentes, clases_registradas, horarios[]
+ *   observaciones, motivo_revision, id_grupo, fecha_inicio, fecha_fin,
+ *   estado_grupo, capacidad_maxima, id_curso, curso, nivel, descripcion,
+ *   duracion_semanas, precio, categoria, aula, ubicacion, instructor,
+ *   instructor_email, avance_pct, clases_presentes, clases_registradas, horarios[]
  */
 $cursos = $cursos ?? [];
 
@@ -47,8 +47,18 @@ $diasCortos = [
     <div class="row g-3">
         <?php foreach ($cursos as $curso): ?>
             <?php
-            $finalizado = in_array($curso['estado'], ['Finalizada', 'Cancelada'], true);
+            $finalizado = $curso['estado'] === 'Finalizada';
+            $cancelada  = $curso['estado'] === 'Cancelada';
             $avance     = max(0, min(100, (int) ($curso['avance_pct'] ?? 0)));
+
+            // Motivo de la cancelación/rechazo para el modal de la tarjeta
+            $motivo = trim((string) ($curso['motivo_revision'] ?? ''));
+            if ($motivo === '') {
+                $motivo = trim((string) ($curso['observaciones'] ?? ''));
+            }
+            if ($motivo === '') {
+                $motivo = 'Sin motivo registrado. Contacta a administración para más información.';
+            }
             ?>
             <div class="col-12 col-md-6 col-xl-4">
                 <div class="portal-card course-card h-100 d-flex flex-column">
@@ -123,15 +133,19 @@ $diasCortos = [
                                 <?= \App\Application\Security\Csrf::campo() ?><button type="submit" class="btn btn-outline-danger w-100 fw-bold">Cancelar solicitud</button>
                             </form>
                         <?php endif; ?>
-                        <?php if ($finalizado): ?>
+                        <?php if ($cancelada): ?>
                             <button type="button"
-                                    class="btn btn-accent w-100 fw-bold"
+                                    class="btn btn-outline-danger w-100 fw-bold"
                                     data-bs-toggle="modal"
-                                    data-bs-target="#modalProximamente"
-                                    data-modal-titulo="Certificado"
-                                    data-modal-mensaje="La descarga de certificados estará disponible muy pronto.">
-                                Ver Certificado <i class="bi bi-arrow-right ms-1"></i>
+                                    data-bs-target="#modalMotivo"
+                                    data-modal-titulo="Motivo de cancelación"
+                                    data-modal-mensaje="<?= htmlspecialchars($motivo, ENT_QUOTES) ?>">
+                                Ver motivos <i class="bi bi-info-circle ms-1"></i>
                             </button>
+                        <?php elseif ($finalizado): ?>
+                            <a href="/estudiante/certificado/<?= (int) $curso['id_inscripcion'] ?>" class="btn btn-accent w-100 fw-bold">
+                                Ver Certificado <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
                         <?php else: ?>
                             <a href="/cursos/<?= (int) $curso['id_curso'] ?>" class="btn btn-accent w-100 fw-bold">
                                 Ir al Curso <i class="bi bi-arrow-right ms-1"></i>
@@ -144,15 +158,15 @@ $diasCortos = [
     </div>
 <?php endif; ?>
 
-<!-- Modal reutilizable para funciones aún no disponibles -->
-<div class="modal fade" id="modalProximamente" tabindex="-1" aria-hidden="true">
+<!-- Modal con el motivo de la cancelación/rechazo de una matrícula -->
+<div class="modal fade" id="modalMotivo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content portal-modal">
             <div class="modal-body text-center p-4">
-                <span class="portal-modal-icon"><i class="bi bi-stars"></i></span>
-                <h2 class="portal-card-title h5 mb-1" data-modal-titulo-texto>Próximamente</h2>
+                <span class="portal-modal-icon"><i class="bi bi-exclamation-octagon"></i></span>
+                <h2 class="portal-card-title h5 mb-1" data-modal-titulo-texto>Motivo de cancelación</h2>
                 <p class="small mb-4" style="color: var(--portal-muted);" data-modal-mensaje-texto>
-                    Esta función estará disponible muy pronto.
+                    Sin motivo registrado.
                 </p>
                 <button type="button" class="btn btn-accent fw-semibold px-4" data-bs-dismiss="modal">Entendido</button>
             </div>
@@ -162,7 +176,7 @@ $diasCortos = [
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var modal = document.getElementById('modalProximamente');
+        var modal = document.getElementById('modalMotivo');
         if (!modal) return;
         modal.addEventListener('show.bs.modal', function (event) {
             var boton = event.relatedTarget;

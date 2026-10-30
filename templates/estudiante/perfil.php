@@ -112,7 +112,16 @@ $historial = $perfil['historial_instrumentos'] ?? [];
                             <?php endif; ?>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-md-6">
+                            <label class="form-label" for="fecha_nacimiento">Fecha de Nacimiento</label>
+                            <input type="date" class="form-control<?= $err('fecha_nacimiento') ?>" id="fecha_nacimiento" name="fecha_nacimiento"
+                                   max="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($valores['fecha_nacimiento'] ?? ($perfil['fecha_nacimiento'] ?? '')) ?>">
+                            <?php if (!empty($errores['fecha_nacimiento'])): ?>
+                                <div class="invalid-feedback"><?= htmlspecialchars($errores['fecha_nacimiento']) ?></div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="col-md-6">
                             <label class="form-label" for="direccion">Dirección de Residencia</label>
                             <input type="text" class="form-control<?= $err('direccion') ?>" id="direccion" name="direccion"
                                    maxlength="255" value="<?= htmlspecialchars($valores['direccion'] ?? ($perfil['direccion'] ?? '')) ?>">

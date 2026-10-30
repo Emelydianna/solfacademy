@@ -14,6 +14,7 @@ use App\Application\Middleware\RequireRole;
 use App\Controllers\Estudiante\AsistenciasController;
 use App\Controllers\Estudiante\CalendarioController;
 use App\Controllers\Estudiante\CalificacionesController;
+use App\Controllers\Estudiante\CertificadoController;
 use App\Controllers\Estudiante\DashboardController;
 use App\Controllers\Estudiante\MisCursosController;
 use App\Controllers\Estudiante\MatriculaController;
@@ -67,6 +68,8 @@ return function (App $app) {
         $group->get('/asistencias', [AsistenciasController::class, 'index']);
         $group->get('/calificaciones', [CalificacionesController::class, 'index']);
         $group->get('/calificaciones/boletin', [CalificacionesController::class, 'descargarBoletin']);
+        // Certificado en PDF de una inscripción finalizada (dueño solamente)
+        $group->get('/certificado/{id:[1-9][0-9]*}', [CertificadoController::class, 'descargar']);
         $group->get('/pagos', [PagosController::class, 'index']);
         $group->post('/pagos/{id:[1-9][0-9]*}/comprobante', [PagosController::class, 'subirComprobante']);
         $group->get('/pagos/comprobante/{archivo}', [PagosController::class, 'verComprobante']);

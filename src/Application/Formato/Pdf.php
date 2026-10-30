@@ -40,6 +40,14 @@ final class Pdf
 
     private int $y = self::MARGEN_ARRIBA;
 
+    /**
+     * Imágenes embebidas (rasterizadas a JPEG con GD). Su posición en la
+     * lista + 1 es el nombre del XObject (/Im1, /Im2, …) en el stream.
+     *
+     * @var list<array{jpeg: string, ancho: int, alto: int}>
+     */
+    private array $imagenes = [];
+
     public function __construct()
     {
         $this->nuevaPagina();
@@ -51,7 +59,7 @@ final class Pdf
      *
      * @param array{0: float, 1: float, 2: float}|null $rgb Color 0–1.
      */
-    public function texto(int $tam, string $contenido, ?array $rgb = null, int $x = self::MARGEN_IZQ): void
+    public function texto(int $tam, string $contenido, ?array $rgb = null, int $x = self::MARGEN_IZQ, bool $negrita = false): void
     {
         $alto = (int) round($tam * 2.2) + 6;
         if ($this->y - $alto < self::MARGEN_ABAJO) {
@@ -61,7 +69,8 @@ final class Pdf
 
         [$r, $g, $b] = $rgb ?? self::TEXTO;
         $this->actual .= sprintf(
-            "BT /F1 %d Tf %.3f %.3f %.3f rg 1 0 0 1 %d %d Tm (%s) Tj ET\n",
+            "BT /F%d %d Tf %.3f %.3f %.3f rg 1 0 0 1 %d %d Tm (%s) Tj ET\n",
+            $negrita ? 2 : 1,
             $tam,
             $r,
             $g,
@@ -70,6 +79,137 @@ final class Pdf
             $this->y,
             self::escapar($contenido)
         );
+    }
+
+    /**
+     * X aproximado para centrar una línea en la página (Helvetica no tiene
+     * métricas en este generador: se estima el ancho por longitud y tamaño).
+     */
+    public function xCentrado(int $tam, string $contenido, bool $negrita = false): int
+    {
+        if ($contenido === '') {
+            return self::MARGEN_IZQ;
+        }
+        // Las mayúsculas promedian más anchas que la caja baja
+        $factor = $contenido === mb_strtoupper($contenido) ? 0.70 : 0.52;
+        if ($negrita) {
+            $factor += 0.04;
+        }
+        $ancho = (int) round(mb_strlen($contenido) * $tam * $factor);
+
+        return max(self::MARGEN_IZQ, (int) round((self::ANCHO - $ancho) / 2));
+    }
+
+    /** Línea centrada en la página que avanza el cursor igual que texto(). */
+    public function textoCentrado(int $tam, string $contenido, ?array $rgb = null, bool $negrita = false): void
+    {
+        $this->texto($tam, $contenido, $rgb, $this->xCentrado($tam, $contenido, $negrita), $negrita);
+    }
+
+    /**
+     * Línea en coordenadas absolutas, sin mover el cursor (pies de página y
+     * elementos fijos que no deben empujar el flujo del documento).
+     *
+     * @param array{0: float, 1: float, 2: float}|null $rgb
+     */
+    public function textoAbsoluto(int $tam, string $contenido, int $x, int $y, ?array $rgb = null, bool $negrita = false): void
+    {
+        [$r, $g, $b] = $rgb ?? self::TEXTO;
+        $this->actual .= sprintf(
+            "BT /F%d %d Tf %.3f %.3f %.3f rg 1 0 0 1 %d %d Tm (%s) Tj ET\n",
+            $negrita ? 2 : 1,
+            $tam,
+            $r,
+            $g,
+            $b,
+            $x,
+            $y,
+            self::escapar($contenido)
+        );
+    }
+
+    /**
+     * Marco de línea (sin relleno) en coordenadas absolutas: no mueve el
+     * cursor, sirve para bordes decorativos.
+     *
+     * @param array{0: float, 1: float, 2: float} $rgb
+     */
+    public function marco(int $x, int $y, int $ancho, int $alto, int $grosor = 2, ?array $rgb = null): void
+    {
+        [$r, $g, $b] = $rgb ?? self::DORADO;
+        $this->actual .= sprintf(
+            "%.3f %.3f %.3f RG %d w %d %d %d %d re S\n",
+            $r,
+            $g,
+            $b,
+            $grosor,
+            $x,
+            $y,
+            $ancho,
+            $alto
+        );
+    }
+
+    /**
+     * Inserta una imagen (PNG/JPEG/WebP, aplanada sobre blanco y pasada a
+     * JPEG con GD) con la anchura indicada. $yArriba es el borde superior;
+     * devuelve la altura dibujada (0 si el archivo no es usable).
+     */
+    public function imagen(string $ruta, int $x, int $yArriba, int $ancho): int
+    {
+        if ($ruta === '' || !is_file($ruta)) {
+            return 0;
+        }
+        $info = @getimagesize($ruta);
+        if ($info === false || $info[0] < 1 || $info[1] < 1) {
+            return 0;
+        }
+        [$origenAncho, $origenAlto] = $info;
+
+        $mime = $info['mime'] ?? '';
+        $fuente = match ($mime) {
+            'image/png'  => @imagecreatefrompng($ruta),
+            'image/jpeg' => @imagecreatefromjpeg($ruta),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($ruta) : false,
+            default      => false,
+        };
+        if ($fuente === false) {
+            return 0;
+        }
+
+        // Aplana sobre blanco: JPEG no guarda transparencia (el logo PNG
+        // normalizado puede traer fondo transparente).
+        $lienzo = imagecreatetruecolor($origenAncho, $origenAlto);
+        imagealphablending($lienzo, true);
+        imagefill($lienzo, 0, 0, imagecolorallocate($lienzo, 255, 255, 255));
+        imagecopy($lienzo, $fuente, 0, 0, 0, 0, $origenAncho, $origenAlto);
+        imagedestroy($fuente);
+
+        $stream = fopen('php://temp', 'r+b');
+        imagejpeg($lienzo, $stream, 88);
+        imagedestroy($lienzo);
+        rewind($stream);
+        $jpeg = (string) stream_get_contents($stream);
+        fclose($stream);
+
+        if ($jpeg === '') {
+            return 0;
+        }
+
+        $this->imagenes[] = ['jpeg' => $jpeg, 'ancho' => $origenAncho, 'alto' => $origenAlto];
+        $nombre = count($this->imagenes);
+
+        $altoUsado = max(1, (int) round($origenAlto * ($ancho / $origenAncho)));
+        $this->actual .= sprintf(
+            "q %d 0 0 %d %d %d cm /Im%d Do Q\n",
+            $ancho,
+            $altoUsado,
+            $x,
+            $yArriba - $altoUsado,
+            $nombre
+        );
+
+        return $altoUsado;
     }
 
     /**
@@ -188,28 +328,55 @@ final class Pdf
             $this->paginas[] = '';
         }
 
-        // 1 = Catálogo, 2 = Páginas, 3 = Fuente; el resto: página + contenido.
+        // 1 = Catálogo, 2 = Páginas, 3 = Fuente regular, 4 = Fuente bold;
+        // luego páginas (5…) y al final los objetos de imagen.
         $objetos = [
             1 => '<< /Type /Catalog /Pages 2 0 R >>',
             3 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+            4 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
         ];
 
+        // Las imágenes se numeran ANTES que las páginas para que cada
+        // /Resources pueda apuntarlas directamente.
+        $imagenesPorObjeto = [];
+        $xobjects = '';
+        $siguiente = 5 + (2 * count($this->paginas));
+        if ($this->imagenes !== []) {
+            $pares = [];
+            foreach ($this->imagenes as $indice => $imagen) {
+                $numero = $siguiente + $indice;
+                $imagenesPorObjeto[$indice] = $numero;
+                $pares[] = '/Im' . ($indice + 1) . ' ' . $numero . ' 0 R';
+            }
+            $xobjects = ' /XObject << ' . implode(' ', $pares) . ' >>';
+        }
+
         $kids = [];
-        $siguiente = 4;
+        $pagina = 5;
         foreach ($this->paginas as $stream) {
-            $pagina = $siguiente;
-            $contenido = $siguiente + 1;
+            $contenido = $pagina + 1;
             $kids[] = $pagina . ' 0 R';
             $objetos[$pagina] = sprintf(
-                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Resources << /Font << /F1 3 0 R >> >> /Contents %d 0 R >>',
+                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %d %d] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>%s >> /Contents %d 0 R >>',
                 self::ANCHO,
                 self::ALTO,
+                $xobjects,
                 $contenido
             );
             $objetos[$contenido] = '<< /Length ' . strlen($stream) . " >>\nstream\n" . $stream . 'endstream';
-            $siguiente += 2;
+            $pagina += 2;
         }
         $objetos[2] = '<< /Type /Pages /Kids [' . implode(' ', $kids) . '] /Count ' . count($this->paginas) . ' >>';
+
+        foreach ($this->imagenes as $indice => $imagen) {
+            $numero = $imagenesPorObjeto[$indice];
+            $objetos[$numero] = sprintf(
+                '<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length %d >>' . "\n" . 'stream' . "\n",
+                $imagen['ancho'],
+                $imagen['alto'],
+                strlen($imagen['jpeg'])
+            ) . $imagen['jpeg'] . "\nendstream";
+        }
         ksort($objetos);
 
         $pdf = "%PDF-1.4\n";

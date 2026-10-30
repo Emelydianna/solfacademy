@@ -89,8 +89,8 @@ final class PdfTest extends TestCase
         $paginas = (int) $m[1];
         $this->assertGreaterThan(1, $paginas, '120 líneas no caben en una página A4');
         $this->assertSame($paginas, substr_count($documento, '/Type /Page '), 'Un objeto /Page por página');
-        // Catálogo + Páginas + Fuente + (página + contenido) por cada una.
-        $this->assertStringContainsString('/Size ' . (3 + 2 * $paginas + 1), $documento);
+        // Catálogo + Páginas + 2 Fuentes + (página + contenido) por cada una.
+        $this->assertStringContainsString('/Size ' . (4 + 2 * $paginas + 1), $documento);
         $this->assertStringContainsString('Linea 0 ', $documento);
         $this->assertStringContainsString('Linea 119 ', $documento);
     }

@@ -79,6 +79,7 @@ class AuthController
         $nombre = trim((string) ($datos['nombre'] ?? ''));
         $apellido = trim((string) ($datos['apellido'] ?? ''));
         $email = trim((string) ($datos['email'] ?? ''));
+        $fechaNacimiento = trim((string) ($datos['fecha_nacimiento'] ?? ''));
         $password = (string) ($datos['password'] ?? '');
         $password2 = (string) ($datos['password2'] ?? '');
         $terminos = isset($datos['terminos']);
@@ -89,6 +90,8 @@ class AuthController
             $error = 'Completa todos los campos personales.';
         } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $error = 'El correo electrónico no tiene un formato válido.';
+        } elseif ($fechaNacimiento !== '' && (!\App\Application\Admin\ListadoAdmin::fecha($fechaNacimiento) || $fechaNacimiento > date('Y-m-d'))) {
+            $error = 'La fecha de nacimiento debe ser válida y no puede ser futura.';
         } elseif (strlen($password) < 8) {
             $error = 'La contraseña debe tener al menos 8 caracteres.';
         } elseif ($password !== $password2) {
@@ -99,7 +102,7 @@ class AuthController
 
         if ($error === null) {
             try {
-                $this->auth->registrar($nombre, $apellido, $email, $password);
+                $this->auth->registrar($nombre, $apellido, $email, $password, $fechaNacimiento !== '' ? $fechaNacimiento : null);
 
                 return $this->redirigirSegunRol($response, 'estudiante');
             } catch (PDOException $e) {
@@ -121,6 +124,7 @@ class AuthController
                 'nombre' => $nombre,
                 'apellido' => $apellido,
                 'email' => $email,
+                'fecha_nacimiento' => $fechaNacimiento,
             ],
         ]);
     }

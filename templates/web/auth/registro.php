@@ -48,6 +48,16 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="fecha_nacimiento" class="form-label">Fecha de nacimiento <span class="text-muted small">(opcional)</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento"
+                               max="<?= date('Y-m-d') ?>"
+                               value="<?= htmlspecialchars($datosAnteriores['fecha_nacimiento'] ?? '') ?>">
+                    </div>
+                </div>
+
+                <div class="mb-3">
                     <label for="password" class="form-label">Contraseña</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>

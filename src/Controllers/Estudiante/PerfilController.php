@@ -207,6 +207,7 @@ class PerfilController
             'email'     => $limpiar('email'),
             'telefono'  => $limpiar('telefono'),
             'direccion' => $limpiar('direccion'),
+            'fecha_nacimiento' => $limpiar('fecha_nacimiento'),
         ];
     }
 
@@ -222,6 +223,7 @@ class PerfilController
             'email'     => (string) ($perfil['email'] ?? ''),
             'telefono'  => (string) ($perfil['telefono'] ?? ''),
             'direccion' => (string) ($perfil['direccion'] ?? ''),
+            'fecha_nacimiento' => (string) ($perfil['fecha_nacimiento'] ?? ''),
         ];
     }
 
@@ -263,6 +265,13 @@ class PerfilController
 
         if (mb_strlen($valores['direccion']) > 255) {
             $errores['direccion'] = 'Máximo 255 caracteres.';
+        }
+
+        if (
+            ($valores['fecha_nacimiento'] ?? '') !== ''
+            && (!\App\Application\Admin\ListadoAdmin::fecha($valores['fecha_nacimiento']) || $valores['fecha_nacimiento'] > date('Y-m-d'))
+        ) {
+            $errores['fecha_nacimiento'] = 'Indica una fecha de nacimiento válida, no futura.';
         }
 
         return $errores;

@@ -60,6 +60,7 @@ final class EstudiantePortalService
                        i.fecha AS fecha_inscripcion,
                        i.precio_inscripcion,
                        i.observaciones,
+                       i.motivo_revision,
                        g.id_grupo,
                        g.fecha_inicio,
                        g.fecha_fin,
@@ -146,6 +147,30 @@ final class EstudiantePortalService
         unset($inscripcion);
 
         return $inscripciones;
+    }
+
+    /**
+     * Datos del certificado de una inscripción (solo del estudiante dueño):
+     * nombre del estudiante, curso y fechas para fechar la emisión.
+     *
+     * @return array<string, mixed>|null null si la inscripción no existe o es de otro estudiante
+     */
+    public function datosCertificado(int $idInscripcion, int $idEstudiante): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT i.id_inscripcion, i.estado, i.fecha AS fecha_inscripcion,
+                    i.fecha_revision, g.fecha_fin, c.nombre AS curso,
+                    e.nombre, e.apellido
+             FROM inscripcion i
+             JOIN grupo g ON g.id_grupo = i.id_grupo
+             JOIN curso c ON c.id_curso = g.id_curso
+             JOIN estudiante e ON e.id_estudiante = i.id_estudiante
+             WHERE i.id_inscripcion = :id AND i.id_estudiante = :estudiante'
+        );
+        $stmt->execute(['id' => $idInscripcion, 'estudiante' => $idEstudiante]);
+        $fila = $stmt->fetch();
+
+        return $fila === false ? null : $fila;
     }
 
     /**
@@ -762,7 +787,7 @@ final class EstudiantePortalService
     {
         $stmt = $this->pdo->prepare(
             'SELECT e.id_estudiante, e.nombre, e.apellido, e.email, e.telefono,
-                    e.direccion, e.fecha_inscripcion,
+                    e.direccion, e.fecha_inscripcion, e.fecha_nacimiento,
                     u.id_usuario, u.email_usuario, u.ultimo_acceso, u.activo
              FROM estudiante e
              LEFT JOIN usuario u ON u.id_estudiante = e.id_estudiante AND u.rol = \'estudiante\'
@@ -825,7 +850,7 @@ final class EstudiantePortalService
      *
      * Lanza PDOException (código 23000) si el correo ya está en uso.
      *
-     * @param array{nombre: string, apellido: string, email: string, telefono: string, direccion: string} $datos
+     * @param array{nombre: string, apellido: string, email: string, telefono: string, direccion: string, fecha_nacimiento?: string} $datos
      */
     public function actualizarPerfil(int $idEstudiante, int $idUsuario, array $datos): void
     {
@@ -835,7 +860,8 @@ final class EstudiantePortalService
             $stmt = $this->pdo->prepare(
                 'UPDATE estudiante
                  SET nombre = :nombre, apellido = :apellido, email = :email,
-                     telefono = :telefono, direccion = :direccion
+                     telefono = :telefono, direccion = :direccion,
+                     fecha_nacimiento = :fecha_nacimiento
                  WHERE id_estudiante = :id'
             );
             $stmt->execute([
@@ -844,6 +870,7 @@ final class EstudiantePortalService
                 'email'     => $datos['email'],
                 'telefono'  => $datos['telefono'] !== '' ? $datos['telefono'] : null,
                 'direccion' => $datos['direccion'] !== '' ? $datos['direccion'] : null,
+                'fecha_nacimiento' => ($datos['fecha_nacimiento'] ?? '') !== '' ? $datos['fecha_nacimiento'] : null,
                 'id'        => $idEstudiante,
             ]);
 

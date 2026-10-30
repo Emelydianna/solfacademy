@@ -232,7 +232,8 @@ Además de la comprobación de rol, las operaciones sobre un `id` concreto (grup
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/estudiante/dashboard` | KPIs, próximos pagos y clases de hoy |
-| GET | `/estudiante/cursos` | Mis cursos, progreso e historial |
+| GET | `/estudiante/cursos` | Mis cursos, progreso e historial; si la matrícula está `Cancelada`, la tarjeta abre un modal con el motivo |
+| GET | `/estudiante/certificado/{id}` | Certificado en PDF (logo, datos de la academia sin teléfono, estudiante, curso y fecha) de una inscripción `Finalizada` |
 | GET | `/estudiante/calendario` | Agenda semanal |
 | GET | `/estudiante/asistencias` | Historial de asistencia |
 | GET | `/estudiante/calificaciones` | Notas y promedios |

@@ -59,15 +59,21 @@ final class AuthService
      *
      * @return array<string, mixed>
      */
-    public function registrar(string $nombre, string $apellido, string $email, string $password): array
+    public function registrar(string $nombre, string $apellido, string $email, string $password, ?string $fechaNacimiento = null): array
     {
         $this->pdo->beginTransaction();
 
         try {
             $stmt = $this->pdo->prepare(
-                'INSERT INTO estudiante (nombre, apellido, email, fecha_inscripcion) VALUES (:nombre, :apellido, :email, CURDATE())'
+                'INSERT INTO estudiante (nombre, apellido, email, fecha_nacimiento, fecha_inscripcion)
+                 VALUES (:nombre, :apellido, :email, :fecha_nacimiento, CURDATE())'
             );
-            $stmt->execute(['nombre' => $nombre, 'apellido' => $apellido, 'email' => $email]);
+            $stmt->execute([
+                'nombre' => $nombre,
+                'apellido' => $apellido,
+                'email' => $email,
+                'fecha_nacimiento' => ($fechaNacimiento ?? '') !== '' ? $fechaNacimiento : null,
+            ]);
             $idEstudiante = (int) $this->pdo->lastInsertId();
 
             $stmt = $this->pdo->prepare(
