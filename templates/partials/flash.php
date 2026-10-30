@@ -20,7 +20,8 @@ $mensajeFlash = (string) $flash['mensaje'];
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (window.solfAviso) {
-            solfAviso(<?= json_encode($tipoFlash) ?>, <?= json_encode($mensajeFlash, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+            // $tipoFlash está limitado a 'success' | 'error' arriba
+            solfAviso('<?= $tipoFlash ?>', <?= json_encode($mensajeFlash, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
         }
     });
 </script>

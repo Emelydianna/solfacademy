@@ -28,9 +28,8 @@ class AsistenciasController
         $fecha = $params['fecha'] ?? date('Y-m-d');
         $this->view->setLayout('instructor/layout.php');
         $data = $this->service->asistenciaPorGrupo((int) $usuario['id_referencia'], $idGrupo, $fecha);
-        $mensaje = $_SESSION['asistencia_msg'] ?? null;
-        $tipoMsg = $_SESSION['asistencia_msg_tipo'] ?? null;
-        unset($_SESSION['asistencia_msg'], $_SESSION['asistencia_msg_tipo']);
+        $flash = $_SESSION['asistencia_flash'] ?? null;
+        unset($_SESSION['asistencia_flash']);
         return $this->view->render($response, 'instructor/asistencias/index.php', [
             'tituloPagina' => 'Registrar Asistencia',
             'paginaInstructor' => 'asistencias',
@@ -39,8 +38,7 @@ class AsistenciasController
             'grupos' => $data['grupos'],
             'fecha' => $fecha,
             'idGrupo' => $idGrupo,
-            'mensaje' => $mensaje,
-            'tipoMsg' => $tipoMsg,
+            'flash' => $flash,
         ]);
     }
 
@@ -52,8 +50,7 @@ class AsistenciasController
         $fecha = $body['fecha'] ?? date('Y-m-d');
         $asistencias = $body['asistencia'] ?? [];
         $this->service->guardarAsistencia((int) $usuario['id_referencia'], $idGrupo, $fecha, $asistencias);
-        $_SESSION['asistencia_msg'] = 'Registro de asistencia guardado correctamente.';
-        $_SESSION['asistencia_msg_tipo'] = 'success';
+        $_SESSION['asistencia_flash'] = ['tipo' => 'exito', 'mensaje' => 'Registro de asistencia guardado correctamente.'];
         return $response->withStatus(302)->withHeader('Location', '/instructor/asistencias?grupo=' . $idGrupo . '&fecha=' . $fecha);
     }
 }

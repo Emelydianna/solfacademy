@@ -42,9 +42,8 @@ class CalificacionesController
         $this->view->setLayout('instructor/layout.php');
         $data = $this->service->calificacionesPorGrupo((int) $usuario['id_referencia'], $idGrupo, $tipo, $fecha);
 
-        $mensaje = $_SESSION['calif_msg'] ?? null;
-        $tipoMsg = $_SESSION['calif_msg_tipo'] ?? null;
-        unset($_SESSION['calif_msg'], $_SESSION['calif_msg_tipo']);
+        $flash = $_SESSION['calificaciones_flash'] ?? null;
+        unset($_SESSION['calificaciones_flash']);
 
         return $this->view->render($response, 'instructor/calificaciones/index.php', [
             'tituloPagina' => 'Ingresar Calificaciones',
@@ -55,8 +54,7 @@ class CalificacionesController
             'evaluaciones' => $data['evaluaciones'],
             'idGrupo' => $data['idGrupo'],
             'claveEvaluacion' => $this->claveEvaluacion((string) $data['tipo'], $data['fecha']),
-            'mensaje' => $mensaje,
-            'tipoMsg' => $tipoMsg,
+            'flash' => $flash,
         ]);
     }
 
@@ -77,10 +75,9 @@ class CalificacionesController
             (array) ($body['observaciones'] ?? [])
         );
 
-        $_SESSION['calif_msg'] = $ok
+        $_SESSION['calificaciones_flash'] = ['tipo' => $ok ? 'exito' : 'error', 'mensaje' => $ok
             ? 'Calificaciones guardadas correctamente.'
-            : 'No se pudieron guardar las calificaciones. Revisa que la evaluación exista en el grupo.';
-        $_SESSION['calif_msg_tipo'] = $ok ? 'success' : 'error';
+            : 'No se pudieron guardar las calificaciones. Revisa que la evaluación exista en el grupo.'];
 
         return $response->withStatus(302)->withHeader(
             'Location',
@@ -105,8 +102,7 @@ class CalificacionesController
             'descripcion'      => (string) ($body['descripcion'] ?? ''),
         ]);
 
-        $_SESSION['calif_msg'] = $resultado['msg'];
-        $_SESSION['calif_msg_tipo'] = $resultado['ok'] ? 'success' : 'error';
+        $_SESSION['calificaciones_flash'] = ['tipo' => $resultado['ok'] ? 'exito' : 'error', 'mensaje' => $resultado['msg']];
 
         return $response->withStatus(302)->withHeader('Location', '/instructor/calificaciones?grupo=' . $idGrupo);
     }

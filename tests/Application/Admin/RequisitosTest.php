@@ -58,4 +58,16 @@ final class RequisitosTest extends GestionOperativaTestCase
         $this->assertStringContainsString('aria-invalid="true"', (string) $app->handle($this->createRequest('GET', '/admin/requisitos/1'))->getBody());
         $this->assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM requisito_curso')->fetchColumn());
     }
+
+    public function testGuardarEmiteToastDeExitoEnElFormularioAlQueRedirige(): void
+    {
+        $app = $this->appAdmin();
+
+        $r = $app->handle($this->createRequest('POST', '/admin/requisitos/1')->withParsedBody($this->datos(['_csrf' => Csrf::token()])));
+        $this->assertSame(303, $r->getStatusCode());
+
+        $html = (string) $app->handle($this->createRequest('GET', $r->getHeaderLine('Location')))->getBody();
+        $this->assertStringContainsString('Requisitos guardados correctamente', $html, 'El mensaje debe mostrarse en la página destino.');
+        $this->assertStringContainsString("solfAviso('success'", $html, 'El guardado debe emitir el toast de SweetAlert2.');
+    }
 }

@@ -4,8 +4,7 @@ $grupo = $grupo ?? [];
 $alumnos = $alumnos ?? [];
 $fecha = $fecha ?? date('Y-m-d');
 $idGrupo = $idGrupo ?? 0;
-$mensaje = $mensaje ?? null;
-$tipoMsg = $tipoMsg ?? null;
+$flash = $flash ?? null;
 $hoy = date('Y-m-d');
 $esHoy = $fecha === $hoy;
 ?>
@@ -14,12 +13,7 @@ $esHoy = $fecha === $hoy;
     <p class="portal-subtitle mb-0">Control diario de asistencia para clases individuales y de ensamble</p>
 </div>
 
-<?php if ($mensaje): ?>
-    <div class="portal-alert portal-alert--<?= ($tipoMsg === 'success') ? 'exito' : 'peligro' ?> d-flex align-items-center gap-2 mb-4" role="alert">
-        <i class="bi bi-<?= ($tipoMsg === 'success') ? 'check-circle' : 'exclamation-circle' ?>-fill"></i>
-        <span><?= htmlspecialchars($mensaje) ?></span>
-    </div>
-<?php endif; ?>
+<?php require __DIR__ . '/../../partials/flash.php'; ?>
 
 <form method="get" action="/instructor/asistencias" class="row g-3 mb-4 align-items-end">
     <div class="col-lg-6">

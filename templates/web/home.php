@@ -14,10 +14,9 @@
                 </div>
             </div>
             <div class="col-lg-6">
-                <!-- TODO: sustituir por la imagen real del aula cuando haya assets -->
                 <div class="hero-image-placeholder">
-                    <i class="bi bi-music-note-beamed"></i>
-                    <span>Aula de orquesta</span>
+                    <img src="/img/aula_orquesta.png" alt="Aula de orquesta de la academia"
+                         width="980" height="657">
                 </div>
             </div>
         </div>

@@ -42,10 +42,12 @@ final class RequisitosController
         $errores = $_SESSION['requisitos_errores'] ?? [];
         $valores = $_SESSION['requisitos_valores'] ?? null;
         unset($_SESSION['requisitos_errores'], $_SESSION['requisitos_valores']);
+        $flash = $_SESSION['requisitos_flash'] ?? null;
+        unset($_SESSION['requisitos_flash']);
         $this->view->setLayout('admin/layout.php');
         return $this->view->render($response, 'admin/requisitos/formulario.php', [
             'tituloPagina' => 'Requisitos — ' . $curso['nombre'], 'paginaAdmin' => 'requisitos',
-            'curso' => $curso, 'errores' => $errores, 'valores' => $valores,
+            'curso' => $curso, 'errores' => $errores, 'valores' => $valores, 'flash' => $flash,
         ]);
     }
 
