@@ -40,10 +40,7 @@
                         <a class="nav-link <?= ($paginaActiva ?? '') === 'instructores' ? 'active' : '' ?>" href="/#instructores">Instructores</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Precios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Contacto</a>
+                        <a class="nav-link" href="/cursos">Precios</a>
                     </li>
                 </ul>
                 <?php if (!empty($usuarioSesion)): ?>
@@ -117,8 +114,7 @@
                     <ul class="list-unstyled footer-links">
                         <li><a href="/#instructores">Instructores</a></li>
                         <li><a href="/cursos">Cursos</a></li>
-                        <li><a href="#">Precios</a></li>
-                        <li><a href="#">Blog</a></li>
+                        <li><a href="/cursos">Precios</a></li>
                     </ul>
                 </div>
                 <?php

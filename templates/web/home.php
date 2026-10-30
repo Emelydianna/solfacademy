@@ -9,8 +9,8 @@
                 <h1 class="hero-title">Aprende de los Mejores Músicos en <?= htmlspecialchars((string) ($config['nombre'] ?? 'SolfAcademy')) ?></h1>
                 <p class="hero-text">Desde principiante hasta entusiasta. Ofrecemos clases personalizadas con instructores expertos, horarios flexibles y una comunidad vibrante. ¡Comienza tu viaje musical hoy!</p>
                 <div class="d-flex flex-wrap gap-3 mt-4">
-                    <a href="#" class="btn btn-accent px-4 fw-semibold">REGISTRARME AHORA</a>
-                    <a href="#" class="btn btn-outline-light px-4">VER CURSOS</a>
+                    <a href="/registro" class="btn btn-accent px-4 fw-semibold">REGISTRARME AHORA</a>
+                    <a href="/cursos" class="btn btn-outline-light px-4">VER CURSOS</a>
                 </div>
             </div>
             <div class="col-lg-6">
