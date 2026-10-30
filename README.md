@@ -47,6 +47,33 @@ Crean tablas **temporales y vacías**, visibles solo en su propia conexión, con
 estructura de las existentes. No reimportan el SQL ni modifican registros reales.
 Sin esa variable, las pruebas de integración se omiten; las de permisos y CSRF sí se ejecutan.
 
+### Cuentas de prueba
+
+El SQL de la semilla incluye cuentas para los tres roles, **con una
+contraseña distinta por rol** (nunca la misma para los tres):
+
+| Rol | Contraseña | Cuentas de ejemplo |
+|---|---|---|
+| Admin | `SolfAdmin2026` | `admin@solfacademy.com` |
+| Instructor | `SolfProfe2026` | `carlos.mendoza@solfacademy.com`, `diego.torres@solfacademy.com`, `ricardo.aguilar@solfacademy.com` |
+| Estudiante | `SolfAlumno2026` | `laura.gomez@ejemplo.com`, `mateo.diaz@ejemplo.com`, `daniel.reyes@ejemplo.com` |
+
+Casos de prueba incluidos a propósito: **Marta López** está *suspendida*
+(acceso bloqueado y reactivable desde su ficha), **Ana Ríos** es
+instructora *sin cuenta* (para crearle acceso desde /admin/instructores),
+**Andrés Castillo y Valeria Orellana** son altas *sin matrículas* (una con
+fecha de nacimiento y otra sin ella, para los dos caminos de verificación
+de edad), y hay una **solicitud de matrícula pendiente** sobre un grupo
+activo en `/admin/matriculas`, pagos con comprobante *pendiente*, *rechazado*
+y *sin comprobante*, y reservas de cabina y de clase extra en todos sus
+estados.
+
+Tras importar, genera los PDF de los comprobantes:
+
+```bash
+php scripts/generar-comprobantes.php
+```
+
 ## Configuración de la base de datos
 
 La conexión se configura en **`config/db.php`** (credenciales por defecto de desarrollo: usuario `valet` sin contraseña en `127.0.0.1`, base de datos `solfacademy`). Edita ese archivo con los datos de tu servidor:
@@ -80,7 +107,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 
 ### Esquema
 
-`database/solfacademy.sql` crea las 24 tablas (las 17 del diagrama entidad-relación, más `practica_estudiante` y las tablas propias de la implementación) con sus claves foráneas, vistas, procedimientos almacenados y datos de prueba alineados con la web (categorías, instrumentos, instructores, 9 cursos, grupos, horarios, aulas, estudiantes e inscripciones de ejemplo):
+`database/solfacademy.sql` crea las 24 tablas (las 17 del diagrama entidad-relación, más `practica_estudiante` y las tablas propias de la implementación) con sus claves foráneas, vistas, procedimientos almacenados y datos de prueba alineados con la web (categorías, instrumentos, instructores, 16 cursos, grupos de octubre y noviembre de 2026, horarios, aulas, estudiantes, inscripciones, pagos con y sin comprobante, reservas de cabina y de clase extra, asistencias y evaluaciones de ejemplo):
 
 | Área | Tablas |
 |---|---|
@@ -96,7 +123,7 @@ Imprime la conexión correcta con el número de tablas y registros, o el error e
 | Acceso | `usuario` (roles `estudiante` / `instructor` / `admin`; listado, alta y bloqueo en `/admin/usuarios`) |
 | Configuración | `configuracion` (una sola fila: marca, lema, logo, contacto, redes, pie de página y nota de los PDF) |
 
-> **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. Todos los usuarios de prueba usan la contraseña `solfacademy123` (por ejemplo `admin@solfacademy.com` o `laura.gomez@ejemplo.com`).
+> **Nota**: `usuario.password_hash` es un añadido respecto al diagrama original; es necesario para autenticar con `password_hash()` de PHP. La semilla usa **una contraseña distinta por rol** (ver [*Cuentas de prueba*](#cuentas-de-prueba)): `SolfAdmin2026` para `admin@solfacademy.com`, `SolfProfe2026` para las cuentas de instructor y `SolfAlumno2026` para las de estudiante.
 >
 > **Nota de pagos**: el estado de pago *no* se guarda duplicado en `inscripcion`; se calcula con `SUM(pago.monto_pagado) WHERE estado='Pagado'` (fuente única de verdad). La vista `v_inscripciones_detalle` ya lo hace por ti. El estudiante envía su comprobante desde `/estudiante/pagos` y el movimiento nace en `Pendiente` (no descuenta); al verificarlo desde `/admin/pagos` pasa a `Pagado`, y si se rechaza queda en `Fallido` con motivo para que pueda enviar otro.
 >

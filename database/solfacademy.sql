@@ -1,7 +1,7 @@
 -- ============================================================
 --  SolfAcademy — Esquema de base de datos + datos de prueba
 --  MySQL / MariaDB (utf8mb4)
--------------------------------------------------------------
+-- ------------------------------------------------------------
 --  CATEGORÍA, INSTRUMENTO, INSTRUCTOR, INSTRUCTOR-INSTRUMENTO,
 --  CURSO, REQUISITO CURSO, DESCUENTO, AULA, GRUPO, HORARIO,
 --  ESTUDIANTE, USUARIO, INSCRIPCIÓN, EVALUACIÓN, ASISTENCIA, PAGO,
@@ -501,8 +501,8 @@ CREATE TABLE configuracion (
 -- Semilla con los valores actuales: nada cambia visualmente hasta que
 -- la administración edite la configuración.
 INSERT INTO configuracion (id_configuracion, nombre, lema, email_contacto, telefono, direccion, ciudad, pie_pagina) VALUES
-    (1, 'SolfAcademy', 'Academia de Música', 'info@solfacademy.com', '+34 912 345 678',
-     'Calle de la Música 123, Madrid', 'Madrid, España', '© 2026 SolfAcademy · Todos los derechos reservados.');
+    (1, 'SolfAcademy', 'Academia de Música', 'info@solfacademy.com', '70463662',
+     '8 ° calle oriente, Barrio Santa Lucia, Zacatecoluca', 'La Paz, El Salvador', '© 2026 SolfAcademy · Todos los derechos reservados.');
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -797,15 +797,28 @@ INSERT INTO categoria (id_categoria, nombre, descripcion) VALUES
     (4, 'Batería',             'Ritmo y coordinación de extremidades'),
     (5, 'Violín',              'Expresión, postura y afinación'),
     (6, 'Clases Particulares', 'A tu ritmo, uno a uno'),
-    (7, 'Teoría Musical',      'Configuración, armonía y composición');
+    (7, 'Teoría Musical',      'Configuración, armonía y composición'),
+    (8, 'Vientos',             'Flauta, saxofón, trompeta y clarinete'),
+    (9, 'Cuerdas graves',      'Bajo eléctrico y contrabajo'),
+    (10, 'Percusión',          'Marimba y percusión de conjunto'),
+    (11, 'Teclados',           'Teclado y sintetizador');
 
 -- Instrumentos ------------------------------------------------
 INSERT INTO instrumento (id_instrumento, id_categoria, nombre, descripcion, precio_alquiler, disponible, imagen) VALUES
-    (1, 1, 'Guitarra',  'Instrumento de cuerda de seis cuerdas', 15.00, 1, NULL),
-    (2, 4, 'Batería',   'Set acústico de percusión',             25.00, 1, NULL),
-    (3, 3, 'Canto',     'Clases de técnica vocal',               10.00, 1, NULL),
-    (4, 2, 'Piano',     'Piano acústico y digital',              30.00, 1, NULL),
-    (5, 5, 'Violín',    'Instrumento de cuerda frotada',         20.00, 1, NULL);
+    (1, 1,  'Guitarra',         'Instrumento de cuerda de seis cuerdas', 15.00, 1, NULL),
+    (2, 4,  'Batería',          'Set acústico de percusión',             25.00, 1, NULL),
+    (3, 3,  'Canto',            'Clases de técnica vocal',               10.00, 1, NULL),
+    (4, 2,  'Piano',            'Piano acústico y digital',              30.00, 1, NULL),
+    (5, 5,  'Violín',           'Instrumento de cuerda frotada',         20.00, 1, NULL),
+    (6, 1,  'Ukelele',          'Cuerda pequeña, ideal para empezar',    10.00, 1, NULL),
+    (7, 9,  'Bajo eléctrico',   'Bajo de cuatro cuerdas con amplificador', 25.00, 1, NULL),
+    (8, 9,  'Contrabajo',       'Cuerda frotada de la sección de bajos', 35.00, 1, NULL),
+    (9, 8,  'Flauta traversa',  'Flauta metal de orquesta',              15.00, 1, NULL),
+    (10, 8, 'Saxofón tenor',    'Saxofón en Si bemol',                  30.00, 1, NULL),
+    (11, 8, 'Trompeta',         'Trompeta en Si bemol',                 25.00, 1, NULL),
+    (12, 8, 'Clarinete',        'Clarinete en Si bemol',                 20.00, 1, NULL),
+    (13, 11, 'Teclado',         'Teclado de 61 teclas con acompañamiento', 20.00, 1, NULL),
+    (14, 10, 'Marimba',         'Marimba de maderas,5 octavas',           40.00, 1, NULL);
 
 -- Instructores ------------------------------------------------
 INSERT INTO instructor (id_instructor, nombre, apellido, anios_experiencia, email, telefono, activo) VALUES
@@ -813,17 +826,28 @@ INSERT INTO instructor (id_instructor, nombre, apellido, anios_experiencia, emai
     (2, 'Sofía',  'Martínez', 8, 'sofia.martinez@solfacademy.com', '22110002', 1),
     (3, 'Mateo',  'Silva',   10, 'mateo.silva@solfacademy.com',    '22110003', 1),
     (4, 'Ana',    'Ríos',     9, 'ana.rios@solfacademy.com',       '22110004', 1),
-    (5, 'Diego',  'Torres',  11, 'diego.torres@solfacademy.com',   '22110005', 1);
+    (5, 'Diego',  'Torres',  11, 'diego.torres@solfacademy.com',   '22110005', 1),
+    (6, 'Ricardo','Aguilar', 14, 'ricardo.aguilar@solfacademy.com','22110006', 1);
 
 -- Instructor <-> Instrumento (N:M) ----------------------------
+-- Además de su especialidad base, cada instructor cubre los
+-- instrumentos nuevos con los que imparte los cursos de noviembre.
 INSERT INTO instructor_instrumento (id_instructor, id_instrumento, anios_experiencia_i, nivel_dominio) VALUES
     (1, 4, 12, 'avanzado'),  -- Carlos -> Piano
     (2, 5,  8, 'avanzado'),  -- Sofía  -> Violín
     (3, 1, 10, 'avanzado'),  -- Mateo  -> Guitarra
     (4, 3,  9, 'avanzado'),  -- Ana    -> Canto
-    (5, 2, 11, 'avanzado');  -- Diego  -> Batería
+    (5, 2, 11, 'avanzado'),  -- Diego  -> Batería
+    (1, 13, 10, 'avanzado'), -- Carlos -> Teclado
+    (3, 6,  4, 'intermedio'),-- Mateo  -> Ukelele
+    (3, 7,  6, 'intermedio'),-- Mateo  -> Bajo eléctrico
+    (5, 14,  7, 'avanzado'), -- Diego  -> Marimba
+    (6, 9, 14, 'avanzado'),  -- Ricardo-> Flauta
+    (6, 10, 14, 'avanzado'), -- Ricardo-> Saxofón
+    (6, 11, 12, 'avanzado'), -- Ricardo-> Trompeta
+    (6, 12, 10, 'avanzado'); -- Ricardo-> Clarinete
 
--- Cursos (los 9 del catálogo) ---------------------------------
+-- Cursos (los 9 del catálogo original +7 de noviembre) ---------
 INSERT INTO curso (id_curso, id_instrumento, nombre, nivel, precio, descripcion, duracion_semanas, disponible, activo, max_grupos) VALUES
     (1, 1, 'Guitarra para Principiantes',                         'Principiante', 49.00, 'Acordes básicos, ritmo y tus primeras canciones',        12, 1, 1, 3),
     (2, 4, 'Piano Clásico I: Fundamentos',                        'Principiante', 55.00, 'Postura, lectura de notas y ejercicios de las dos manos', 12, 1, 1, 3),
@@ -833,7 +857,16 @@ INSERT INTO curso (id_curso, id_instrumento, nombre, nivel, precio, descripcion,
     (6, 5, 'Violín: Expresión y Afinación',                       'Intermedio',   62.00, 'Postura de arco, afinación y expresión',                  12, 1, 1, 2),
     (7, 1, 'Guitarra Intermedia: Arpegios y Ritmos',              'Intermedio',   59.00, 'Arpegios, ritmos alternados y punteo',                    12, 1, 1, 2),
     (8, 2, 'Batería Avanzada: Grooves y Solos',                   'Avanzado',     69.00, 'Grooves, fills y coordinación avanzada',                  12, 1, 1, 2),
-    (9, 4, 'Piano Avanzado: Improvisación',                       'Avanzado',     85.00, 'Armonía aplicada e improvisación sobre estándares',        16, 1, 1, 2);
+    (9, 4, 'Piano Avanzado: Improvisación',                       'Avanzado',     85.00, 'Armonía aplicada e improvisación sobre estándares',        16, 1, 1, 2),
+    (10, 6,  'Ukelele para Principiantes',        'Principiante', 45.00, 'Acordes abiertos y tus primeras canciones',      10, 1, 1, 2),
+    (11, 7,  'Bajo: Técnica y Groove',           'Principiante', 55.00, 'Postura, digitación y fundamentos del groove',   12, 1, 1, 2),
+    (12, 9,  'Flauta: Iniciación y Respiración',  'Principiante', 45.00, 'Embocadura, postura y tu primera melodía',       10, 1, 1, 2),
+    (13, 10, 'Saxofón: Primeros Pasos',           'Principiante', 50.00, 'Embocadura, lenguaje musical y escalas',         12, 1, 1, 2),
+    (14, 13, 'Teclado: Acordes y Ritmo',          'Principiante', 45.00, 'Acordes en ambas manos y acompañamiento rítmico',12, 1, 1, 2),
+    (15, 14, 'Marimba Tradicional',               'Principiante', 65.00, 'Toques fundamentales y sones tradicionales',    16, 1, 1, 2),
+    (16, 11, 'Trompeta: Respiración y Técnica',   'Principiante', 50.00, 'Apoyo, respiración y primeros sonidos',         12, 1, 1, 2);
+-- Los cursos nuevos (10-16) no llevan fila en requisito_curso a
+-- propósito: permiten probar el mensaje "sin requisitos configurados".
 
 -- Requisitos de cada curso ------------------------------------
 INSERT INTO requisito_curso (id_curso, nivel_minimo, edad_minima, edad_maxima, conocimientos_previos, necesita_instrumento, puede_alquilar, descripcion_general) VALUES
@@ -847,32 +880,50 @@ INSERT INTO requisito_curso (id_curso, nivel_minimo, edad_minima, edad_maxima, c
     (8, 'Nivel intermedio aprobado',    16, 99, 'Grooves en 4/4 y lectura rítmica',      1, 0, 'Requiere batería propia o acceso al aula'),
     (9, 'Nivel intermedio aprobado',    16, 99, 'Armonía funcional básica',              0, 1, 'Imprescindible piano propio para practicar');
 
--- Descuentos (vigentes relativos a hoy) -----------------------
+-- Descuentos (vigentes relativos a hoy + casos de prueba) -------
 INSERT INTO descuento (id_curso, codigo, descripcion, porcentaje, monto_fijo, fecha_inicio, fecha_fin, usos_disponibles, usos_realizados, activo) VALUES
     (3,    'PRIMAVERA20', '10% en Piano Clásico II',            10.00, NULL,    DATE_SUB(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY),  -1, 0, 1),
     (1,    'NUEVO15',     '15% para nuevas inscripciones',      15.00, NULL,    DATE_SUB(CURDATE(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 45 DAY),  50, 2, 1),
-    (NULL, 'BIENVENIDA30','$30 de descuento en cualquier curso', NULL, 30.00,  DATE_SUB(CURDATE(), INTERVAL 7 DAY),  DATE_ADD(CURDATE(), INTERVAL 30 DAY), 100, 5, 1);
+    (NULL, 'BIENVENIDA30','$30 de descuento en cualquier curso', NULL, 30.00,  DATE_SUB(CURDATE(), INTERVAL 7 DAY),  DATE_ADD(CURDATE(), INTERVAL 30 DAY), 100, 5, 1),
+    -- Vigente sólo en noviembre de 2026 (para probar cupones en las
+    -- matrículas de los grupos de noviembre).
+    (NULL, 'NOVIEMBRE15', '15% en cualquier curso durante noviembre', 15.00, NULL, '2026-11-01', '2026-11-30', -1, 0, 1),
+    -- Vencido (cierre15/10/2026): permite probar el aviso "ya venció".
+    (NULL, 'OCTUBRE10',   '10% de octubre (promoción cerrada)',      10.00, NULL, '2026-10-01', '2026-10-15', 20, 3, 1);
 
 -- Aulas -------------------------------------------------------
 INSERT INTO aula (id_aula, nombre, capacidad, recursos, ubicacion, activa) VALUES
     (1, 'Aula 1', 12, 'Pianos y piano de cola',               'Planta baja', 1),
     (2, 'Aula 2', 15, 'Baterías acústicas y percusión',       'Planta baja', 1),
-    (3, 'Aula 3', 10, 'Piano de cola, sillas y atriles',      'Primer piso', 1);
+    (3, 'Aula 3', 10, 'Piano de cola, sillas y atriles',      'Primer piso', 1),
+    (4, 'Aula de Ensamble', 12, 'Amplificación, atriles y percusión', 'Primer piso', 1),
+    (5, 'Aula de Grabación', 8, 'Cabina de sonido y micrófonos', 'Sótano', 0);
 
 -- Grupos ------------------------------------------------------
 -- 1-3: grupos históricos (ya finalizados). 4-6: fechas dinámicas
 -- para que el portal del estudiante siempre tenga cursos vivos.
+-- 7-11: grupos de noviembre de 2026 (dos "planeado" aún sin iniciar,
+-- uno "activo" desde octubre para tener asistencias/notas vivas, y
+-- uno "cancelado" para probar filtros). Ningún cruce de instructor
+-- ni de aula entre los grupos abiertos.
 INSERT INTO grupo (id_grupo, id_curso, id_instructor, id_aula, capacidad_maxima, fecha_inicio, fecha_fin, estado) VALUES
     (1, 3, 1, 3, 10, '2026-03-02', '2026-05-25', 'finalizado'),                                                    -- Piano Clásico II (curso del prototipo)
     (2, 1, 3, 1, 12, '2026-03-02', '2026-05-25', 'finalizado'),                                                    -- Guitarra para Principiantes
     (3, 4, 4, 1, 10, '2026-03-03', '2026-05-26', 'finalizado'),                                                    -- Canto
     (4, 3, 1, 3, 10, DATE_SUB(CURDATE(), INTERVAL 70 DAY), DATE_ADD(CURDATE(), INTERVAL 20 DAY), 'activo'),        -- Piano Clásico II
     (5, 5, 5, 2, 12, DATE_SUB(CURDATE(), INTERVAL 50 DAY), DATE_ADD(CURDATE(), INTERVAL 35 DAY), 'activo'),        -- Batería
-    (6, 6, 2, 1, 10, DATE_SUB(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 45 DAY), 'activo');        -- Violín
+    (6, 6, 2, 1, 10, DATE_SUB(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 45 DAY), 'activo'),        -- Violín
+    (7, 10, 3, 1, 10, '2026-11-02', '2026-12-14', 'planeado'),  -- Ukelele: empieza el2/11 (se puede matricular al activarlo)
+    (8, 11, 3, 2, 12, '2026-10-12', '2026-11-30', 'activo'),     -- Bajo: en curso, con asistencias y notas de octubre
+    (9, 14, 1, 1, 10, '2026-11-04', '2026-12-16', 'planeado'),   -- Teclado: empieza el4/11
+    (10, 15, 5, 4, 12, '2026-11-07', '2026-12-19', 'planeado'),  -- Marimba: empieza el7/11, en el Aula de Ensamble
+    (11, 13, 6, 1, 8, '2026-11-03', '2026-12-15', 'cancelado');  -- Saxofón: cancelado (para filtros y estados)
 
 -- Horarios (el grupo 1: Lunes y Miércoles 18:00-19:30) --------
 -- El grupo 4 incluye una clase "de hoy" para que el dashboard
 -- muestre siempre "Próxima clase: Hoy".
+-- Los grupos de noviembre evitan los huecos de grupos abiertos
+-- existentes (aula e instructor) para que la edición no choque.
 INSERT INTO horario (id_grupo, dia_semana, hora_inicio, hora_fin) VALUES
     (1, 'Lunes',     '18:00', '19:30'),
     (1, 'Miércoles', '18:00', '19:30'),
@@ -883,7 +934,15 @@ INSERT INTO horario (id_grupo, dia_semana, hora_inicio, hora_fin) VALUES
     (4, ELT(WEEKDAY(CURDATE()) + 1, 'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'), '17:00', '18:30'),
     (5, 'Martes',    '19:00', '20:30'),
     (5, 'Jueves',    '19:00', '20:30'),
-    (6, 'Viernes',   '18:00', '19:30');
+    (6, 'Viernes',   '18:00', '19:30'),
+    (7, 'Lunes',     '16:00', '17:30'),
+    (7, 'Miércoles', '16:00', '17:30'),
+    (8, 'Martes',    '09:00', '10:30'),
+    (8, 'Jueves',    '09:00', '10:30'),
+    (9, 'Martes',    '09:00', '10:30'),
+    (9, 'Jueves',    '09:00', '10:30'),
+    (10, 'Sábado',   '09:00', '11:00'),
+    (11, 'Martes',   '19:00', '20:30');
 
 -- Estudiantes -------------------------------------------------
 INSERT INTO estudiante (id_estudiante, nombre, apellido, email, telefono, fecha_inscripcion, direccion) VALUES
@@ -892,20 +951,49 @@ INSERT INTO estudiante (id_estudiante, nombre, apellido, email, telefono, fecha_
     (3, 'Marta',  'López', 'marta.lopez@ejemplo.com',  '600555666', '2026-02-21', 'Santa Tecla'),
     (4, 'Mateo',  'Díaz',  'mateo.diaz@ejemplo.com',   '600777888', DATE_SUB(CURDATE(), INTERVAL 100 DAY), 'San Miguel');
 
--- Usuarios (contraseña de todos: "solfacademy123") ------------
+-- Dos altas recientes sin matrículas ni cuenta de acceso: sirven para
+-- probar el alta de cuenta desde la ficha y la primera matrícula.
+-- Andrés sí tiene fecha de nacimiento (la edad se verifica sola);
+-- Valeria no (obliga a la confirmación manual al aprobar).
+INSERT INTO estudiante (id_estudiante, nombre, apellido, email, telefono, fecha_inscripcion, direccion, fecha_nacimiento) VALUES
+    (5, 'Andrés',  'Castillo', 'andres.castillo@ejemplo.com',  '600222333', '2026-10-20', 'Barrio Centro, Zacatecoluca',     '2005-06-15'),
+    (6, 'Valeria', 'Orellana', 'valeria.orellana@ejemplo.com', '600444555', '2026-10-27', 'Santa Rosa de Lima, Zacatecoluca', NULL);
+
+-- Marta dejó la academia en marzo: coherente con su matrícula
+-- cancelada. Con estado suspendido se pueden probar los filtros de
+-- la ficha, el bloqueo de acceso y la reactivación.
+UPDATE estudiante
+SET estado = 'Suspendido',
+    suspension_fecha = '2026-03-05 10:30:00',
+    suspension_motivo = 'Retiro de la academia tras ausencias injustificadas'
+WHERE id_estudiante = 3;
+
+-- Usuarios -----------------------------------------------------
+-- Contraseñas de prueba (hash bcrypt):
+--   admin@solfacademy.com            -> SolfAdmin2026
+--   cualquier cuenta de instructor    -> SolfProfe2026
+--   cualquier cuenta de estudiante    -> SolfAlumno2026
+-- Ana Ríos (instructora) queda sin cuenta a propósito: permite
+-- probar la creación de acceso desde su ficha.
 INSERT INTO usuario (id_usuario, id_estudiante, id_instructor, email_usuario, password_hash, rol, activo, ultimo_acceso) VALUES
-    (1, 1,    NULL, 'laura.gomez@ejemplo.com',          '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'estudiante',  1, DATE_SUB(NOW(), INTERVAL 3 DAY)),
-    (2, 2,    NULL, 'daniel.reyes@ejemplo.com',         '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'estudiante',  1, NULL),
-    (3, 3,    NULL, 'marta.lopez@ejemplo.com',          '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'estudiante',  1, DATE_SUB(NOW(), INTERVAL 2 DAY)),
-    (4, NULL, 1,    'carlos.mendoza@solfacademy.com',   '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'instructor', 1, DATE_SUB(NOW(), INTERVAL 5 HOUR)),
-    (5, NULL, 2,    'sofia.martinez@solfacademy.com',   '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'instructor', 1, NULL),
-    (6, NULL, 3,    'mateo.silva@solfacademy.com',      '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'instructor', 1, DATE_SUB(NOW(), INTERVAL 1 DAY)),
-    (7, NULL, NULL, 'admin@solfacademy.com',            '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'admin',      1, DATE_SUB(NOW(), INTERVAL 2 HOUR)),
-    (8, 4,    NULL, 'mateo.diaz@ejemplo.com',           '$2y$12$EICJjyzk2SHbCrsr7Nh.8eg4VXDwjxdntzguHelswFWVyubudFHtq', 'estudiante', 1, DATE_SUB(NOW(), INTERVAL 1 HOUR));
+    (1, 1,    NULL, 'laura.gomez@ejemplo.com',          '$2y$12$4RfUCMWcQnKTfDuBshjGUuDXPKK54/EUlgsZLG42RkTrJOetGXhdG', 'estudiante',  1, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+    (2, 2,    NULL, 'daniel.reyes@ejemplo.com',         '$2y$12$4RfUCMWcQnKTfDuBshjGUuDXPKK54/EUlgsZLG42RkTrJOetGXhdG', 'estudiante',  1, NULL),
+    (3, 3,    NULL, 'marta.lopez@ejemplo.com',          '$2y$12$4RfUCMWcQnKTfDuBshjGUuDXPKK54/EUlgsZLG42RkTrJOetGXhdG', 'estudiante',  1, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+    (4, NULL, 1,    'carlos.mendoza@solfacademy.com',   '$2y$12$3Z3QEPzO8EZshLdXisJ/y.WXOClxmo/Ts9227e3mK331YkKwgHwsq', 'instructor', 1, DATE_SUB(NOW(), INTERVAL 5 HOUR)),
+    (5, NULL, 2,    'sofia.martinez@solfacademy.com',   '$2y$12$3Z3QEPzO8EZshLdXisJ/y.WXOClxmo/Ts9227e3mK331YkKwgHwsq', 'instructor', 1, NULL),
+    (6, NULL, 3,    'mateo.silva@solfacademy.com',      '$2y$12$3Z3QEPzO8EZshLdXisJ/y.WXOClxmo/Ts9227e3mK331YkKwgHwsq', 'instructor', 1, DATE_SUB(NOW(), INTERVAL 1 DAY)),
+    (7, NULL, NULL, 'admin@solfacademy.com',            '$2y$12$8mgcyyTpcEW/5JMjOxcyX.LO9On4puLF7v9oHgomWjJ.H1g3nV9j.', 'admin',      1, DATE_SUB(NOW(), INTERVAL 2 HOUR)),
+    (8, 4,    NULL, 'mateo.diaz@ejemplo.com',           '$2y$12$4RfUCMWcQnKTfDuBshjGUuDXPKK54/EUlgsZLG42RkTrJOetGXhdG', 'estudiante', 1, DATE_SUB(NOW(), INTERVAL 1 HOUR)),
+    (9, NULL, 5,    'diego.torres@solfacademy.com',     '$2y$12$3Z3QEPzO8EZshLdXisJ/y.WXOClxmo/Ts9227e3mK331YkKwgHwsq', 'instructor', 1, DATE_SUB(NOW(), INTERVAL 5 HOUR)),
+    (10, NULL, 6,   'ricardo.aguilar@solfacademy.com',  '$2y$12$3Z3QEPzO8EZshLdXisJ/y.WXOClxmo/Ts9227e3mK331YkKwgHwsq', 'instructor', 1, DATE_SUB(NOW(), INTERVAL 2 DAY));
 
 -- Inscripciones -----------------------------------------------
 -- Los grupos 1-3 ya terminaron, por eso sus matrículas están
--- cerradas; las de Mateo (4..8) son las que alimentan el portal.
+-- cerradas; las de Mateo (5..8) son las que alimentan el portal.
+-- La 9 es una solicitud pendiente sobre un grupo ACTIVO: es la que
+-- permite probar el flujo de aprobación desde /admin/matriculas
+-- (sobre un grupo finalizado la aprobación siempre fallaría).
+-- Las 10-13 son matrículas del grupo activo de octubre (grupo 8).
 INSERT INTO inscripcion (id_inscripcion, id_estudiante, id_grupo, fecha, estado, precio_inscripcion, observaciones) VALUES
     (1, 1, 1, '2026-02-20', 'Finalizada', 79.00, NULL),                       -- Laura -> Piano Clásico II
     (2, 2, 2, '2026-02-21', 'Finalizada', 49.00, NULL),                       -- Daniel -> Guitarra para Principiantes
@@ -915,7 +1003,11 @@ INSERT INTO inscripcion (id_inscripcion, id_estudiante, id_grupo, fecha, estado,
     (6, 4, 2, DATE_SUB(CURDATE(), INTERVAL 100 DAY), 'Finalizada', 49.00, NULL), -- Mateo -> Guitarra (cursada completa)
     (7, 4, 5, DATE_SUB(CURDATE(), INTERVAL 50 DAY),  'Activa', 52.00, NULL),  -- Mateo -> Batería
     (8, 4, 6, DATE_SUB(CURDATE(), INTERVAL 30 DAY),  'Activa', 62.00, NULL),  -- Mateo -> Violín
-    (9, 4, 3, CURDATE(), 'Pendiente', 45.00, NULL);                           -- Mateo -> Canto (pendiente de pago)
+    (9, 1, 4, CURDATE(), 'Pendiente', 79.00, NULL),                           -- Laura -> Piano Clásico II (solicitud a aprobar)
+    (10, 4, 8, '2026-10-13', 'Activa', 55.00, NULL),                          -- Mateo  -> Bajo (grupo en curso)
+    (11, 2, 8, '2026-10-16', 'Activa', 55.00, NULL),                          -- Daniel -> Bajo (grupo en curso)
+    (12, 1, 5, '2026-09-15', 'Activa', 52.00, NULL),                          -- Laura  -> Batería
+    (13, 2, 6, '2026-10-05', 'Activa', 62.00, NULL);                          -- Daniel -> Violín
 
 -- Evaluaciones ------------------------------------------------
 INSERT INTO evaluacion (id_inscripcion, tipo, fecha_evaluacion, calificacion, descripcion, observaciones_profesor) VALUES
@@ -923,7 +1015,11 @@ INSERT INTO evaluacion (id_inscripcion, tipo, fecha_evaluacion, calificacion, de
     (5, 'Práctica de Repertorio', DATE_SUB(CURDATE(), INTERVAL 10 DAY), 9.50, 'Pieza clásica de nivel intermedio',   'Interpretación madura y expresiva'),
     (6, 'Examen Final',           DATE_SUB(CURDATE(), INTERVAL 60 DAY), 9.40, 'Acordes, ritmo y canción completa',   'Aprobó con sobresaliente'),
     (7, 'Parcial de Ritmo',       DATE_SUB(CURDATE(), INTERVAL 20 DAY), 8.80, 'Grooves en 4/4 y coordinación',       'Trabajar el cambio de palo'),
-    (8, 'Práctica de Técnica',    DATE_SUB(CURDATE(), INTERVAL 10 DAY), 9.30, 'Postura de arco y afinación',         'Progreso constante');
+    (8, 'Práctica de Técnica',    DATE_SUB(CURDATE(), INTERVAL 10 DAY), 9.30, 'Postura de arco y afinación',         'Progreso constante'),
+    -- Grupo8 (Bajo, en curso durante octubre y noviembre)
+    (10, 'Parcial de octubre', '2026-10-27', 8.50, 'Digitación y groove en 4/4',      'Buen control del compás'),
+    (11, 'Parcial de octubre', '2026-10-27', 7.50, 'Postura y lectura de bajo',       'Reforzar la mano izquierda'),
+    (13, 'Práctica de repertorio', '2026-10-23', 9.00, 'Pieza de cámara del trimestre', 'Muy buena expresión');
 
 -- Asistencias -------------------------------------------------
 INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, observaciones) VALUES
@@ -958,6 +1054,30 @@ SELECT 8, DATE_SUB(CURDATE(), INTERVAL nums.n * 2 DAY), IF(nums.n <= 9, 'S', 'N'
 FROM (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
       FROM information_schema.columns LIMIT 10) AS nums;
 
+-- Asistencias de las matrículas nuevas, con los días reales de clase
+-- de cada grupo (grupo8: martes y jueves; grupo5: martes y jueves;
+-- grupo6: viernes). La última es del 29/10/2026 (hoy).
+INSERT INTO asistencia (id_inscripcion, fecha_clase, presente, justificacion, observaciones) VALUES
+    (10, '2026-10-13', 'S', NULL, NULL),
+    (10, '2026-10-15', 'S', NULL, NULL),
+    (10, '2026-10-20', 'N', 'Compromiso familiar', 'Repondrá la clase'),
+    (10, '2026-10-22', 'S', NULL, NULL),
+    (10, '2026-10-27', 'S', NULL, NULL),
+    (10, '2026-10-29', 'S', NULL, NULL),
+    (11, '2026-10-13', 'S', NULL, NULL),
+    (11, '2026-10-15', 'N', 'Enfermedad', 'Avisó por mensaje'),
+    (11, '2026-10-20', 'S', NULL, NULL),
+    (11, '2026-10-22', 'S', NULL, NULL),
+    (11, '2026-10-27', 'N', NULL, 'Avisó al instructor'),
+    (11, '2026-10-29', 'S', NULL, NULL),
+    (12, '2026-10-06', 'S', NULL, NULL),
+    (12, '2026-10-08', 'S', NULL, NULL),
+    (12, '2026-10-13', 'N', 'Viaje familiar', 'Clase recuperatoria ofrecida'),
+    (12, '2026-10-15', 'S', NULL, NULL),
+    (13, '2026-10-09', 'S', NULL, NULL),
+    (13, '2026-10-16', 'N', 'Enfermedad', 'Justificada por el instructor'),
+    (13, '2026-10-23', 'S', NULL, NULL);
+
 -- Pagos -------------------------------------------------------
 INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto, metodo, estado, referencia_pago, comprobante_url, observaciones, creado_por) VALUES
     (1, '2026-02-20', 79.00, 'Mensualidad',  'Tarjeta de crédito',     'Pagado', NULL,          '/comprobantes/pago-1.pdf', NULL, 7),
@@ -968,6 +1088,20 @@ INSERT INTO pago (id_inscripcion, fecha_pago, monto_pagado, concepto, metodo, es
     (7, DATE_SUB(CURDATE(), INTERVAL 50 DAY),  52.00, 'Mensualidad', 'Tarjeta de crédito',      'Pagado', NULL,          '/comprobantes/pago-7.pdf', NULL, 7),
     (8, DATE_SUB(CURDATE(), INTERVAL 15 DAY),  62.00, 'Mensualidad', 'PayPal',                  'Pendiente', NULL,       NULL,                        'Pendiente de confirmar', NULL),
     (5, DATE_ADD(CURDATE(), INTERVAL 5 DAY),   79.00, 'Mensualidad (próxima)', NULL,             'Pendiente', NULL,       NULL,                        'Próximo vencimiento', NULL);
+
+-- Pagos nuevos (ids explícitos para que las URLs de comprobante
+-- coincidan con los PDF que genera scripts/generar-comprobantes.php):
+--   pago-10: Pagado con comprobante (se puede visualizar)
+--   pago-11: Pendiente CON comprobante -> probar APROBAR COMPROBANTE
+--   pago-12: abono parcial -> probar saldo pendiente en el listado
+--   pago-13: Fallido (comprobante rechazado) -> probar ese filtro
+-- El pago8 de arriba (Pendiente SIN comprobante) permite probar el
+-- aviso "no tiene comprobante asociado".
+INSERT INTO pago (id_pago, id_inscripcion, fecha_pago, monto_pagado, concepto, metodo, estado, referencia_pago, comprobante_url, observaciones, creado_por, verificado_por, fecha_verificacion, motivo_verificacion) VALUES
+    (10, 10, '2026-10-14', 55.00, 'Inscripción', 'Transferencia bancaria', 'Pagado',  'TRF-2026-0042', '/comprobantes/pago-10.pdf', NULL, 7, NULL, NULL, NULL),
+    (11, 11, '2026-10-28', 55.00, 'Mensualidad',  'Tarjeta de crédito',     'Pendiente', NULL,          '/comprobantes/pago-11.pdf', 'Comprobante subido desde el portal', NULL, NULL, NULL, NULL),
+    (12, 12, '2026-10-20', 30.00, 'Mensualidad (abono parcial)', 'Efectivo', 'Pagado', NULL,           NULL,                          'Abono en recepción; falta saldo', 7, NULL, NULL, NULL),
+    (13, 13, '2026-10-24', 62.00, 'Mensualidad',  'PayPal',                  'Fallido', 'PAY-2026-8891', '/comprobantes/pago-13.pdf', NULL, 7, 7, '2026-10-25', 'La imagen no corresponde al monto declarado');
 
 -- Práctica semanal individual (14.5 horas totales) ------------
 INSERT INTO practica_estudiante (id_estudiante, fecha, horas) VALUES
@@ -994,7 +1128,32 @@ INSERT INTO estudiante_instrumento_historial (id_estudiante, instrumento, period
 INSERT INTO cabina (id_cabina, nombre, tipo, capacidad, estado, observaciones) VALUES
     (1, 'Cabina Piano 1', 'piano', 1, 'Activa', 'Piano vertical y atril'),
     (2, 'Cabina Piano 2', 'piano', 1, 'Activa', 'Piano digital con cascos'),
-    (3, 'Cabina Piano 3', 'piano', 1, 'Activa', 'Piano vertical, junto a la recepción');
+    (3, 'Cabina Piano 3', 'piano', 1, 'Activa', 'Piano vertical, junto a la recepción'),
+    (4, 'Cabina de Guitarra', 'guitarra', 2, 'Activa', 'Dos guitarras y amplificador pequeño'),
+    (5, 'Cabina de Ensamble', 'multi', 4, 'Inactiva', 'Fuera de servicio hasta renovar el equipo');
+
+-- Reservas de cabina -------------------------------------------
+-- Cubren los estados del módulo: Pendiente (por confirmar),
+-- Confirmada, Asistida (pasada; ya no se puede cancelar) y Cancelada.
+INSERT INTO reserva_cabina (id_reserva, id_estudiante, id_cabina, fecha, hora_inicio, hora_fin, estado, motivo) VALUES
+    (1, 4, 1, '2026-11-03', '16:00', '17:00', 'Pendiente', 'Práctica de piano antes del examen'),
+    (2, 4, 2, '2026-11-03', '17:00', '18:00', 'Confirmada', 'Ensayo de la pieza del recital'),
+    (3, 1, 1, '2026-10-25', '09:00', '10:00', 'Asistida',  'Repaso de armonía'),
+    (4, 2, 4, '2026-11-05', '18:00', '19:00', 'Cancelada', 'El estudiante lo canceló');
+
+-- Reservas de clase extra --------------------------------------
+-- En días/horas en los que el instructor NO tiene grupo, para que la
+-- edición de los grupos abiertos no quede bloqueada por el cruce de
+-- validación (los grupos abiertos son de lunes a viernes, y el grupo
+-- de marimba es sábado por la mañana: la reserva1 va a las16:00).
+-- id_instructor debe coincidir con el del grupo.
+INSERT INTO reserva_clase_extra (id_reserva, id_estudiante, id_grupo, id_instructor, fecha, hora_inicio, hora_fin, estado, motivo) VALUES
+    (1, 4, 5, 5, '2026-11-07', '16:00', '17:00', 'Pendiente',  'Refuerzo antes del examen parcial'),
+    (2, 2, 6, 2, '2026-11-06', '16:00', '17:00', 'Confirmada', 'Preparación de la audición de fin de año'),
+    (3, 4, 4, 1, '2026-11-08', '10:00', '11:00', 'Cancelada',  'Clase de recuperación');
+-- Nota: la reserva1 (Pendiente, futuro) bloquea suspender al
+-- instructor5 (Diego) hasta cancelarla: es el comportamiento real a
+-- probar en /admin/instructores.
 
 -- ============================================================
 --  VERIFICACIÓN: Contar registros en cada tabla

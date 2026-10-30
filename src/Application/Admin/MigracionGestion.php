@@ -94,8 +94,8 @@ final class MigracionGestion
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
         $pdo->exec("INSERT IGNORE INTO configuracion
             (id_configuracion, nombre, lema, email_contacto, telefono, direccion, ciudad, pie_pagina)
-            VALUES (1, 'SolfAcademy', 'Academia de Música', 'info@solfacademy.com', '+34 912 345 678',
-                    'Calle de la Música 123, Madrid', 'Madrid, España',
+            VALUES (1, 'SolfAcademy', 'Academia de Música', 'info@solfacademy.com', '70463662',
+                    '8 ° calle oriente, Barrio Santa Lucia, Zacatecoluca', 'La Paz, El Salvador',
                     '© 2026 SolfAcademy · Todos los derechos reservados.')");
     }
 
