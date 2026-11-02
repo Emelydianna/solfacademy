@@ -24,7 +24,7 @@ final class InstructoresTest extends GestionOperativaTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->directorio = '/tmp/opencode/solfacademy-fotos-test-' . bin2hex(random_bytes(8));
+        $this->directorio = sys_get_temp_dir() . '/solfacademy-fotos-test-' . bin2hex(random_bytes(8));
         $this->fotos = new FotoInstructorStorage($this->directorio);
         $this->instructores = new InstructoresService($this->pdo, $this->fotos);
     }
